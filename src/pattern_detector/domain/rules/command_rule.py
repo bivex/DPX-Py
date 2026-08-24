@@ -67,42 +67,60 @@ class CommandPatternRule(BasePatternRule):
         evidences: list[Evidence] = []
         related_locs: list[SourceLocation] = []
 
-        if is_named:
-            evidences.append(
-                self.evidence(
-                    description=f"Multimethod '{mm_name}' follows command/event dispatcher naming",
-                    weight=0.45,
-                    location=methods[0].location if methods else SourceLocation(file_path=ns.file_path, line=1),
-                    code_suffix="COMMAND_DISPATCHER_NAMING",
-                )
-            )
+        naming_ev = self._build_naming_evidence(mm_name, methods, is_named, ns)
+        if naming_ev:
+            evidences.append(naming_ev)
 
         if methods:
             primary_fn = methods[0]
-            dispatch_str = primary_fn.dispatch_fn or ""
-            if any(k in dispatch_str for k in (":type", ":command", ":cmd", ":action", ":op", ":event")):
-                evidences.append(
-                    self.evidence(
-                        description=f"Dispatches command execution based on message discriminant key '{dispatch_str}'",
-                        weight=0.55,
-                        location=primary_fn.location,
-                        code_suffix="COMMAND_DISCRIMINANT_KEY",
-                    )
-                )
+            dispatch_ev = self._build_dispatch_key_evidence(primary_fn)
+            if dispatch_ev:
+                evidences.append(dispatch_ev)
 
-            branches = [m.dispatch_val for m in methods if m.dispatch_val]
-            if len(branches) >= 2:
-                evidences.append(
-                    self.evidence(
-                        description=f"Implements {len(branches)} distinct command handler branches: {', '.join(branches[:5])}",
-                        weight=min(0.50, 0.25 + 0.08 * len(branches)),
-                        location=primary_fn.location,
-                        code_suffix="COMMAND_BRANCHES",
-                    )
-                )
-                related_locs.extend(m.location for m in methods)
+            branch_ev, locs = self._build_branches_evidence(methods, primary_fn)
+            if branch_ev:
+                evidences.append(branch_ev)
+            related_locs.extend(locs)
 
         return evidences, related_locs
+
+    def _build_naming_evidence(self, mm_name: str, methods: list[Any], is_named: bool, ns: Any) -> Evidence | None:
+        if not is_named:
+            return None
+        loc = methods[0].location if methods else SourceLocation(file_path=ns.file_path, line=1)
+        return self.evidence(
+            description=f"Multimethod '{mm_name}' follows command/event dispatcher naming",
+            weight=0.45,
+            location=loc,
+            code_suffix="COMMAND_DISPATCHER_NAMING",
+        )
+
+    def _build_dispatch_key_evidence(self, primary_fn: Any) -> Evidence | None:
+        dispatch_str = primary_fn.dispatch_fn or ""
+        keywords = (":type", ":command", ":cmd", ":action", ":op", ":event")
+        if not any(k in dispatch_str for k in keywords):
+            return None
+        return self.evidence(
+            description=f"Dispatches command execution based on message discriminant key '{dispatch_str}'",
+            weight=0.55,
+            location=primary_fn.location,
+            code_suffix="COMMAND_DISCRIMINANT_KEY",
+        )
+
+    def _build_branches_evidence(
+        self, methods: list[Any], primary_fn: Any
+    ) -> tuple[Evidence | None, list[SourceLocation]]:
+        branches = [m.dispatch_val for m in methods if m.dispatch_val]
+        if len(branches) < 2:
+            return None, []
+
+        ev = self.evidence(
+            description=f"Implements {len(branches)} distinct command handler branches: {', '.join(branches[:5])}",
+            weight=min(0.50, 0.25 + 0.08 * len(branches)),
+            location=primary_fn.location,
+            code_suffix="COMMAND_BRANCHES",
+        )
+        return ev, [m.location for m in methods]
 
     def _detect_protocol_commands(self, model: CodeModel) -> list[Detection]:
         results: list[Detection] = []

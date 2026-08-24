@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import html
 import json
+from dataclasses import dataclass
 from typing import Any
 
 from pattern_detector.domain.data_flow import (
@@ -11,6 +12,18 @@ from pattern_detector.domain.data_flow import (
     DataFlowSummaryReport,
     NodeKind,
 )
+
+
+@dataclass(frozen=True)
+class DataFlowRenderContext:
+    page_title: str
+    initial_root: str
+    direction: str
+    all_graphs_json: str
+    variables_summary_json: str
+    total_variables: int
+    total_nodes: int
+    total_edges: int
 
 
 class DataFlowHtmlFormatter:
@@ -23,7 +36,7 @@ class DataFlowHtmlFormatter:
         all_graphs_json = json.dumps({graph.root_id: cy_elements})
         variables_summary_json = json.dumps(self._build_single_variable_summary(graph))
 
-        return self._render_template(
+        context = DataFlowRenderContext(
             page_title=page_title,
             initial_root=graph.root_id,
             direction=graph.direction.value,
@@ -33,6 +46,7 @@ class DataFlowHtmlFormatter:
             total_nodes=len(graph.nodes),
             total_edges=len(graph.edges),
         )
+        return self._render_template(context)
 
     def _build_single_variable_summary(self, graph: DataFlowGraph) -> list[dict[str, Any]]:
         root_node = graph.nodes.get(graph.root_id)
@@ -72,7 +86,7 @@ class DataFlowHtmlFormatter:
         variables_summary_json = json.dumps(self._build_multi_variables_summary(report.summaries))
         total_nodes, total_edges = self._calculate_total_graph_metrics(report.summaries)
 
-        return self._render_template(
+        context = DataFlowRenderContext(
             page_title=page_title,
             initial_root=initial_root,
             direction=report.direction.value,
@@ -82,6 +96,7 @@ class DataFlowHtmlFormatter:
             total_nodes=total_nodes,
             total_edges=total_edges,
         )
+        return self._render_template(context)
 
     def _build_multi_graphs_dict(self, sorted_summaries: list[Any]) -> dict[str, Any]:
         graphs_dict: dict[str, Any] = {}
@@ -196,24 +211,26 @@ class DataFlowHtmlFormatter:
             },
         }
 
-    def _render_template(
-        self,
-        page_title: str,
-        initial_root: str,
-        direction: str,
-        all_graphs_json: str,
-        variables_summary_json: str,
-        total_variables: int,
-        total_nodes: int,
-        total_edges: int,
-    ) -> str:
+    def _render_template(self, context: DataFlowRenderContext) -> str:
         """Render complete standalone HTML template with Cytoscape.js and Semantic UI."""
-        return f"""<!DOCTYPE html>
+        return _DATAFLOW_HTML_TEMPLATE.format(
+            page_title=html.escape(context.page_title),
+            initial_root=context.initial_root,
+            direction=context.direction,
+            all_graphs_json=context.all_graphs_json,
+            variables_summary_json=context.variables_summary_json,
+            total_variables=context.total_variables,
+            total_nodes=context.total_nodes,
+            total_edges=context.total_edges,
+        )
+
+
+_DATAFLOW_HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{html.escape(page_title)} - DPX-Py Data Flow</title>
+    <title>{page_title} - DPX-Py Data Flow</title>
     <!-- Fomantic-UI (Semantic UI) CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fomantic-ui@2.9.3/dist/semantic.min.css">
     <!-- Cytoscape.js Core & Layout Engines -->

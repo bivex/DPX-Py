@@ -123,16 +123,25 @@ class DependencyInversionRule(BasePatternRule):
 
     def _extract_method_concrete_deps(self, m: Any, rec_name: str) -> list[str]:
         body = m.body_text or ""
-        results: list[str] = []
         suffixes = ("Repository", "Client", "Database", "Dao", "Gateway")
+        new_deps = self._extract_new_expr_concrete_deps(body, suffixes)
+        ctor_deps = self._extract_constructor_concrete_deps(body, m.calls, rec_name, suffixes)
+        return new_deps + ctor_deps
 
+    def _extract_new_expr_concrete_deps(self, body: str, suffixes: tuple[str, ...]) -> list[str]:
+        results: list[str] = []
         for raw_match in _NEW_EXPR_RE.findall(body):
-            cl = next((item for item in raw_match if item), "")
-            if any(cl.endswith(sfx) for sfx in suffixes):
+            cl = raw_match[0] if isinstance(raw_match, tuple) and raw_match else str(raw_match)
+            if cl.endswith(suffixes):
                 results.append(cl)
+        return results
 
-        for cl in _PYTHON_CONSTRUCTOR_RE.findall(body) + m.calls:
-            if any(cl.endswith(sfx) for sfx in suffixes) and cl != rec_name:
+    def _extract_constructor_concrete_deps(
+        self, body: str, calls: list[str], rec_name: str, suffixes: tuple[str, ...]
+    ) -> list[str]:
+        results: list[str] = []
+        candidates = _PYTHON_CONSTRUCTOR_RE.findall(body) + calls
+        for cl in candidates:
+            if cl.endswith(suffixes) and cl != rec_name:
                 results.append(cl)
-
         return results

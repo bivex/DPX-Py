@@ -19,26 +19,40 @@ class LlmReportFormatter:
         insights_report: InsightsReport | None = None,
     ) -> str:
         """Render DetectionReport as structured XML/Markdown context for LLMs."""
-        lines: list[str] = [
+        project_path = report.project_path or "."
+        lines = [
             "<codebase_architecture_analysis>",
-            f'  <project path="{report.project_path or "."}" files="{report.scanned_files_count}" detections="{report.total_detections_count}">',
+            f'  <project path="{project_path}" files="{report.scanned_files_count}" detections="{report.total_detections_count}">',
         ]
         lines.extend(self._render_category_summary(report.summary_by_category))
 
-        patterns = [d for d in report.detections if d.pattern_category != PatternCategory.PRINCIPLE]
-        adherences = [
-            d
-            for d in report.detections
-            if d.pattern_category == PatternCategory.PRINCIPLE
-            and ("Adherence" in d.summary or "adherence" in d.target_kind)
-        ]
-        violations = [
-            d
-            for d in report.detections
-            if d.pattern_category == PatternCategory.PRINCIPLE
-            and not ("Adherence" in d.summary or "adherence" in d.target_kind)
-        ]
+        patterns, adherences, violations = self._partition_detections(report.detections)
+        self._append_detection_sections(lines, patterns, adherences, violations, insights_report)
 
+        lines.extend(["  </project>", "</codebase_architecture_analysis>"])
+        return "\n".join(lines)
+
+    def _partition_detections(self, detections: list[Any]) -> tuple[list[Any], list[Any], list[Any]]:
+        patterns: list[Any] = []
+        adherences: list[Any] = []
+        violations: list[Any] = []
+        for d in detections:
+            if d.pattern_category != PatternCategory.PRINCIPLE:
+                patterns.append(d)
+            elif "Adherence" in d.summary or "adherence" in d.target_kind:
+                adherences.append(d)
+            else:
+                violations.append(d)
+        return patterns, adherences, violations
+
+    def _append_detection_sections(
+        self,
+        lines: list[str],
+        patterns: list[Any],
+        adherences: list[Any],
+        violations: list[Any],
+        insights_report: InsightsReport | None,
+    ) -> None:
         if patterns:
             lines.extend(self._render_design_patterns(patterns))
         if adherences:
@@ -47,14 +61,6 @@ class LlmReportFormatter:
             lines.extend(self._render_architectural_violations(violations))
         if insights_report and insights_report.insights:
             lines.extend(self._render_pattern_data_insights(insights_report))
-
-        lines.extend(
-            [
-                "  </project>",
-                "</codebase_architecture_analysis>",
-            ]
-        )
-        return "\n".join(lines)
 
     def _render_category_summary(self, summary_by_category: dict[str, int]) -> list[str]:
         lines = ["    <category_summary>"]
@@ -160,31 +166,45 @@ class LlmReportFormatter:
         return reads_by, writes_by
 
     def _extract_propagation_paths(self, graph: DataFlowGraph) -> list[str]:
-        adj: dict[str, list[tuple[str, str]]] = {}
-        for edge in graph.edges:
-            adj.setdefault(edge.from_id, []).append((edge.to_id, edge.kind))
-
+        adj = self._build_adjacency_map(graph.edges)
         paths: list[list[str]] = []
+        self._dfs_traverse(adj, graph.root_id, [graph.root_id], {graph.root_id}, 0, paths)
+        return self._deduplicate_and_render_paths(paths)
 
-        def find_paths(current: str, current_path: list[str], visited: set[str], depth: int) -> None:
-            if depth > 10:
-                paths.append(current_path)
-                return
-            neighbors = adj.get(current, [])
-            if not neighbors:
-                if len(current_path) > 1:
-                    paths.append(current_path)
-                return
-            for nxt, kind in neighbors:
-                clean_name = nxt.replace("fn_", "") + ("()" if "fn_" in nxt else "")
-                step_str = f"-[{kind.lower()}]-> {clean_name}"
-                if nxt not in visited:
-                    find_paths(nxt, current_path + [step_str], visited | {nxt}, depth + 1)
-                else:
-                    paths.append(current_path + [step_str + " (cycle)"])
+    def _build_adjacency_map(self, edges: list[Any]) -> dict[str, list[tuple[str, str]]]:
+        adj: dict[str, list[tuple[str, str]]] = {}
+        for edge in edges:
+            adj.setdefault(edge.from_id, []).append((edge.to_id, edge.kind))
+        return adj
 
-        find_paths(graph.root_id, [graph.root_id], {graph.root_id}, 0)
+    def _dfs_traverse(
+        self,
+        adj: dict[str, list[tuple[str, str]]],
+        current: str,
+        current_path: list[str],
+        visited: set[str],
+        depth: int,
+        out_paths: list[list[str]],
+    ) -> None:
+        if depth > 10:
+            out_paths.append(current_path)
+            return
 
+        neighbors = adj.get(current, [])
+        if not neighbors:
+            if len(current_path) > 1:
+                out_paths.append(current_path)
+            return
+
+        for nxt, kind in neighbors:
+            clean_name = nxt.replace("fn_", "") + ("()" if "fn_" in nxt else "")
+            step_str = f"-[{kind.lower()}]-> {clean_name}"
+            if nxt not in visited:
+                self._dfs_traverse(adj, nxt, current_path + [step_str], visited | {nxt}, depth + 1, out_paths)
+            else:
+                out_paths.append(current_path + [step_str + " (cycle)"])
+
+    def _deduplicate_and_render_paths(self, paths: list[list[str]]) -> list[str]:
         seen_paths: set[str] = set()
         rendered: list[str] = []
         for p in paths[:25]:

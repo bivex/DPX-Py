@@ -62,16 +62,22 @@ class ConsoleReportFormatter(ReportFormatterPort):
 
         for cat, count in report.summary_by_category.items():
             if count > 0:
-                cat_dets = [d for d in report.detections if d.pattern_category.value == cat]
-                vh = sum(1 for d in cat_dets if d.level == ConfidenceLevel.VERY_HIGH)
-                h = sum(1 for d in cat_dets if d.level == ConfidenceLevel.HIGH)
-                m = sum(1 for d in cat_dets if d.level == ConfidenceLevel.MEDIUM)
-                l = sum(1 for d in cat_dets if d.level == ConfidenceLevel.LOW)
-                breakdown = f"[green]{vh} VERY HIGH[/], [cyan]{h} HIGH[/], [yellow]{m} MED[/], [red]{l} LOW[/]"
+                breakdown = self._format_category_breakdown(report.detections, cat)
                 summary_table.add_row(cat.upper(), str(count), breakdown)
 
         console.print(summary_table)
         console.print()
+
+    def _format_category_breakdown(self, detections: list[Any], cat: str) -> str:
+        counts = {level: 0 for level in ConfidenceLevel}
+        for d in detections:
+            if d.pattern_category.value == cat:
+                counts[d.level] += 1
+        vh = counts[ConfidenceLevel.VERY_HIGH]
+        h = counts[ConfidenceLevel.HIGH]
+        m = counts[ConfidenceLevel.MEDIUM]
+        l = counts[ConfidenceLevel.LOW]
+        return f"[green]{vh} VERY HIGH[/], [cyan]{h} HIGH[/], [yellow]{m} MED[/], [red]{l} LOW[/]"
 
     def _render_detection_tree(self, idx: int, det: Any) -> Tree:
         badge_color = {

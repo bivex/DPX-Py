@@ -57,23 +57,22 @@ class PaymentProcessor:
             print("Processing Crypto")
 
 
-# 3. LSP: Subclass Contract Breach
-class ReadOnlyRepository(ABC):
+# 3. LSP: Subclass Contract Adherence
+class BaseRepository(ABC):
     @abstractmethod
     def read_all(self) -> list[str]:
         pass
 
+
+class WritableRepository(BaseRepository):
     @abstractmethod
     def write_one(self, item: str) -> None:
         pass
 
 
-class ImmutableRepository(ReadOnlyRepository):
+class ImmutableRepository(BaseRepository):
     def read_all(self) -> list[str]:
         return ["item1", "item2"]
-
-    def write_one(self, item: str) -> None:
-        raise NotImplementedError("Writing is prohibited in ImmutableRepository")
 
 
 # 4. ISP: Fat Monolithic Interface

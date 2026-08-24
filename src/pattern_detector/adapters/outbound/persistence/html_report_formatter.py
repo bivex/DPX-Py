@@ -119,20 +119,22 @@ class HtmlReportFormatter(ReportFormatterPort):
     """Renders a standalone, responsive, interactive Semantic UI (Fomantic-UI) HTML dashboard for DetectionReport."""
 
     def format(self, report: DetectionReport, verbose: bool = False) -> str:
-        vh_count = sum(1 for d in report.detections if d.level == ConfidenceLevel.VERY_HIGH)
-        h_count = sum(1 for d in report.detections if d.level == ConfidenceLevel.HIGH)
-        m_count = sum(1 for d in report.detections if d.level == ConfidenceLevel.MEDIUM)
-        l_count = sum(1 for d in report.detections if d.level == ConfidenceLevel.LOW)
+        counts = self._count_confidence_levels(report.detections)
+        vh_count = counts.get(ConfidenceLevel.VERY_HIGH, 0)
+        h_count = counts.get(ConfidenceLevel.HIGH, 0)
+        m_count = counts.get(ConfidenceLevel.MEDIUM, 0)
+        l_count = counts.get(ConfidenceLevel.LOW, 0)
 
-        cards_html = [self._render_detection_card(idx, det) for idx, det in enumerate(report.detections, 1)]
+        cards_html = self._render_cards_list(report.detections)
         category_filters = self._render_category_filters(report)
+        project_name = html.escape(report.project_path or "Codebase")
 
         return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pattern Scanner Report - {html.escape(report.project_path or "Codebase")}</title>
+    <title>Pattern Scanner Report - {project_name}</title>
     <!-- Fomantic-UI (Semantic UI) CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fomantic-ui@2.9.3/dist/semantic.min.css">
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
@@ -408,3 +410,15 @@ class HtmlReportFormatter(ReportFormatterPort):
                     """
                 )
         return category_filters
+
+    def _count_confidence_levels(self, detections: list[Any]) -> dict[ConfidenceLevel, int]:
+        counts: dict[ConfidenceLevel, int] = {level: 0 for level in ConfidenceLevel}
+        for d in detections:
+            counts[d.level] += 1
+        return counts
+
+    def _render_cards_list(self, detections: list[Any]) -> list[str]:
+        cards: list[str] = []
+        for idx, det in enumerate(detections, 1):
+            cards.append(self._render_detection_card(idx, det))
+        return cards
