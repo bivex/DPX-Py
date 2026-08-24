@@ -250,6 +250,21 @@ class DataFlowService:
         path_graph: DataFlowGraph,
         src_loc: SourceLocation,
     ) -> TaintFlow:
+        steps = self._build_taint_flow_steps(path_graph, sink_id)
+        return TaintFlow(
+            id=f"taint_{src_pattern.category.value}_{sink_pattern.category.value}_{len(steps)}",
+            category=sink_pattern.category,
+            severity=sink_pattern.severity,
+            cwe_id=sink_pattern.cwe_id,
+            source_expr=src_name,
+            sink_target=sink_id,
+            primary_location=src_loc,
+            steps=steps,
+            summary=f"Taint Flow: Untrusted input '{src_name}' flows directly into {sink_pattern.description} ('{sink_id}')",
+            remediation_hint=f"Sanitize or validate '{src_name}' before passing it to '{sink_pattern.pattern}'.",
+        )
+
+    def _build_taint_flow_steps(self, path_graph: DataFlowGraph, sink_id: str) -> list[TaintFlowStep]:
         steps: list[TaintFlowStep] = []
         for idx, (nid, node) in enumerate(path_graph.nodes.items(), 1):
             kind_str = "SOURCE" if idx == 1 else ("SINK" if nid == sink_id else "FLOW")
@@ -262,20 +277,7 @@ class DataFlowService:
                     description=f"Value propagated to {node.kind.value} '{node.name}'",
                 )
             )
-
-        cat = sink_pattern.category
-        return TaintFlow(
-            id=f"taint_{src_pattern.category.value}_{sink_pattern.category.value}_{len(steps)}",
-            category=cat,
-            severity=sink_pattern.severity,
-            cwe_id=sink_pattern.cwe_id,
-            source_expr=src_name,
-            sink_target=sink_id,
-            primary_location=src_loc,
-            steps=steps,
-            summary=f"Taint Flow: Untrusted input '{src_name}' flows directly into {sink_pattern.description} ('{sink_id}')",
-            remediation_hint=f"Sanitize or validate '{src_name}' before passing it to '{sink_pattern.pattern}'.",
-        )
+        return steps
 
     def _create_initial_graph(
         self, root_variable: str, direction: DataFlowDirection, variant: DataFlowVariant
@@ -295,23 +297,39 @@ class DataFlowService:
 
     def _get_readers_index(self, model: CodeModel, root_variable: str) -> dict[str, list]:
         if not hasattr(model, "_readers_by_var"):
-            readers_by_var: dict[str, list] = defaultdict(list)
-            for fn in model.all_functions():
-                for r_var in fn.reads_variables:
-                    readers_by_var[r_var].append(fn)
-                for step in fn.flow_steps:
-                    readers_by_var[step.source_expr].append(fn)
-                    if step.step_kind == "call":
-                        for a in step.call_args:
-                            readers_by_var[a].append(fn)
-            model._readers_by_var = readers_by_var  # type: ignore[attr-defined]
+            model._readers_by_var = self._build_readers_index(model)  # type: ignore[attr-defined]
         index: dict[str, list] = model._readers_by_var  # type: ignore[attr-defined]
-
         if not index.get(root_variable):
-            for fn in model.all_functions():
-                if root_variable in fn.body_text or any(root_variable in s.source_expr for s in fn.flow_steps):
-                    index[root_variable].append(fn)
+            self._fill_readers_fallback(model, index, root_variable)
         return index
+
+    def _build_readers_index(self, model: CodeModel) -> dict[str, list]:
+        readers_by_var: dict[str, list] = defaultdict(list)
+        for fn in model.all_functions():
+            self._index_reads_variables(fn, readers_by_var)
+            self._index_flow_step_sources(fn, readers_by_var)
+        return readers_by_var
+
+    def _index_reads_variables(self, fn: Any, index: dict[str, list]) -> None:
+        for r_var in fn.reads_variables:
+            index[r_var].append(fn)
+
+    def _index_flow_step_sources(self, fn: Any, index: dict[str, list]) -> None:
+        for step in fn.flow_steps:
+            index[step.source_expr].append(fn)
+            if step.step_kind == "call":
+                for arg in step.call_args:
+                    index[arg].append(fn)
+
+    def _fill_readers_fallback(self, model: CodeModel, index: dict[str, list], root_variable: str) -> None:
+        for fn in model.all_functions():
+            if self._fn_mentions_variable(fn, root_variable):
+                index[root_variable].append(fn)
+
+    def _fn_mentions_variable(self, fn: Any, var: str) -> bool:
+        if var in fn.body_text:
+            return True
+        return any(var in s.source_expr for s in fn.flow_steps)
 
     def _get_writers_index(self, model: CodeModel) -> dict[str, list]:
         if not hasattr(model, "_writers_by_var"):
@@ -352,9 +370,7 @@ class DataFlowService:
             if w_var != var_name and w_var not in ctx.visited_vars:
                 ctx.queue.append((w_var, ctx.depth + 1))
 
-    def _expand_forward_flow_steps(
-        self, ctx: _ExpansionContext, var_name: str, fn: Any, cluster_name: str
-    ) -> None:
+    def _expand_forward_flow_steps(self, ctx: _ExpansionContext, var_name: str, fn: Any, cluster_name: str) -> None:
         for step in getattr(fn, "flow_steps", []):
             if len(ctx.graph.nodes) >= ctx.max_nodes:
                 break
@@ -436,35 +452,41 @@ class DataFlowService:
         )
         w_kind = "MODIFIED_BY" if var_name in fn.modifies_variables else "WRITTEN_BY"
         ctx.graph.add_edge(from_id=var_name, to_id=fn_id, kind=w_kind, location=fn.location)
+        self._expand_backward_flow_steps(ctx, var_name, cluster_name, fn)
+        self._expand_backward_reads(ctx, var_name, fn_id, cluster_name, fn)
 
+    def _expand_backward_flow_steps(self, ctx: _ExpansionContext, var_name: str, cluster_name: str, fn: Any) -> None:
         for step in getattr(fn, "flow_steps", []):
             if len(ctx.graph.nodes) >= ctx.max_nodes:
                 break
-            if var_name in step.target_expr or var_name == step.target_expr:
-                is_src = any(sp.pattern in step.source_expr for sp in DEFAULT_TAINT_SOURCES)
-                ctx.graph.add_node(
-                    node_id=step.source_expr,
-                    name=step.source_expr,
-                    kind=NodeKind.SYMBOL,
-                    cluster=cluster_name,
-                    location=step.location,
-                    is_source=is_src,
-                )
-                ctx.graph.add_edge(
-                    from_id=var_name,
-                    to_id=step.source_expr,
-                    kind=f"PRODUCED_BY_{step.step_kind.upper()}",
-                    location=step.location,
-                )
-                if step.source_expr != var_name and step.source_expr not in ctx.visited_vars:
-                    ctx.queue.append((step.source_expr, ctx.depth + 1))
+            if var_name not in step.target_expr and var_name != step.target_expr:
+                continue
+            is_src = any(sp.pattern in step.source_expr for sp in DEFAULT_TAINT_SOURCES)
+            ctx.graph.add_node(
+                node_id=step.source_expr,
+                name=step.source_expr,
+                kind=NodeKind.SYMBOL,
+                cluster=cluster_name,
+                location=step.location,
+                is_source=is_src,
+            )
+            ctx.graph.add_edge(
+                from_id=var_name,
+                to_id=step.source_expr,
+                kind=f"PRODUCED_BY_{step.step_kind.upper()}",
+                location=step.location,
+            )
+            if step.source_expr != var_name and step.source_expr not in ctx.visited_vars:
+                ctx.queue.append((step.source_expr, ctx.depth + 1))
 
+    def _expand_backward_reads(
+        self, ctx: _ExpansionContext, var_name: str, fn_id: str, cluster_name: str, fn: Any
+    ) -> None:
         for r_var in fn.reads_variables:
             if len(ctx.graph.nodes) >= ctx.max_nodes:
                 break
             ctx.graph.add_node(node_id=r_var, name=r_var, kind=NodeKind.SYMBOL, cluster=cluster_name)
             ctx.graph.add_edge(from_id=fn_id, to_id=r_var, kind="READS_FROM", location=fn.location)
-
             if r_var != var_name and r_var not in ctx.visited_vars:
                 ctx.queue.append((r_var, ctx.depth + 1))
 

@@ -61,29 +61,45 @@ DEFAULT_TAINT_SOURCES: tuple[TaintSourcePattern, ...] = (
     TaintSourcePattern("token", TaintCategory.SENSITIVE_DATA_LEAK, "Sensitive authentication token", is_sensitive=True),
     TaintSourcePattern("api_key", TaintCategory.SENSITIVE_DATA_LEAK, "Sensitive API key secret", is_sensitive=True),
     TaintSourcePattern("secret_key", TaintCategory.SENSITIVE_DATA_LEAK, "Cryptographic master key", is_sensitive=True),
-    TaintSourcePattern("auth_header", TaintCategory.SENSITIVE_DATA_LEAK, "Authorization bearer header", is_sensitive=True),
+    TaintSourcePattern(
+        "auth_header", TaintCategory.SENSITIVE_DATA_LEAK, "Authorization bearer header", is_sensitive=True
+    ),
     TaintSourcePattern("credit_card", TaintCategory.SENSITIVE_DATA_LEAK, "Payment card information", is_sensitive=True),
 )
 
 # Standard Python Taint Sinks Catalog
 DEFAULT_TAINT_SINKS: tuple[TaintSinkPattern, ...] = (
     # SQL Injection Sinks
-    TaintSinkPattern("cursor.execute", TaintCategory.SQL_INJECTION, "CRITICAL", "CWE-89", "SQL Database Query Execution"),
-    TaintSinkPattern("connection.execute", TaintCategory.SQL_INJECTION, "CRITICAL", "CWE-89", "Raw SQL Statement Execution"),
-    TaintSinkPattern("session.execute", TaintCategory.SQL_INJECTION, "HIGH", "CWE-89", "ORM Session Raw Query Execution"),
+    TaintSinkPattern(
+        "cursor.execute", TaintCategory.SQL_INJECTION, "CRITICAL", "CWE-89", "SQL Database Query Execution"
+    ),
+    TaintSinkPattern(
+        "connection.execute", TaintCategory.SQL_INJECTION, "CRITICAL", "CWE-89", "Raw SQL Statement Execution"
+    ),
+    TaintSinkPattern(
+        "session.execute", TaintCategory.SQL_INJECTION, "HIGH", "CWE-89", "ORM Session Raw Query Execution"
+    ),
     TaintSinkPattern("db.execute", TaintCategory.SQL_INJECTION, "CRITICAL", "CWE-89", "Database Engine Execution"),
     TaintSinkPattern("raw_sql", TaintCategory.SQL_INJECTION, "HIGH", "CWE-89", "Raw SQL evaluation"),
     # Command Injection Sinks
     TaintSinkPattern("subprocess.run", TaintCategory.COMMAND_INJECTION, "CRITICAL", "CWE-78", "Subprocess Execution"),
-    TaintSinkPattern("subprocess.Popen", TaintCategory.COMMAND_INJECTION, "CRITICAL", "CWE-78", "Async Subprocess Invocation"),
+    TaintSinkPattern(
+        "subprocess.Popen", TaintCategory.COMMAND_INJECTION, "CRITICAL", "CWE-78", "Async Subprocess Invocation"
+    ),
     TaintSinkPattern("subprocess.call", TaintCategory.COMMAND_INJECTION, "CRITICAL", "CWE-78", "Process Invocation"),
-    TaintSinkPattern("subprocess.check_output", TaintCategory.COMMAND_INJECTION, "CRITICAL", "CWE-78", "Process Output Extraction"),
-    TaintSinkPattern("os.system", TaintCategory.COMMAND_INJECTION, "CRITICAL", "CWE-78", "Direct Shell Command Execution"),
+    TaintSinkPattern(
+        "subprocess.check_output", TaintCategory.COMMAND_INJECTION, "CRITICAL", "CWE-78", "Process Output Extraction"
+    ),
+    TaintSinkPattern(
+        "os.system", TaintCategory.COMMAND_INJECTION, "CRITICAL", "CWE-78", "Direct Shell Command Execution"
+    ),
     TaintSinkPattern("os.popen", TaintCategory.COMMAND_INJECTION, "CRITICAL", "CWE-78", "Piped Shell Command"),
     # Code Injection Sinks
     TaintSinkPattern("eval", TaintCategory.CODE_INJECTION, "CRITICAL", "CWE-94", "Dynamic Code Evaluation"),
     TaintSinkPattern("exec", TaintCategory.CODE_INJECTION, "CRITICAL", "CWE-94", "Dynamic Code Execution"),
-    TaintSinkPattern("pickle.loads", TaintCategory.CODE_INJECTION, "CRITICAL", "CWE-502", "Unsafe Object Deserialization"),
+    TaintSinkPattern(
+        "pickle.loads", TaintCategory.CODE_INJECTION, "CRITICAL", "CWE-502", "Unsafe Object Deserialization"
+    ),
     TaintSinkPattern("yaml.load", TaintCategory.CODE_INJECTION, "HIGH", "CWE-502", "Unsafe YAML Deserialization"),
     # Path Traversal Sinks
     TaintSinkPattern("open", TaintCategory.PATH_TRAVERSAL, "HIGH", "CWE-22", "File System Read/Write Access"),
@@ -94,10 +110,18 @@ DEFAULT_TAINT_SINKS: tuple[TaintSinkPattern, ...] = (
     TaintSinkPattern("requests.post", TaintCategory.SSRF, "HIGH", "CWE-918", "Outbound HTTP Post Request (SSRF)"),
     TaintSinkPattern("urllib.request.urlopen", TaintCategory.SSRF, "HIGH", "CWE-918", "Network Resource Fetch"),
     # Sensitive Data Leak Sinks (Logging)
-    TaintSinkPattern("logger.info", TaintCategory.SENSITIVE_DATA_LEAK, "MEDIUM", "CWE-532", "Sensitive Information in System Log"),
-    TaintSinkPattern("logger.error", TaintCategory.SENSITIVE_DATA_LEAK, "MEDIUM", "CWE-532", "Sensitive Information in Error Log"),
-    TaintSinkPattern("logger.debug", TaintCategory.SENSITIVE_DATA_LEAK, "MEDIUM", "CWE-532", "Sensitive Information in Debug Log"),
-    TaintSinkPattern("print", TaintCategory.SENSITIVE_DATA_LEAK, "LOW", "CWE-532", "Plaintext Print of Sensitive Variable"),
+    TaintSinkPattern(
+        "logger.info", TaintCategory.SENSITIVE_DATA_LEAK, "MEDIUM", "CWE-532", "Sensitive Information in System Log"
+    ),
+    TaintSinkPattern(
+        "logger.error", TaintCategory.SENSITIVE_DATA_LEAK, "MEDIUM", "CWE-532", "Sensitive Information in Error Log"
+    ),
+    TaintSinkPattern(
+        "logger.debug", TaintCategory.SENSITIVE_DATA_LEAK, "MEDIUM", "CWE-532", "Sensitive Information in Debug Log"
+    ),
+    TaintSinkPattern(
+        "print", TaintCategory.SENSITIVE_DATA_LEAK, "LOW", "CWE-532", "Plaintext Print of Sensitive Variable"
+    ),
 )
 
 

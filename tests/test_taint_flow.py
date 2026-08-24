@@ -1,4 +1,5 @@
 """Tests for Level 1-3 Data Flow Engine: Access Paths, Interprocedural Links, and Taint Analysis."""
+
 from __future__ import annotations
 
 from pattern_detector.adapters.outbound.python_ast.py_parser_adapter import PyParserAdapter
@@ -20,6 +21,7 @@ SERVICE = DataFlowService()
 def _parse(code: str):
     ns = ADAPTER.parse_source(code, file_path="test_module.py")
     from pattern_detector.domain.code_model import CodeModel
+
     model = CodeModel()
     model.add_namespace(ns)
     return model
@@ -275,6 +277,7 @@ def test_level3_taint_flow_dataclass():
 def test_data_flow_node_kinds_extended():
     """NodeKind enum has all new expression-type variants."""
     from pattern_detector.domain.data_flow import NodeKind
+
     assert NodeKind.ATTRIBUTE in NodeKind
     assert NodeKind.SUBSCRIPT in NodeKind
     assert NodeKind.CALL in NodeKind
@@ -287,6 +290,7 @@ def test_data_flow_node_kinds_extended():
 def test_data_flow_node_source_sink_flags():
     """DataFlowGraph.add_node correctly stores is_source and is_sink flags."""
     from pattern_detector.domain.data_flow import DataFlowDirection, DataFlowGraph, DataFlowVariant, NodeKind
+
     g = DataFlowGraph(root_id="root", direction=DataFlowDirection.OUT, variant=DataFlowVariant.SIMPLIFIED)
     g.add_node("src1", "request.json", NodeKind.SYMBOL, is_source=True)
     g.add_node("snk1", "cursor.execute", NodeKind.CALL, is_sink=True)

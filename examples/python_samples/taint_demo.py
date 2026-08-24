@@ -4,6 +4,7 @@ Taint Flow Demonstration — intentionally vulnerable patterns for DPX-Py scanni
 This file demonstrates Level 1 (local access path), Level 2 (interprocedural),
 and Level 3 (Source->Sink taint) data flows.
 """
+
 import subprocess
 
 
@@ -16,15 +17,15 @@ def get_user_by_email(email: str, cursor) -> dict:
 
 def handle_search_request(request, cursor):
     """Level 1+2: Multi-hop taint from HTTP JSON input -> attribute -> subscript -> interprocedural -> SQL."""
-    payload = request.json                          # ACCESS: attribute
-    query_term = payload["search"]                  # ACCESS: subscript
-    results = get_user_by_email(query_term, cursor) # CALL: interprocedural
+    payload = request.json  # ACCESS: attribute
+    query_term = payload["search"]  # ACCESS: subscript
+    results = get_user_by_email(query_term, cursor)  # CALL: interprocedural
     return results
 
 
 def run_system_command(request):
     """Level 1: Direct HTTP param -> command injection sink."""
-    cmd = request.args.get("cmd")       # SOURCE: HTTP query param
+    cmd = request.args.get("cmd")  # SOURCE: HTTP query param
     output = subprocess.run(cmd, shell=True, capture_output=True, check=False)  # SINK: command injection
     return output.stdout
 
@@ -32,7 +33,7 @@ def run_system_command(request):
 def read_file_by_path(request):
     """Level 1: HTTP param -> path traversal sink."""
     file_path = request.args["filename"]  # SOURCE: HTTP query param subscript
-    with open(file_path, "r") as f:       # SINK: path traversal
+    with open(file_path, "r") as f:  # SINK: path traversal
         return f.read()
 
 
