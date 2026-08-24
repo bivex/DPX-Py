@@ -288,3 +288,37 @@ class WebCrawler:
         if d.pattern_type == PatternType.VISITOR and d.confidence.level in (ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH)
     ]
     assert len(visitor_detections) == 0
+
+
+def test_lsp_rule_and_ast_extractor_not_flagged_as_lsp_violation() -> None:
+    code = """
+from abc import ABC, abstractmethod
+
+class BaseDetector(ABC):
+    @abstractmethod
+    def detect(self, text: str) -> list[str]:
+        pass
+
+class ConcreteLspRule(BaseDetector):
+    def detect(self, text: str) -> list[str]:
+        # String checking keywords, NOT raising an exception
+        keywords = ("notimplemented", "unsupported", "logic_error")
+        results = [k for k in keywords if k in text]
+        return results
+
+class NodeVisitorBase:
+    def visit(self, node: object) -> None:
+        pass
+
+class AstExtractor(NodeVisitorBase):
+    def _extract_method(self, node: object) -> str:
+        # Method returning extracted name, not throwing
+        return "method_name"
+"""
+    report = _scan_snippet({"detector.py": code})
+    lsp_detections = [
+        d for d in report.detections
+        if d.pattern_type == PatternType.LISKOV_SUBSTITUTION
+    ]
+    assert len(lsp_detections) == 0
+

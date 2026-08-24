@@ -7,7 +7,7 @@
 [![Parser](https://img.shields.io/badge/Parser-Python%20AST%20(Native)-red.svg?style=flat)](https://docs.python.org/3/library/ast.html)
 [![Visualizer](https://img.shields.io/badge/Graph%20Engine-Cytoscape.js%20%2B%20Dagre-0284c7.svg?style=flat)](https://js.cytoscape.org/)
 [![UI Theme](https://img.shields.io/badge/UI-Semantic%20UI%20(Fomantic)-35bdb2.svg?style=flat)](https://fomantic-ui.com/)
-[![Tests](https://img.shields.io/badge/Tests-73%20passed%20(100%25)-success.svg?style=flat)]()
+[![Tests](https://img.shields.io/badge/Tests-74%20passed%20(100%25)-success.svg?style=flat)]()
 [![Code Style](https://img.shields.io/badge/Linter-Ruff%20%26%20Mypy%20Strict-black.svg?style=flat)]()
 [![Rules](https://img.shields.io/badge/Supported%20Rules-35%20(23%20GoF%20%2B%2010%20SOLID%2FPrinciples%20%2B%202%20Arch)-orange.svg?style=flat)]()
 [![SARIF](https://img.shields.io/badge/SARIF-v2.1.0%20OASIS-blue.svg?style=flat)]()
