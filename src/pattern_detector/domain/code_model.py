@@ -308,14 +308,14 @@ class CodeModel:
             for rec in self.all_records():
                 for proto in rec.implemented_protocols:
                     self._implements_cache.setdefault(proto, []).append(rec)
-        norm = protocol_name.split("/")[-1]
-        matches: list[RecordModel] = []
-        for rec in self.all_records():
-            for p in rec.implemented_protocols:
-                if p == protocol_name or p.split("/")[-1] == norm:
-                    matches.append(rec)
-                    break
-        return matches
+                    norm_proto = proto.split("/")[-1].split(".")[-1]
+                    if norm_proto != proto:
+                        self._implements_cache.setdefault(norm_proto, []).append(rec)
+        matches = self._implements_cache.get(protocol_name)
+        if matches is not None:
+            return matches
+        norm = protocol_name.split("/")[-1].split(".")[-1]
+        return self._implements_cache.get(norm, [])
 
     def find_callers_of(self, fn_name: str) -> list[FunctionModel]:
         norm = fn_name.split("/")[-1]
@@ -334,29 +334,36 @@ class CodeModel:
         graph: dict[str, set[str]] = {ns_name: set() for ns_name in self.namespaces}
         all_ns_names = set(self.namespaces.keys())
 
+        # Precompute lookup index for imported symbol -> namespace name
+        symbol_to_ns: dict[str, str] = {}
+        for other_name, other_ns in self.namespaces.items():
+            symbol_to_ns[other_name] = other_name
+            if other_ns.file_path:
+                other_base = os.path.splitext(os.path.basename(other_ns.file_path))[0]
+                symbol_to_ns[other_base] = other_name
+            for rec_name in other_ns.records:
+                symbol_to_ns[rec_name] = other_name
+
         for ns_name, ns in self.namespaces.items():
-            self._connect_import_dependencies(ns_name, ns, graph)
+            self._connect_import_dependencies(ns_name, ns, graph, symbol_to_ns)
             self._connect_call_dependencies(ns_name, ns, all_ns_names, graph)
 
         return graph
 
-    def _connect_import_dependencies(self, ns_name: str, ns: NamespaceModel, graph: dict[str, set[str]]) -> None:
+    def _connect_import_dependencies(
+        self, ns_name: str, ns: NamespaceModel, graph: dict[str, set[str]], symbol_to_ns: dict[str, str]
+    ) -> None:
         all_imported_symbols = set(ns.requires) | set(ns.imports)
         for raw_sym in all_imported_symbols:
+            if raw_sym in symbol_to_ns:
+                target_ns = symbol_to_ns[raw_sym]
+                if target_ns != ns_name:
+                    graph[ns_name].add(target_ns)
             sym_clean = os.path.splitext(os.path.basename(raw_sym))[0]
-            for other_name, other_ns in self.namespaces.items():
-                if other_name == ns_name:
-                    continue
-                other_base = (
-                    os.path.splitext(os.path.basename(other_ns.file_path))[0] if other_ns.file_path else other_name
-                )
-                if (
-                    sym_clean == other_name
-                    or sym_clean == other_base
-                    or sym_clean in other_ns.records
-                    or raw_sym in other_ns.records
-                ):
-                    graph[ns_name].add(other_name)
+            if sym_clean in symbol_to_ns:
+                target_ns = symbol_to_ns[sym_clean]
+                if target_ns != ns_name:
+                    graph[ns_name].add(target_ns)
 
     def _connect_call_dependencies(
         self, ns_name: str, ns: NamespaceModel, all_ns_names: set[str], graph: dict[str, set[str]]
