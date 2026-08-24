@@ -53,6 +53,11 @@ def test_html_report_formatter() -> None:
     assert "OBSERVER" in rendered
     assert "system-state" in rendered
     assert "WATCHED_STATE" in rendered
+    assert "AI Architectural Map & LLM Context Prompt" in rendered
+    assert "Copy Architecture Map for LLM" in rendered
+    assert "llmArchMapRaw" in rendered
+    assert "copyArchMapForLlm" in rendered
+
 
 
 def test_markdown_report_formatter() -> None:

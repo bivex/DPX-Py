@@ -278,6 +278,45 @@ _HTML_DASHBOARD_TEMPLATE: str = """<!DOCTYPE html>
             </div>
         </div>
 
+        <!-- Architectural Map & LLM Prompt Section -->
+        <div class="ui inverted segment" style="background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; margin-bottom: 20px; padding: 16px 20px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                <div>
+                    <h3 style="color: #f8fafc; margin: 0; font-size: 15px; display: flex; align-items: center; gap: 8px;">
+                        <i class="magic icon" style="color: #c084fc;"></i>
+                        <span>AI Architectural Map & LLM Context Prompt</span>
+                    </h3>
+                    <p style="color: #94a3b8; font-size: 13px; margin-top: 4px; margin-bottom: 0;">
+                        Export structured codebase architecture map formatted for Claude, ChatGPT or Gemini to analyze bottlenecks and suggest improvements.
+                    </p>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <button class="ui mini inverted basic button" id="toggleArchMapBtn" onclick="toggleArchMapPreview()">
+                        <i class="eye icon"></i> <span id="toggleArchMapText">View Map Preview</span>
+                    </button>
+                    <button class="ui mini purple button" id="copyLlmBtn" onclick="copyArchMapForLlm()" style="font-weight: 700;">
+                        <i class="copy outline icon"></i> 📋 Copy Architecture Map for LLM
+                    </button>
+                </div>
+            </div>
+
+            <!-- Toast notification -->
+            <div id="copyToast" class="ui positive mini message" style="display: none; padding: 10px 14px; margin-top: 12px; background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #86efac; border-radius: 6px;">
+                <i class="check circle icon"></i> <strong>Copied to clipboard!</strong> Paste directly into your AI assistant (Claude, ChatGPT, Gemini) for instant architectural recommendations & refactoring suggestions.
+            </div>
+
+            <!-- Collapsible Preview Block -->
+            <div id="archMapPreviewContainer" style="display: none; margin-top: 14px;">
+                <div style="font-size: 12px; color: #64748b; margin-bottom: 6px; display: flex; justify-content: space-between;">
+                    <span><i class="code icon"></i> Markdown Prompt & Architectural Context:</span>
+                    <span>Optimized for AI prompt context</span>
+                </div>
+                <pre id="archMapPre" style="max-height: 380px; overflow-y: auto; background: #070b14; border: 1px solid #1e293b; color: #bae6fd; padding: 14px; border-radius: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; line-height: 1.5; white-space: pre-wrap; word-break: break-word;">{llm_arch_map_preview}</pre>
+            </div>
+
+            <textarea id="llmArchMapRaw" style="display: none;">{llm_arch_map_raw}</textarea>
+        </div>
+
         <!-- Filter Menu (Semantic UI Secondary Pointing Menu for Categories) -->
         <div class="ui mini inverted secondary pointing menu" style="border-bottom: 1px solid #1e293b; margin-bottom: 14px;">
             <a class="active item cat-filter-btn" data-filter="all">
@@ -420,6 +459,66 @@ _HTML_DASHBOARD_TEMPLATE: str = """<!DOCTYPE html>
             }});
         }});
 
+        function copyArchMapForLlm() {{
+            const rawText = document.getElementById('llmArchMapRaw').value;
+            const btn = document.getElementById('copyLlmBtn');
+            const originalHtml = btn.innerHTML;
+
+            function showSuccess() {{
+                btn.innerHTML = '<i class="check icon"></i> Copied to Clipboard!';
+                btn.classList.remove('purple');
+                btn.classList.add('green');
+
+                const toast = document.getElementById('copyToast');
+                if (toast) {{
+                    toast.style.display = 'block';
+                    setTimeout(() => {{ toast.style.display = 'none'; }}, 4000);
+                }}
+
+                setTimeout(() => {{
+                    btn.innerHTML = originalHtml;
+                    btn.classList.remove('green');
+                    btn.classList.add('purple');
+                }}, 2500);
+            }}
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {{
+                navigator.clipboard.writeText(rawText).then(showSuccess).catch(err => {{
+                    fallbackCopy(rawText, showSuccess);
+                }});
+            }} else {{
+                fallbackCopy(rawText, showSuccess);
+            }}
+        }}
+
+        function fallbackCopy(text, callback) {{
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {{
+                document.execCommand('copy');
+                callback();
+            }} catch (e) {{
+                console.error('Fallback copy failed', e);
+            }}
+            document.body.removeChild(textarea);
+        }}
+
+        function toggleArchMapPreview() {{
+            const container = document.getElementById('archMapPreviewContainer');
+            const btnText = document.getElementById('toggleArchMapText');
+            if (container.style.display === 'none') {{
+                container.style.display = 'block';
+                btnText.textContent = 'Hide Map Preview';
+            }} else {{
+                container.style.display = 'none';
+                btnText.textContent = 'View Map Preview';
+            }}
+        }}
+
         updateStatusCounts();
     </script>
 </body>
@@ -435,6 +534,7 @@ class HtmlReportFormatter(ReportFormatterPort):
         cards_html = "".join(self._render_cards_list(report.detections))
         category_filters = "".join(self._render_category_filters(report))
         project_name = self._resolve_project_name(report.project_path)
+        llm_arch_map = self._build_llm_architectural_map(report, counts, project_name)
 
         return _HTML_DASHBOARD_TEMPLATE.format(
             project_name=project_name,
@@ -446,7 +546,122 @@ class HtmlReportFormatter(ReportFormatterPort):
             elapsed_seconds=f"{report.elapsed_seconds:.3f}",
             category_filters=category_filters,
             cards_html=cards_html,
+            llm_arch_map_preview=html.escape(llm_arch_map),
+            llm_arch_map_raw=html.escape(llm_arch_map),
         )
+
+    def _build_llm_architectural_map(
+        self, report: DetectionReport, counts: dict[str, int], project_name: str
+    ) -> str:
+        """Constructs structured, token-efficient Markdown prompt for LLM architecture analysis."""
+        lines = [
+            "# 🏛️ Codebase Architecture Map & Refactoring Analysis",
+            "",
+            "## 📌 Project Overview",
+            f"- **Target Project:** `{project_name}`",
+            f"- **Files Scanned:** `{report.scanned_files_count}`",
+            f"- **Total Architecture Findings:** `{report.total_detections_count}`",
+            f"- **⚠️ Violations / Code Smells (Action Required):** `{counts.get('violation', 0)}`",
+            f"- **🔷 Design Patterns Identified:** `{counts.get('pattern', 0)}`",
+            f"- **✅ SOLID & Clean Code Adherences:** `{counts.get('adherence', 0)}`",
+            "",
+            "---",
+            "",
+            "## 🎯 Task for AI / LLM Architect",
+            "> **Prompt Instructions:**",
+            "> 1. **Analyze Modularity & Coupling:** Review the package breakdown, design pattern distribution, and high-coupling components.",
+            "> 2. **Prioritize Top Architectural Violations:** Review the listed code smells (KISS complexity, Law of Demeter, Fan-Out, God Objects, etc.) and highlight the top 3-5 highest-risk issues.",
+            "> 3. **Provide Concrete Refactoring Suggestions:** For each top issue, propose architectural patterns (e.g. Strategy, Facade, Composite, Observer) and provide concise Python code examples/signatures.",
+            "> 4. **SOLID Improvements:** Explain how to resolve the identified Open-Closed, Liskov, and Demeter issues without over-engineering.",
+            "",
+            "---",
+        ]
+
+        patterns_by_type: dict[str, list[Any]] = {}
+        violations_by_type: dict[str, list[Any]] = {}
+        adherences_by_type: dict[str, list[Any]] = {}
+        file_to_findings: dict[str, list[str]] = {}
+
+        for d in report.detections:
+            status = self._classify_detection_status(d)
+            ptype = d.pattern_type.value.upper()
+            if status == "pattern":
+                patterns_by_type.setdefault(ptype, []).append(d)
+            elif status == "violation":
+                violations_by_type.setdefault(ptype, []).append(d)
+            else:
+                adherences_by_type.setdefault(ptype, []).append(d)
+
+            loc_file = d.primary_location.file_path if d.primary_location and d.primary_location.file_path else "unknown"
+            short_file = loc_file.replace("\\", "/").split("/")[-1]
+            file_to_findings.setdefault(short_file, []).append(f"{ptype} ({status})")
+
+        # 1. Design Patterns
+        lines.append(f"## 🔷 Active Design Patterns ({counts.get('pattern', 0)} instances)")
+        if patterns_by_type:
+            for ptype, items in sorted(patterns_by_type.items()):
+                lines.append(f"### Pattern: `{ptype}` ({len(items)} instances)")
+                for d in items:
+                    loc = f"{d.primary_location.file_path}:{d.primary_location.line}" if d.primary_location else ""
+                    loc_str = f" in `{loc}`" if loc else ""
+                    lines.append(f"- **{d.target_name}** ({d.target_kind}, confidence {d.confidence.percentage_str}){loc_str}")
+                    lines.append(f"  - *Summary:* {d.summary}")
+            lines.append("")
+        else:
+            lines.append("*No design patterns identified.*\n")
+
+        lines.append("---")
+        lines.append("")
+
+        # 2. Violations & Code Smells
+        lines.append(f"## ⚠️ Architectural Violations & Code Smells ({counts.get('violation', 0)} instances)")
+        if violations_by_type:
+            for vtype, items in sorted(violations_by_type.items()):
+                lines.append(f"### Violation: `{vtype}` ({len(items)} occurrences)")
+                for d in items[:30]:
+                    loc = f"{d.primary_location.file_path}:{d.primary_location.line}" if d.primary_location else ""
+                    loc_str = f" in `{loc}`" if loc else ""
+                    lines.append(f"- **{d.target_name}** ({d.confidence.percentage_str}){loc_str}")
+                    lines.append(f"  - *Risk / Smell:* {d.summary}")
+                    for ev in d.evidences[:2]:
+                        lines.append(f"  - *Evidence:* `+{int(ev.weight * 100)}%` [{ev.rule_code}] {ev.description}")
+                if len(items) > 30:
+                    lines.append(f"  *(... and {len(items) - 30} more {vtype} occurrences)*")
+            lines.append("")
+        else:
+            lines.append("✅ *Zero violations detected! All evaluated code adheres to clean architecture principles.*\n")
+
+        lines.append("---")
+        lines.append("")
+
+        # 3. Clean Adherences
+        lines.append(f"## ✅ SOLID Principles & Clean Adherences ({counts.get('adherence', 0)} instances)")
+        if adherences_by_type:
+            for atype, items in sorted(adherences_by_type.items()):
+                lines.append(f"### Principle: `{atype}` ({len(items)} instances)")
+                for d in items[:25]:
+                    loc = f"{d.primary_location.file_path}:{d.primary_location.line}" if d.primary_location else ""
+                    loc_str = f" in `{loc}`" if loc else ""
+                    lines.append(f"- **{d.target_name}** ({d.confidence.percentage_str}){loc_str} - {d.summary}")
+            lines.append("")
+        else:
+            lines.append("*None recorded.*\n")
+
+        lines.append("---")
+        lines.append("")
+
+        # 4. Module & File Hotspots Distribution
+        lines.append("## 🗺️ Module & File Hotspots Distribution")
+        top_files = sorted(file_to_findings.items(), key=lambda x: len(x[1]), reverse=True)[:25]
+        if top_files:
+            for fname, f_items in top_files:
+                p_count = sum(1 for x in f_items if "pattern" in x)
+                v_count = sum(1 for x in f_items if "violation" in x)
+                a_count = sum(1 for x in f_items if "adherence" in x)
+                lines.append(f"- **`{fname}`**: {len(f_items)} findings ({v_count} violations, {p_count} patterns, {a_count} adherences)")
+        lines.append("")
+
+        return "\n".join(lines)
 
     def _calculate_status_counts(self, detections: list[Any]) -> dict[str, int]:
         counts = {"violation": 0, "adherence": 0, "pattern": 0}

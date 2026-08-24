@@ -95,11 +95,11 @@
         <div class="ui inverted segment" style="background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; margin-bottom: 20px; padding: 16px 20px;">
             <div class="ui five mini inverted statistics">
                 <div class="statistic">
-                    <div class="value" style="color: #38bdf8;">36</div>
+                    <div class="value" style="color: #38bdf8;">38</div>
                     <div class="label" style="color: #94a3b8;">Total Detections</div>
                 </div>
                 <div class="statistic">
-                    <div class="value" style="color: #f87171;">0</div>
+                    <div class="value" style="color: #f87171;">2</div>
                     <div class="label" style="color: #94a3b8;">⚠️ Needs Fix / Violations</div>
                 </div>
                 <div class="statistic">
@@ -111,17 +111,300 @@
                     <div class="label" style="color: #94a3b8;">🔷 Design Patterns</div>
                 </div>
                 <div class="statistic">
-                    <div class="value" style="color: #c084fc;">91 files (0.347s)</div>
+                    <div class="value" style="color: #c084fc;">91 files (0.218s)</div>
                     <div class="label" style="color: #94a3b8;">Scan Scope</div>
                 </div>
             </div>
+        </div>
+
+        <!-- Architectural Map & LLM Prompt Section -->
+        <div class="ui inverted segment" style="background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; margin-bottom: 20px; padding: 16px 20px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                <div>
+                    <h3 style="color: #f8fafc; margin: 0; font-size: 15px; display: flex; align-items: center; gap: 8px;">
+                        <i class="magic icon" style="color: #c084fc;"></i>
+                        <span>AI Architectural Map & LLM Context Prompt</span>
+                    </h3>
+                    <p style="color: #94a3b8; font-size: 13px; margin-top: 4px; margin-bottom: 0;">
+                        Export structured codebase architecture map formatted for Claude, ChatGPT or Gemini to analyze bottlenecks and suggest improvements.
+                    </p>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <button class="ui mini inverted basic button" id="toggleArchMapBtn" onclick="toggleArchMapPreview()">
+                        <i class="eye icon"></i> <span id="toggleArchMapText">View Map Preview</span>
+                    </button>
+                    <button class="ui mini purple button" id="copyLlmBtn" onclick="copyArchMapForLlm()" style="font-weight: 700;">
+                        <i class="copy outline icon"></i> 📋 Copy Architecture Map for LLM
+                    </button>
+                </div>
+            </div>
+
+            <!-- Toast notification -->
+            <div id="copyToast" class="ui positive mini message" style="display: none; padding: 10px 14px; margin-top: 12px; background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #86efac; border-radius: 6px;">
+                <i class="check circle icon"></i> <strong>Copied to clipboard!</strong> Paste directly into your AI assistant (Claude, ChatGPT, Gemini) for instant architectural recommendations & refactoring suggestions.
+            </div>
+
+            <!-- Collapsible Preview Block -->
+            <div id="archMapPreviewContainer" style="display: none; margin-top: 14px;">
+                <div style="font-size: 12px; color: #64748b; margin-bottom: 6px; display: flex; justify-content: space-between;">
+                    <span><i class="code icon"></i> Markdown Prompt & Architectural Context:</span>
+                    <span>Optimized for AI prompt context</span>
+                </div>
+                <pre id="archMapPre" style="max-height: 380px; overflow-y: auto; background: #070b14; border: 1px solid #1e293b; color: #bae6fd; padding: 14px; border-radius: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; line-height: 1.5; white-space: pre-wrap; word-break: break-word;"># 🏛️ Codebase Architecture Map &amp; Refactoring Analysis
+
+## 📌 Project Overview
+- **Target Project:** `/Volumes/External/Code/DPX-Py`
+- **Files Scanned:** `91`
+- **Total Architecture Findings:** `38`
+- **⚠️ Violations / Code Smells (Action Required):** `2`
+- **🔷 Design Patterns Identified:** `22`
+- **✅ SOLID &amp; Clean Code Adherences:** `14`
+
+---
+
+## 🎯 Task for AI / LLM Architect
+&gt; **Prompt Instructions:**
+&gt; 1. **Analyze Modularity &amp; Coupling:** Review the package breakdown, design pattern distribution, and high-coupling components.
+&gt; 2. **Prioritize Top Architectural Violations:** Review the listed code smells (KISS complexity, Law of Demeter, Fan-Out, God Objects, etc.) and highlight the top 3-5 highest-risk issues.
+&gt; 3. **Provide Concrete Refactoring Suggestions:** For each top issue, propose architectural patterns (e.g. Strategy, Facade, Composite, Observer) and provide concise Python code examples/signatures.
+&gt; 4. **SOLID Improvements:** Explain how to resolve the identified Open-Closed, Liskov, and Demeter issues without over-engineering.
+
+---
+## 🔷 Active Design Patterns (22 instances)
+### Pattern: `ADAPTER` (2 instances)
+- **PyParserAdapter** (adapter_class, confidence 75%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/python_ast/py_parser_adapter.py:612`
+  - *Summary:* Adapter pattern: class &#x27;PyParserAdapter&#x27; adapts adaptee to target interface
+- **ScanningService** (adapter_class, confidence 71%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/application/services/scanning_service.py:33`
+  - *Summary:* Adapter pattern: class &#x27;ScanningService&#x27; adapts adaptee to target interface
+### Pattern: `BUILDER` (1 instances)
+- **HttpRequestBuilder** (builder_class, confidence 87%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/design_patterns_demo.py:27`
+  - *Summary:* Builder pattern: class &#x27;HttpRequestBuilder&#x27; provides fluent step-by-step assembly with 4 steps
+### Pattern: `CHAIN_OF_RESPONSIBILITY` (5 instances)
+- **IPaymentMethodHandler** (chain_handler_class, confidence 77%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/principles_and_clean_code_demo.py:44`
+  - *Summary:* Chain of Responsibility: class &#x27;IPaymentMethodHandler&#x27; processes requests and/or delegates to successor handler
+- **CardPaymentMethodHandler** (chain_handler_class, confidence 77%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/principles_and_clean_code_demo.py:52`
+  - *Summary:* Chain of Responsibility: class &#x27;CardPaymentMethodHandler&#x27; processes requests and/or delegates to successor handler
+- **PayPalPaymentMethodHandler** (chain_handler_class, confidence 77%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/principles_and_clean_code_demo.py:57`
+  - *Summary:* Chain of Responsibility: class &#x27;PayPalPaymentMethodHandler&#x27; processes requests and/or delegates to successor handler
+- **CryptoPaymentMethodHandler** (chain_handler_class, confidence 77%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/principles_and_clean_code_demo.py:62`
+  - *Summary:* Chain of Responsibility: class &#x27;CryptoPaymentMethodHandler&#x27; processes requests and/or delegates to successor handler
+- **PaymentProcessor** (chain_handler_class, confidence 77%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/principles_and_clean_code_demo.py:67`
+  - *Summary:* Chain of Responsibility: class &#x27;PaymentProcessor&#x27; processes requests and/or delegates to successor handler
+### Pattern: `COMPOSITE` (2 instances)
+- **FileSystemNode** (composite_hierarchy, confidence 87%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/design_patterns_demo.py:113`
+  - *Summary:* Composite pattern: protocol &#x27;FileSystemNode&#x27; unifies leaf and composite container records in part-whole hierarchy
+- **BasePatternRule** (composite_hierarchy, confidence 87%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/base.py:49`
+  - *Summary:* Composite pattern: protocol &#x27;BasePatternRule&#x27; unifies leaf and composite container records in part-whole hierarchy
+### Pattern: `FACADE` (1 instances)
+- **ScanningService** (facade_class, confidence 75%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/application/services/scanning_service.py:33`
+  - *Summary:* Facade pattern: class &#x27;ScanningService&#x27; exposes unified high-level interface over subsystems
+### Pattern: `FACTORY_METHOD` (1 instances)
+- **SourceProviderPort** (factory_method_protocol, confidence 80%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/ports/outbound.py:23`
+  - *Summary:* Factory Method pattern: &#x27;SourceProviderPort&#x27; declares factory creation contract implemented by 1 concrete creator(s)
+### Pattern: `OBSERVER` (2 instances)
+- **ObservableState** (subject_class, confidence 77%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/design_patterns_demo.py:89`
+  - *Summary:* Observer pattern: class &#x27;ObservableState&#x27; manages and notifies observers of state changes
+- **StateModel** (subject_class, confidence 57%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/domain/code_model.py:129`
+  - *Summary:* Observer pattern: class &#x27;StateModel&#x27; manages and notifies observers of state changes
+### Pattern: `SINGLETON` (4 instances)
+- **DatabaseConnection** (singleton_class, confidence 79%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/design_patterns_demo.py:11`
+  - *Summary:* Singleton pattern: class &#x27;DatabaseConnection&#x27; guarantees a single global instance
+- **DatabaseConnection._instance** (static_singleton_state, confidence 74%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/design_patterns_demo.py:11`
+  - *Summary:* Singleton pattern: static single-instance management for &#x27;DatabaseConnection._instance&#x27;
+- **DryRule** (singleton_class, confidence 68%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/dry_rule.py:17`
+  - *Summary:* Singleton pattern: class &#x27;DryRule&#x27; guarantees a single global instance
+- **SingletonPatternRule** (singleton_class, confidence 68%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/singleton_rule.py:18`
+  - *Summary:* Singleton pattern: class &#x27;SingletonPatternRule&#x27; guarantees a single global instance
+### Pattern: `STRATEGY` (4 instances)
+- **ResultRepositoryPort** (protocol_strategy, confidence 87%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/ports/outbound.py:31`
+  - *Summary:* Strategy pattern: protocol &#x27;ResultRepositoryPort&#x27; defines strategy interface implemented by 4 concrete types
+- **ReportFormatterPort** (protocol_strategy, confidence 83%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/ports/outbound.py:39`
+  - *Summary:* Strategy pattern: protocol &#x27;ReportFormatterPort&#x27; defines strategy interface implemented by 3 concrete types
+- **PaymentStrategy** (protocol_strategy, confidence 77%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/design_patterns_demo.py:62`
+  - *Summary:* Strategy pattern: protocol &#x27;PaymentStrategy&#x27; defines strategy interface implemented by 2 concrete types
+- **BaseRepository** (protocol_strategy, confidence 77%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/principles_and_clean_code_demo.py:84`
+  - *Summary:* Strategy pattern: protocol &#x27;BaseRepository&#x27; defines strategy interface implemented by 2 concrete types
+
+---
+
+## ⚠️ Architectural Violations &amp; Code Smells (2 instances)
+### Violation: `KISS` (2 occurrences)
+- **HtmlReportFormatter._build_llm_architectural_map** (88%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/html_report_formatter.py:553`
+  - *Risk / Smell:* KISS Violation (High Complexity): Method &#x27;HtmlReportFormatter._build_llm_architectural_map&#x27; has 30 control flow branches
+  - *Evidence:* `+70%` [KISS_KISS_HIGH_CYCLOMATIC_COMPLEXITY] Method &#x27;HtmlReportFormatter._build_llm_architectural_map&#x27; has high cyclomatic complexity (30 branch points), violating KISS
+  - *Evidence:* `+35%` [KISS_KISS_DECOMPOSITION_NEEDED] Complex nested conditionals are difficult to test and maintain; decompose into smaller functions
+- **ObserverPatternRule._has_observer_callback_signature** (88%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/observer_rule.py:146`
+  - *Risk / Smell:* KISS Violation (High Complexity): Method &#x27;ObserverPatternRule._has_observer_callback_signature&#x27; has 13 control flow branches
+  - *Evidence:* `+70%` [KISS_KISS_HIGH_CYCLOMATIC_COMPLEXITY] Method &#x27;ObserverPatternRule._has_observer_callback_signature&#x27; has high cyclomatic complexity (13 branch points), violating KISS
+  - *Evidence:* `+35%` [KISS_KISS_DECOMPOSITION_NEEDED] Complex nested conditionals are difficult to test and maintain; decompose into smaller functions
+
+---
+
+## ✅ SOLID Principles &amp; Clean Adherences (14 instances)
+### Principle: `INTERFACE_SEGREGATION` (7 instances)
+- **PaymentStrategy** (75%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/design_patterns_demo.py:62` - ISP Adherence: Role interface &#x27;PaymentStrategy&#x27; is segregated and focused (1 methods)
+- **FileSystemNode** (75%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/design_patterns_demo.py:113` - ISP Adherence: Role interface &#x27;FileSystemNode&#x27; is segregated and focused (1 methods)
+- **IPaymentMethodHandler** (75%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/principles_and_clean_code_demo.py:44` - ISP Adherence: Role interface &#x27;IPaymentMethodHandler&#x27; is segregated and focused (1 methods)
+- **BaseRepository** (75%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/principles_and_clean_code_demo.py:84` - ISP Adherence: Role interface &#x27;BaseRepository&#x27; is segregated and focused (1 methods)
+- **ResultRepositoryPort** (75%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/ports/outbound.py:31` - ISP Adherence: Role interface &#x27;ResultRepositoryPort&#x27; is segregated and focused (1 methods)
+- **ReportFormatterPort** (75%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/ports/outbound.py:39` - ISP Adherence: Role interface &#x27;ReportFormatterPort&#x27; is segregated and focused (1 methods)
+- **BasePatternRule** (75%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/base.py:49` - ISP Adherence: Role interface &#x27;BasePatternRule&#x27; is segregated and focused (2 methods)
+### Principle: `OPEN_CLOSED` (7 instances)
+- **IPaymentMethodHandler** (87%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/principles_and_clean_code_demo.py:44` - OCP Adherence: Interface &#x27;IPaymentMethodHandler&#x27; supports open extension with 3 implementations
+- **ResultRepositoryPort** (87%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/ports/outbound.py:31` - OCP Adherence: Interface &#x27;ResultRepositoryPort&#x27; supports open extension with 4 implementations
+- **ReportFormatterPort** (87%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/ports/outbound.py:39` - OCP Adherence: Interface &#x27;ReportFormatterPort&#x27; supports open extension with 3 implementations
+- **BasePatternRule** (87%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/base.py:49` - OCP Adherence: Interface &#x27;BasePatternRule&#x27; supports open extension with 35 implementations
+- **PaymentStrategy** (83%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/design_patterns_demo.py:62` - OCP Adherence: Interface &#x27;PaymentStrategy&#x27; supports open extension with 2 implementations
+- **FileSystemNode** (83%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/design_patterns_demo.py:113` - OCP Adherence: Interface &#x27;FileSystemNode&#x27; supports open extension with 2 implementations
+- **BaseRepository** (83%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/principles_and_clean_code_demo.py:84` - OCP Adherence: Interface &#x27;BaseRepository&#x27; supports open extension with 2 implementations
+
+---
+
+## 🗺️ Module &amp; File Hotspots Distribution
+- **`design_patterns_demo.py`**: 10 findings (0 violations, 6 patterns, 4 adherences)
+- **`principles_and_clean_code_demo.py`**: 10 findings (0 violations, 6 patterns, 4 adherences)
+- **`outbound.py`**: 7 findings (0 violations, 3 patterns, 4 adherences)
+- **`base.py`**: 3 findings (0 violations, 1 patterns, 2 adherences)
+- **`scanning_service.py`**: 2 findings (0 violations, 2 patterns, 0 adherences)
+- **`html_report_formatter.py`**: 1 findings (1 violations, 0 patterns, 0 adherences)
+- **`observer_rule.py`**: 1 findings (1 violations, 0 patterns, 0 adherences)
+- **`py_parser_adapter.py`**: 1 findings (0 violations, 1 patterns, 0 adherences)
+- **`dry_rule.py`**: 1 findings (0 violations, 1 patterns, 0 adherences)
+- **`singleton_rule.py`**: 1 findings (0 violations, 1 patterns, 0 adherences)
+- **`code_model.py`**: 1 findings (0 violations, 1 patterns, 0 adherences)
+</pre>
+            </div>
+
+            <textarea id="llmArchMapRaw" style="display: none;"># 🏛️ Codebase Architecture Map &amp; Refactoring Analysis
+
+## 📌 Project Overview
+- **Target Project:** `/Volumes/External/Code/DPX-Py`
+- **Files Scanned:** `91`
+- **Total Architecture Findings:** `38`
+- **⚠️ Violations / Code Smells (Action Required):** `2`
+- **🔷 Design Patterns Identified:** `22`
+- **✅ SOLID &amp; Clean Code Adherences:** `14`
+
+---
+
+## 🎯 Task for AI / LLM Architect
+&gt; **Prompt Instructions:**
+&gt; 1. **Analyze Modularity &amp; Coupling:** Review the package breakdown, design pattern distribution, and high-coupling components.
+&gt; 2. **Prioritize Top Architectural Violations:** Review the listed code smells (KISS complexity, Law of Demeter, Fan-Out, God Objects, etc.) and highlight the top 3-5 highest-risk issues.
+&gt; 3. **Provide Concrete Refactoring Suggestions:** For each top issue, propose architectural patterns (e.g. Strategy, Facade, Composite, Observer) and provide concise Python code examples/signatures.
+&gt; 4. **SOLID Improvements:** Explain how to resolve the identified Open-Closed, Liskov, and Demeter issues without over-engineering.
+
+---
+## 🔷 Active Design Patterns (22 instances)
+### Pattern: `ADAPTER` (2 instances)
+- **PyParserAdapter** (adapter_class, confidence 75%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/python_ast/py_parser_adapter.py:612`
+  - *Summary:* Adapter pattern: class &#x27;PyParserAdapter&#x27; adapts adaptee to target interface
+- **ScanningService** (adapter_class, confidence 71%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/application/services/scanning_service.py:33`
+  - *Summary:* Adapter pattern: class &#x27;ScanningService&#x27; adapts adaptee to target interface
+### Pattern: `BUILDER` (1 instances)
+- **HttpRequestBuilder** (builder_class, confidence 87%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/design_patterns_demo.py:27`
+  - *Summary:* Builder pattern: class &#x27;HttpRequestBuilder&#x27; provides fluent step-by-step assembly with 4 steps
+### Pattern: `CHAIN_OF_RESPONSIBILITY` (5 instances)
+- **IPaymentMethodHandler** (chain_handler_class, confidence 77%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/principles_and_clean_code_demo.py:44`
+  - *Summary:* Chain of Responsibility: class &#x27;IPaymentMethodHandler&#x27; processes requests and/or delegates to successor handler
+- **CardPaymentMethodHandler** (chain_handler_class, confidence 77%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/principles_and_clean_code_demo.py:52`
+  - *Summary:* Chain of Responsibility: class &#x27;CardPaymentMethodHandler&#x27; processes requests and/or delegates to successor handler
+- **PayPalPaymentMethodHandler** (chain_handler_class, confidence 77%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/principles_and_clean_code_demo.py:57`
+  - *Summary:* Chain of Responsibility: class &#x27;PayPalPaymentMethodHandler&#x27; processes requests and/or delegates to successor handler
+- **CryptoPaymentMethodHandler** (chain_handler_class, confidence 77%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/principles_and_clean_code_demo.py:62`
+  - *Summary:* Chain of Responsibility: class &#x27;CryptoPaymentMethodHandler&#x27; processes requests and/or delegates to successor handler
+- **PaymentProcessor** (chain_handler_class, confidence 77%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/principles_and_clean_code_demo.py:67`
+  - *Summary:* Chain of Responsibility: class &#x27;PaymentProcessor&#x27; processes requests and/or delegates to successor handler
+### Pattern: `COMPOSITE` (2 instances)
+- **FileSystemNode** (composite_hierarchy, confidence 87%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/design_patterns_demo.py:113`
+  - *Summary:* Composite pattern: protocol &#x27;FileSystemNode&#x27; unifies leaf and composite container records in part-whole hierarchy
+- **BasePatternRule** (composite_hierarchy, confidence 87%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/base.py:49`
+  - *Summary:* Composite pattern: protocol &#x27;BasePatternRule&#x27; unifies leaf and composite container records in part-whole hierarchy
+### Pattern: `FACADE` (1 instances)
+- **ScanningService** (facade_class, confidence 75%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/application/services/scanning_service.py:33`
+  - *Summary:* Facade pattern: class &#x27;ScanningService&#x27; exposes unified high-level interface over subsystems
+### Pattern: `FACTORY_METHOD` (1 instances)
+- **SourceProviderPort** (factory_method_protocol, confidence 80%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/ports/outbound.py:23`
+  - *Summary:* Factory Method pattern: &#x27;SourceProviderPort&#x27; declares factory creation contract implemented by 1 concrete creator(s)
+### Pattern: `OBSERVER` (2 instances)
+- **ObservableState** (subject_class, confidence 77%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/design_patterns_demo.py:89`
+  - *Summary:* Observer pattern: class &#x27;ObservableState&#x27; manages and notifies observers of state changes
+- **StateModel** (subject_class, confidence 57%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/domain/code_model.py:129`
+  - *Summary:* Observer pattern: class &#x27;StateModel&#x27; manages and notifies observers of state changes
+### Pattern: `SINGLETON` (4 instances)
+- **DatabaseConnection** (singleton_class, confidence 79%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/design_patterns_demo.py:11`
+  - *Summary:* Singleton pattern: class &#x27;DatabaseConnection&#x27; guarantees a single global instance
+- **DatabaseConnection._instance** (static_singleton_state, confidence 74%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/design_patterns_demo.py:11`
+  - *Summary:* Singleton pattern: static single-instance management for &#x27;DatabaseConnection._instance&#x27;
+- **DryRule** (singleton_class, confidence 68%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/dry_rule.py:17`
+  - *Summary:* Singleton pattern: class &#x27;DryRule&#x27; guarantees a single global instance
+- **SingletonPatternRule** (singleton_class, confidence 68%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/singleton_rule.py:18`
+  - *Summary:* Singleton pattern: class &#x27;SingletonPatternRule&#x27; guarantees a single global instance
+### Pattern: `STRATEGY` (4 instances)
+- **ResultRepositoryPort** (protocol_strategy, confidence 87%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/ports/outbound.py:31`
+  - *Summary:* Strategy pattern: protocol &#x27;ResultRepositoryPort&#x27; defines strategy interface implemented by 4 concrete types
+- **ReportFormatterPort** (protocol_strategy, confidence 83%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/ports/outbound.py:39`
+  - *Summary:* Strategy pattern: protocol &#x27;ReportFormatterPort&#x27; defines strategy interface implemented by 3 concrete types
+- **PaymentStrategy** (protocol_strategy, confidence 77%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/design_patterns_demo.py:62`
+  - *Summary:* Strategy pattern: protocol &#x27;PaymentStrategy&#x27; defines strategy interface implemented by 2 concrete types
+- **BaseRepository** (protocol_strategy, confidence 77%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/principles_and_clean_code_demo.py:84`
+  - *Summary:* Strategy pattern: protocol &#x27;BaseRepository&#x27; defines strategy interface implemented by 2 concrete types
+
+---
+
+## ⚠️ Architectural Violations &amp; Code Smells (2 instances)
+### Violation: `KISS` (2 occurrences)
+- **HtmlReportFormatter._build_llm_architectural_map** (88%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/html_report_formatter.py:553`
+  - *Risk / Smell:* KISS Violation (High Complexity): Method &#x27;HtmlReportFormatter._build_llm_architectural_map&#x27; has 30 control flow branches
+  - *Evidence:* `+70%` [KISS_KISS_HIGH_CYCLOMATIC_COMPLEXITY] Method &#x27;HtmlReportFormatter._build_llm_architectural_map&#x27; has high cyclomatic complexity (30 branch points), violating KISS
+  - *Evidence:* `+35%` [KISS_KISS_DECOMPOSITION_NEEDED] Complex nested conditionals are difficult to test and maintain; decompose into smaller functions
+- **ObserverPatternRule._has_observer_callback_signature** (88%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/observer_rule.py:146`
+  - *Risk / Smell:* KISS Violation (High Complexity): Method &#x27;ObserverPatternRule._has_observer_callback_signature&#x27; has 13 control flow branches
+  - *Evidence:* `+70%` [KISS_KISS_HIGH_CYCLOMATIC_COMPLEXITY] Method &#x27;ObserverPatternRule._has_observer_callback_signature&#x27; has high cyclomatic complexity (13 branch points), violating KISS
+  - *Evidence:* `+35%` [KISS_KISS_DECOMPOSITION_NEEDED] Complex nested conditionals are difficult to test and maintain; decompose into smaller functions
+
+---
+
+## ✅ SOLID Principles &amp; Clean Adherences (14 instances)
+### Principle: `INTERFACE_SEGREGATION` (7 instances)
+- **PaymentStrategy** (75%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/design_patterns_demo.py:62` - ISP Adherence: Role interface &#x27;PaymentStrategy&#x27; is segregated and focused (1 methods)
+- **FileSystemNode** (75%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/design_patterns_demo.py:113` - ISP Adherence: Role interface &#x27;FileSystemNode&#x27; is segregated and focused (1 methods)
+- **IPaymentMethodHandler** (75%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/principles_and_clean_code_demo.py:44` - ISP Adherence: Role interface &#x27;IPaymentMethodHandler&#x27; is segregated and focused (1 methods)
+- **BaseRepository** (75%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/principles_and_clean_code_demo.py:84` - ISP Adherence: Role interface &#x27;BaseRepository&#x27; is segregated and focused (1 methods)
+- **ResultRepositoryPort** (75%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/ports/outbound.py:31` - ISP Adherence: Role interface &#x27;ResultRepositoryPort&#x27; is segregated and focused (1 methods)
+- **ReportFormatterPort** (75%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/ports/outbound.py:39` - ISP Adherence: Role interface &#x27;ReportFormatterPort&#x27; is segregated and focused (1 methods)
+- **BasePatternRule** (75%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/base.py:49` - ISP Adherence: Role interface &#x27;BasePatternRule&#x27; is segregated and focused (2 methods)
+### Principle: `OPEN_CLOSED` (7 instances)
+- **IPaymentMethodHandler** (87%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/principles_and_clean_code_demo.py:44` - OCP Adherence: Interface &#x27;IPaymentMethodHandler&#x27; supports open extension with 3 implementations
+- **ResultRepositoryPort** (87%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/ports/outbound.py:31` - OCP Adherence: Interface &#x27;ResultRepositoryPort&#x27; supports open extension with 4 implementations
+- **ReportFormatterPort** (87%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/ports/outbound.py:39` - OCP Adherence: Interface &#x27;ReportFormatterPort&#x27; supports open extension with 3 implementations
+- **BasePatternRule** (87%) in `/Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/base.py:49` - OCP Adherence: Interface &#x27;BasePatternRule&#x27; supports open extension with 35 implementations
+- **PaymentStrategy** (83%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/design_patterns_demo.py:62` - OCP Adherence: Interface &#x27;PaymentStrategy&#x27; supports open extension with 2 implementations
+- **FileSystemNode** (83%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/design_patterns_demo.py:113` - OCP Adherence: Interface &#x27;FileSystemNode&#x27; supports open extension with 2 implementations
+- **BaseRepository** (83%) in `/Volumes/External/Code/DPX-Py/examples/python_samples/principles_and_clean_code_demo.py:84` - OCP Adherence: Interface &#x27;BaseRepository&#x27; supports open extension with 2 implementations
+
+---
+
+## 🗺️ Module &amp; File Hotspots Distribution
+- **`design_patterns_demo.py`**: 10 findings (0 violations, 6 patterns, 4 adherences)
+- **`principles_and_clean_code_demo.py`**: 10 findings (0 violations, 6 patterns, 4 adherences)
+- **`outbound.py`**: 7 findings (0 violations, 3 patterns, 4 adherences)
+- **`base.py`**: 3 findings (0 violations, 1 patterns, 2 adherences)
+- **`scanning_service.py`**: 2 findings (0 violations, 2 patterns, 0 adherences)
+- **`html_report_formatter.py`**: 1 findings (1 violations, 0 patterns, 0 adherences)
+- **`observer_rule.py`**: 1 findings (1 violations, 0 patterns, 0 adherences)
+- **`py_parser_adapter.py`**: 1 findings (0 violations, 1 patterns, 0 adherences)
+- **`dry_rule.py`**: 1 findings (0 violations, 1 patterns, 0 adherences)
+- **`singleton_rule.py`**: 1 findings (0 violations, 1 patterns, 0 adherences)
+- **`code_model.py`**: 1 findings (0 violations, 1 patterns, 0 adherences)
+</textarea>
         </div>
 
         <!-- Filter Menu (Semantic UI Secondary Pointing Menu for Categories) -->
         <div class="ui mini inverted secondary pointing menu" style="border-bottom: 1px solid #1e293b; margin-bottom: 14px;">
             <a class="active item cat-filter-btn" data-filter="all">
                 <i class="cubes icon"></i> All Categories
-                <div class="ui mini blue label">36</div>
+                <div class="ui mini blue label">38</div>
             </a>
             
                     <a class="item cat-filter-btn" data-filter="creational">
@@ -145,7 +428,7 @@
                     <a class="item cat-filter-btn" data-filter="principle">
                         <i class="shield alternate icon" style="color: #6366f1;"></i>
                         Principles & SOLID
-                        <div class="ui mini teal label">14</div>
+                        <div class="ui mini teal label">16</div>
                     </a>
                     
         </div>
@@ -157,10 +440,10 @@
             </div>
             <div class="ui mini inverted basic buttons" id="statusFilterGroup">
                 <button class="ui button active status-filter-btn" data-status="all">
-                    <i class="eye icon"></i> All Findings <span class="ui mini blue label" id="statusCountAll">36</span>
+                    <i class="eye icon"></i> All Findings <span class="ui mini blue label" id="statusCountAll">38</span>
                 </button>
                 <button class="ui button status-filter-btn" data-status="violation" style="color: #f87171 !important;">
-                    <i class="exclamation triangle icon" style="color: #f87171;"></i> ⚠️ Needs Fix (Violations) <span class="ui mini red label" id="statusCountViolation">0</span>
+                    <i class="exclamation triangle icon" style="color: #f87171;"></i> ⚠️ Needs Fix (Violations) <span class="ui mini red label" id="statusCountViolation">2</span>
                 </button>
                 <button class="ui button status-filter-btn" data-status="adherence" style="color: #4ade80 !important;">
                     <i class="check circle icon" style="color: #4ade80;"></i> ✅ Clean (Adherences) <span class="ui mini green label" id="statusCountAdherence">14</span>
@@ -195,6 +478,74 @@
         <!-- Pattern Cards Container -->
         <div id="cardsContainer">
             
+        <div class="ui fluid inverted card pattern-card" data-pattern="kiss" data-category="principle" data-status="violation" data-target="HtmlReportFormatter._build_llm_architectural_map" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #f43f5e !important; margin-bottom: 14px;">
+            <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini red label" style="font-weight: 700;"><i class="exclamation triangle icon"></i> ACTION REQUIRED (VIOLATION)</span>
+                    <span class="ui mini green label" style="font-weight: 700;">88% [VERY_HIGH]</span>
+                </div>
+                <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#1</span>
+                    <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
+                    <span class="ui mini olive label">KISS</span>
+                    <span style="color: #cbd5e1; font-weight: 600;">kiss_cyclomatic_complexity:</span>
+                    <span style="color: #38bdf8; font-family: monospace; font-weight: 700;">HtmlReportFormatter._build_llm_architectural_map</span>
+                </div>
+            </div>
+            <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                <div class="ui mini negative message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(244, 63, 94, 0.12); border: 1px solid rgba(244, 63, 94, 0.35); color: #fca5a5;"><i class="warning sign icon"></i> <strong>Anti-Pattern / Violation:</strong> Refactoring recommended to resolve this code smell.</div>
+                <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
+                    <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> KISS Violation (High Complexity): Method &#x27;HtmlReportFormatter._build_llm_architectural_map&#x27; has 30 control flow branches
+                </div>
+                <div style="margin-bottom: 10px; color: #94a3b8;">
+                    <i class="map marker alternate icon" style="color: #f43f5e;"></i> <strong>Primary Location:</strong> <span class="code-pill">/Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/html_report_formatter.py:553:5</span>
+                </div>
+                <div class="evidence-section" style="margin-top: 12px;">
+                    <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
+                        <i class="search icon"></i> Evidence Trail (2 heuristics):
+                    </div>
+                    <div class="ui inverted list">
+                        <div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+70%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[KISS_KISS_HIGH_CYCLOMATIC_COMPLEXITY]</span> <span style="color: #e2e8f0;">Method &#x27;HtmlReportFormatter._build_llm_architectural_map&#x27; has high cyclomatic complexity (30 branch points), violating KISS</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/html_report_formatter.py:553:5</span></div><div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+35%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[KISS_KISS_DECOMPOSITION_NEEDED]</span> <span style="color: #e2e8f0;">Complex nested conditionals are difficult to test and maintain; decompose into smaller functions</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/html_report_formatter.py:553:5</span></div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="ui fluid inverted card pattern-card" data-pattern="kiss" data-category="principle" data-status="violation" data-target="ObserverPatternRule._has_observer_callback_signature" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #f43f5e !important; margin-bottom: 14px;">
+            <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini red label" style="font-weight: 700;"><i class="exclamation triangle icon"></i> ACTION REQUIRED (VIOLATION)</span>
+                    <span class="ui mini green label" style="font-weight: 700;">88% [VERY_HIGH]</span>
+                </div>
+                <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#2</span>
+                    <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
+                    <span class="ui mini olive label">KISS</span>
+                    <span style="color: #cbd5e1; font-weight: 600;">kiss_cyclomatic_complexity:</span>
+                    <span style="color: #38bdf8; font-family: monospace; font-weight: 700;">ObserverPatternRule._has_observer_callback_signature</span>
+                </div>
+            </div>
+            <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                <div class="ui mini negative message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(244, 63, 94, 0.12); border: 1px solid rgba(244, 63, 94, 0.35); color: #fca5a5;"><i class="warning sign icon"></i> <strong>Anti-Pattern / Violation:</strong> Refactoring recommended to resolve this code smell.</div>
+                <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
+                    <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> KISS Violation (High Complexity): Method &#x27;ObserverPatternRule._has_observer_callback_signature&#x27; has 13 control flow branches
+                </div>
+                <div style="margin-bottom: 10px; color: #94a3b8;">
+                    <i class="map marker alternate icon" style="color: #f43f5e;"></i> <strong>Primary Location:</strong> <span class="code-pill">/Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/observer_rule.py:146:5</span>
+                </div>
+                <div class="evidence-section" style="margin-top: 12px;">
+                    <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
+                        <i class="search icon"></i> Evidence Trail (2 heuristics):
+                    </div>
+                    <div class="ui inverted list">
+                        <div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+70%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[KISS_KISS_HIGH_CYCLOMATIC_COMPLEXITY]</span> <span style="color: #e2e8f0;">Method &#x27;ObserverPatternRule._has_observer_callback_signature&#x27; has high cyclomatic complexity (13 branch points), violating KISS</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/observer_rule.py:146:5</span></div><div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+35%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[KISS_KISS_DECOMPOSITION_NEEDED]</span> <span style="color: #e2e8f0;">Complex nested conditionals are difficult to test and maintain; decompose into smaller functions</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/observer_rule.py:146:5</span></div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+        
         <div class="ui fluid inverted card pattern-card" data-pattern="strategy" data-category="behavioral" data-status="pattern" data-target="ResultRepositoryPort" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #a855f7 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
                 <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
@@ -202,7 +553,7 @@
                     <span class="ui mini green label" style="font-weight: 700;">87% [VERY_HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#1</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#3</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini violet label">STRATEGY</span>
                     <span style="color: #cbd5e1; font-weight: 600;">protocol_strategy:</span>
@@ -236,7 +587,7 @@
                     <span class="ui mini green label" style="font-weight: 700;">87% [VERY_HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#2</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#4</span>
                     <span class="ui mini green label"><i class="magic icon"></i> CREATIONAL</span>
                     <span class="ui mini green label">BUILDER</span>
                     <span style="color: #cbd5e1; font-weight: 600;">builder_class:</span>
@@ -263,40 +614,6 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="composite" data-category="structural" data-status="pattern" data-target="BasePatternRule" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #0ea5e9 !important; margin-bottom: 14px;">
-            <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
-                    <span class="ui mini blue label" style="font-weight: 700;"><i class="cube icon"></i> DESIGN PATTERN</span>
-                    <span class="ui mini green label" style="font-weight: 700;">87% [VERY_HIGH]</span>
-                </div>
-                <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#3</span>
-                    <span class="ui mini blue label"><i class="cubes icon"></i> STRUCTURAL</span>
-                    <span class="ui mini blue label">COMPOSITE</span>
-                    <span style="color: #cbd5e1; font-weight: 600;">composite_hierarchy:</span>
-                    <span style="color: #38bdf8; font-family: monospace; font-weight: 700;">BasePatternRule</span>
-                </div>
-            </div>
-            <div class="content" style="padding: 14px 16px; font-size: 13px;">
-                
-                <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
-                    <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> Composite pattern: protocol &#x27;BasePatternRule&#x27; unifies leaf and composite container records in part-whole hierarchy
-                </div>
-                <div style="margin-bottom: 10px; color: #94a3b8;">
-                    <i class="map marker alternate icon" style="color: #f43f5e;"></i> <strong>Primary Location:</strong> <span class="code-pill">/Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/base.py:49:1</span>
-                </div>
-                <div class="evidence-section" style="margin-top: 12px;">
-                    <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
-                        <i class="search icon"></i> Evidence Trail (3 heuristics):
-                    </div>
-                    <div class="ui inverted list">
-                        <div class="item" style="padding: 4px 0; border-left: 3px solid #0ea5e9; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #38bdf8; font-weight: 700; font-family: monospace;">+50%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[COMPOSITE_COMPOSITE_PROTOCOL]</span> <span style="color: #e2e8f0;">Protocol &#x27;BasePatternRule&#x27; defines uniform component interface for both leaves and containers</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/base.py:49:1</span></div><div class="item" style="padding: 4px 0; border-left: 3px solid #0ea5e9; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #38bdf8; font-weight: 700; font-family: monospace;">+45%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[COMPOSITE_COMPOSITE_CONTAINER_RECORDS]</span> <span style="color: #e2e8f0;">Identified composite container record(s) holding child hierarchies: CompositePatternRule</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/composite_rule.py:13:1</span></div><div class="item" style="padding: 4px 0; border-left: 3px solid #0ea5e9; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #38bdf8; font-weight: 700; font-family: monospace;">+35%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[COMPOSITE_LEAF_ELEMENT_RECORDS]</span> <span style="color: #e2e8f0;">Identified leaf element record(s): BuilderPatternRule, LawOfDemeterRule, SingleResponsibilityRule, CompositionOverInheritanceRule, AbstractFactoryRule, ObserverPatternRule, FactoryPatternRule, ChainOfResponsibilityRule, LifecycleComponentPatternRule, OpenClosedPrincipleRule, MediatorPatternRule, PrototypePatternRule, StrategyPatternRule, TemplateMethodRule, DependencyInversionRule, ProxyPatternRule, FacadePatternRule, StatePatternRule, InterpreterPatternRule, LiskovSubstitutionRule, CircularDependencyRule, DryRule, CohesionCouplingRule, AdapterPatternRule, InterfaceSegregationRule, CommandPatternRule, IteratorPatternRule, MementoPatternRule, BridgePatternRule, FlyweightPatternRule, DecoratorPatternRule, KissRule, SingletonPatternRule, VisitorPatternRule</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/builder_rule.py:13:1</span></div>
-                    </div>
-                </div>
-                <div style="margin-top: 10px; font-size: 12px; color: #94a3b8;"><strong>Related Locations:</strong><div style="margin-top: 4px;"><span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/builder_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/law_of_demeter_rule.py:15:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/srp_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/composition_over_inheritance_rule.py:11:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/abstract_factory_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/observer_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/factory_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/chain_of_responsibility_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/lifecycle_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/ocp_rule.py:18:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/mediator_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/prototype_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/strategy_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/template_method_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/dip_rule.py:21:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/proxy_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/facade_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/state_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/interpreter_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/lsp_rule.py:11:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/circular_dependency_rule.py:11:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/composite_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/dry_rule.py:17:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/cohesion_coupling_rule.py:11:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/adapter_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/isp_rule.py:11:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/command_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/iterator_rule.py:11:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/memento_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/bridge_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/flyweight_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/decorator_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/kiss_rule.py:15:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/singleton_rule.py:18:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/visitor_rule.py:13:1</span></div></div>
-            </div>
-        </div>
-        
         <div class="ui fluid inverted card pattern-card" data-pattern="composite" data-category="structural" data-status="pattern" data-target="FileSystemNode" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #0ea5e9 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
                 <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
@@ -304,7 +621,7 @@
                     <span class="ui mini green label" style="font-weight: 700;">87% [VERY_HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#4</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#5</span>
                     <span class="ui mini blue label"><i class="cubes icon"></i> STRUCTURAL</span>
                     <span class="ui mini blue label">COMPOSITE</span>
                     <span style="color: #cbd5e1; font-weight: 600;">composite_hierarchy:</span>
@@ -331,6 +648,74 @@
             </div>
         </div>
         
+        <div class="ui fluid inverted card pattern-card" data-pattern="composite" data-category="structural" data-status="pattern" data-target="BasePatternRule" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #0ea5e9 !important; margin-bottom: 14px;">
+            <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini blue label" style="font-weight: 700;"><i class="cube icon"></i> DESIGN PATTERN</span>
+                    <span class="ui mini green label" style="font-weight: 700;">87% [VERY_HIGH]</span>
+                </div>
+                <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#6</span>
+                    <span class="ui mini blue label"><i class="cubes icon"></i> STRUCTURAL</span>
+                    <span class="ui mini blue label">COMPOSITE</span>
+                    <span style="color: #cbd5e1; font-weight: 600;">composite_hierarchy:</span>
+                    <span style="color: #38bdf8; font-family: monospace; font-weight: 700;">BasePatternRule</span>
+                </div>
+            </div>
+            <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                
+                <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
+                    <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> Composite pattern: protocol &#x27;BasePatternRule&#x27; unifies leaf and composite container records in part-whole hierarchy
+                </div>
+                <div style="margin-bottom: 10px; color: #94a3b8;">
+                    <i class="map marker alternate icon" style="color: #f43f5e;"></i> <strong>Primary Location:</strong> <span class="code-pill">/Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/base.py:49:1</span>
+                </div>
+                <div class="evidence-section" style="margin-top: 12px;">
+                    <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
+                        <i class="search icon"></i> Evidence Trail (3 heuristics):
+                    </div>
+                    <div class="ui inverted list">
+                        <div class="item" style="padding: 4px 0; border-left: 3px solid #0ea5e9; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #38bdf8; font-weight: 700; font-family: monospace;">+50%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[COMPOSITE_COMPOSITE_PROTOCOL]</span> <span style="color: #e2e8f0;">Protocol &#x27;BasePatternRule&#x27; defines uniform component interface for both leaves and containers</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/base.py:49:1</span></div><div class="item" style="padding: 4px 0; border-left: 3px solid #0ea5e9; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #38bdf8; font-weight: 700; font-family: monospace;">+45%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[COMPOSITE_COMPOSITE_CONTAINER_RECORDS]</span> <span style="color: #e2e8f0;">Identified composite container record(s) holding child hierarchies: CompositePatternRule</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/composite_rule.py:13:1</span></div><div class="item" style="padding: 4px 0; border-left: 3px solid #0ea5e9; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #38bdf8; font-weight: 700; font-family: monospace;">+35%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[COMPOSITE_LEAF_ELEMENT_RECORDS]</span> <span style="color: #e2e8f0;">Identified leaf element record(s): BuilderPatternRule, LawOfDemeterRule, SingleResponsibilityRule, CompositionOverInheritanceRule, AbstractFactoryRule, ObserverPatternRule, FactoryPatternRule, ChainOfResponsibilityRule, LifecycleComponentPatternRule, OpenClosedPrincipleRule, MediatorPatternRule, PrototypePatternRule, StrategyPatternRule, TemplateMethodRule, DependencyInversionRule, ProxyPatternRule, FacadePatternRule, StatePatternRule, InterpreterPatternRule, LiskovSubstitutionRule, CircularDependencyRule, DryRule, CohesionCouplingRule, AdapterPatternRule, InterfaceSegregationRule, CommandPatternRule, IteratorPatternRule, MementoPatternRule, BridgePatternRule, FlyweightPatternRule, DecoratorPatternRule, KissRule, SingletonPatternRule, VisitorPatternRule</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/builder_rule.py:13:1</span></div>
+                    </div>
+                </div>
+                <div style="margin-top: 10px; font-size: 12px; color: #94a3b8;"><strong>Related Locations:</strong><div style="margin-top: 4px;"><span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/builder_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/law_of_demeter_rule.py:15:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/srp_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/composition_over_inheritance_rule.py:11:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/abstract_factory_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/observer_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/factory_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/chain_of_responsibility_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/lifecycle_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/ocp_rule.py:18:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/mediator_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/prototype_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/strategy_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/template_method_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/dip_rule.py:21:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/proxy_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/facade_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/state_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/interpreter_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/lsp_rule.py:11:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/circular_dependency_rule.py:11:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/composite_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/dry_rule.py:17:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/cohesion_coupling_rule.py:11:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/adapter_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/isp_rule.py:11:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/command_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/iterator_rule.py:11:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/memento_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/bridge_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/flyweight_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/decorator_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/kiss_rule.py:15:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/singleton_rule.py:18:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/visitor_rule.py:13:1</span></div></div>
+            </div>
+        </div>
+        
+        <div class="ui fluid inverted card pattern-card" data-pattern="open_closed" data-category="principle" data-status="adherence" data-target="IPaymentMethodHandler" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
+            <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini green label" style="font-weight: 700;"><i class="check circle icon"></i> GOOD PRACTICE (ADHERENCE)</span>
+                    <span class="ui mini green label" style="font-weight: 700;">87% [VERY_HIGH]</span>
+                </div>
+                <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#7</span>
+                    <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
+                    <span class="ui mini violet label">OPEN_CLOSED</span>
+                    <span style="color: #cbd5e1; font-weight: 600;">ocp_polymorphic_hierarchy:</span>
+                    <span style="color: #38bdf8; font-family: monospace; font-weight: 700;">IPaymentMethodHandler</span>
+                </div>
+            </div>
+            <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                <div class="ui mini positive message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #86efac;"><i class="check circle outline icon"></i> <strong>SOLID Adherence:</strong> Code adheres cleanly to architectural principles (No fix required).</div>
+                <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
+                    <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> OCP Adherence: Interface &#x27;IPaymentMethodHandler&#x27; supports open extension with 3 implementations
+                </div>
+                <div style="margin-bottom: 10px; color: #94a3b8;">
+                    <i class="map marker alternate icon" style="color: #f43f5e;"></i> <strong>Primary Location:</strong> <span class="code-pill">/Volumes/External/Code/DPX-Py/examples/python_samples/principles_and_clean_code_demo.py:44:1</span>
+                </div>
+                <div class="evidence-section" style="margin-top: 12px;">
+                    <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
+                        <i class="search icon"></i> Evidence Trail (2 heuristics):
+                    </div>
+                    <div class="ui inverted list">
+                        <div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+70%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[OPEN_CLOSED_OCP_POLYMORPHIC_ABSTRACTION]</span> <span style="color: #e2e8f0;">Abstract interface/Protocol &#x27;IPaymentMethodHandler&#x27; enables open extension through 3 polymorphic implementations: CardPaymentMethodHandler, PayPalPaymentMethodHandler, CryptoPaymentMethodHandler</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/examples/python_samples/principles_and_clean_code_demo.py:44:1</span></div><div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+35%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[OPEN_CLOSED_OCP_EXTENSIBLE_DESIGN]</span> <span style="color: #e2e8f0;">New behaviors can be added by implementing the Protocol/ABC without modifying existing consumers</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/examples/python_samples/principles_and_clean_code_demo.py:44:1</span></div>
+                    </div>
+                </div>
+                <div style="margin-top: 10px; font-size: 12px; color: #94a3b8;"><strong>Related Locations:</strong><div style="margin-top: 4px;"><span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/examples/python_samples/principles_and_clean_code_demo.py:52:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/examples/python_samples/principles_and_clean_code_demo.py:57:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/examples/python_samples/principles_and_clean_code_demo.py:62:1</span></div></div>
+            </div>
+        </div>
+        
         <div class="ui fluid inverted card pattern-card" data-pattern="open_closed" data-category="principle" data-status="adherence" data-target="ResultRepositoryPort" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
                 <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
@@ -338,7 +723,7 @@
                     <span class="ui mini green label" style="font-weight: 700;">87% [VERY_HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#5</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#8</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini violet label">OPEN_CLOSED</span>
                     <span style="color: #cbd5e1; font-weight: 600;">ocp_polymorphic_hierarchy:</span>
@@ -372,7 +757,7 @@
                     <span class="ui mini green label" style="font-weight: 700;">87% [VERY_HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#6</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#9</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini violet label">OPEN_CLOSED</span>
                     <span style="color: #cbd5e1; font-weight: 600;">ocp_polymorphic_hierarchy:</span>
@@ -395,7 +780,7 @@
                         <div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+70%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[OPEN_CLOSED_OCP_POLYMORPHIC_ABSTRACTION]</span> <span style="color: #e2e8f0;">Abstract interface/Protocol &#x27;ReportFormatterPort&#x27; enables open extension through 3 polymorphic implementations: MarkdownReportFormatter, HtmlReportFormatter, ConsoleReportFormatter</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/ports/outbound.py:39:1</span></div><div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+35%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[OPEN_CLOSED_OCP_EXTENSIBLE_DESIGN]</span> <span style="color: #e2e8f0;">New behaviors can be added by implementing the Protocol/ABC without modifying existing consumers</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/ports/outbound.py:39:1</span></div>
                     </div>
                 </div>
-                <div style="margin-top: 10px; font-size: 12px; color: #94a3b8;"><strong>Related Locations:</strong><div style="margin-top: 4px;"><span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/markdown_report_formatter.py:10:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/html_report_formatter.py:430:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/console_report_formatter.py:19:1</span></div></div>
+                <div style="margin-top: 10px; font-size: 12px; color: #94a3b8;"><strong>Related Locations:</strong><div style="margin-top: 4px;"><span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/markdown_report_formatter.py:10:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/html_report_formatter.py:529:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/console_report_formatter.py:19:1</span></div></div>
             </div>
         </div>
         
@@ -406,7 +791,7 @@
                     <span class="ui mini green label" style="font-weight: 700;">87% [VERY_HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#7</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#10</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini violet label">OPEN_CLOSED</span>
                     <span style="color: #cbd5e1; font-weight: 600;">ocp_polymorphic_hierarchy:</span>
@@ -433,40 +818,6 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="open_closed" data-category="principle" data-status="adherence" data-target="IPaymentMethodHandler" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
-            <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
-                    <span class="ui mini green label" style="font-weight: 700;"><i class="check circle icon"></i> GOOD PRACTICE (ADHERENCE)</span>
-                    <span class="ui mini green label" style="font-weight: 700;">87% [VERY_HIGH]</span>
-                </div>
-                <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#8</span>
-                    <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
-                    <span class="ui mini violet label">OPEN_CLOSED</span>
-                    <span style="color: #cbd5e1; font-weight: 600;">ocp_polymorphic_hierarchy:</span>
-                    <span style="color: #38bdf8; font-family: monospace; font-weight: 700;">IPaymentMethodHandler</span>
-                </div>
-            </div>
-            <div class="content" style="padding: 14px 16px; font-size: 13px;">
-                <div class="ui mini positive message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #86efac;"><i class="check circle outline icon"></i> <strong>SOLID Adherence:</strong> Code adheres cleanly to architectural principles (No fix required).</div>
-                <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
-                    <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> OCP Adherence: Interface &#x27;IPaymentMethodHandler&#x27; supports open extension with 3 implementations
-                </div>
-                <div style="margin-bottom: 10px; color: #94a3b8;">
-                    <i class="map marker alternate icon" style="color: #f43f5e;"></i> <strong>Primary Location:</strong> <span class="code-pill">/Volumes/External/Code/DPX-Py/examples/python_samples/principles_and_clean_code_demo.py:44:1</span>
-                </div>
-                <div class="evidence-section" style="margin-top: 12px;">
-                    <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
-                        <i class="search icon"></i> Evidence Trail (2 heuristics):
-                    </div>
-                    <div class="ui inverted list">
-                        <div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+70%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[OPEN_CLOSED_OCP_POLYMORPHIC_ABSTRACTION]</span> <span style="color: #e2e8f0;">Abstract interface/Protocol &#x27;IPaymentMethodHandler&#x27; enables open extension through 3 polymorphic implementations: CardPaymentMethodHandler, PayPalPaymentMethodHandler, CryptoPaymentMethodHandler</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/examples/python_samples/principles_and_clean_code_demo.py:44:1</span></div><div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+35%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[OPEN_CLOSED_OCP_EXTENSIBLE_DESIGN]</span> <span style="color: #e2e8f0;">New behaviors can be added by implementing the Protocol/ABC without modifying existing consumers</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/examples/python_samples/principles_and_clean_code_demo.py:44:1</span></div>
-                    </div>
-                </div>
-                <div style="margin-top: 10px; font-size: 12px; color: #94a3b8;"><strong>Related Locations:</strong><div style="margin-top: 4px;"><span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/examples/python_samples/principles_and_clean_code_demo.py:52:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/examples/python_samples/principles_and_clean_code_demo.py:57:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/examples/python_samples/principles_and_clean_code_demo.py:62:1</span></div></div>
-            </div>
-        </div>
-        
         <div class="ui fluid inverted card pattern-card" data-pattern="strategy" data-category="behavioral" data-status="pattern" data-target="ReportFormatterPort" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #a855f7 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
                 <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
@@ -474,7 +825,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">83% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#9</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#11</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini violet label">STRATEGY</span>
                     <span style="color: #cbd5e1; font-weight: 600;">protocol_strategy:</span>
@@ -494,10 +845,10 @@
                         <i class="search icon"></i> Evidence Trail (4 heuristics):
                     </div>
                     <div class="ui inverted list">
-                        <div class="item" style="padding: 4px 0; border-left: 3px solid #a855f7; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #c084fc; font-weight: 700; font-family: monospace;">+45%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[STRATEGY_PROTOCOL_STRATEGY_INTERFACE]</span> <span style="color: #e2e8f0;">Protocol &#x27;ReportFormatterPort&#x27; defines strategy interface with methods: format</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/ports/outbound.py:39:1</span></div><div class="item" style="padding: 4px 0; border-left: 3px solid #a855f7; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #c084fc; font-weight: 700; font-family: monospace;">+25%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[STRATEGY_RECORD_STRATEGY_IMPL]</span> <span style="color: #e2e8f0;">Record &#x27;MarkdownReportFormatter&#x27; provides concrete strategy implementation for protocol &#x27;ReportFormatterPort&#x27;</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/markdown_report_formatter.py:10:1</span></div><div class="item" style="padding: 4px 0; border-left: 3px solid #a855f7; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #c084fc; font-weight: 700; font-family: monospace;">+25%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[STRATEGY_RECORD_STRATEGY_IMPL]</span> <span style="color: #e2e8f0;">Record &#x27;HtmlReportFormatter&#x27; provides concrete strategy implementation for protocol &#x27;ReportFormatterPort&#x27;</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/html_report_formatter.py:430:1</span></div><div class="item" style="padding: 4px 0; border-left: 3px solid #a855f7; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #c084fc; font-weight: 700; font-family: monospace;">+25%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[STRATEGY_RECORD_STRATEGY_IMPL]</span> <span style="color: #e2e8f0;">Record &#x27;ConsoleReportFormatter&#x27; provides concrete strategy implementation for protocol &#x27;ReportFormatterPort&#x27;</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/console_report_formatter.py:19:1</span></div>
+                        <div class="item" style="padding: 4px 0; border-left: 3px solid #a855f7; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #c084fc; font-weight: 700; font-family: monospace;">+45%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[STRATEGY_PROTOCOL_STRATEGY_INTERFACE]</span> <span style="color: #e2e8f0;">Protocol &#x27;ReportFormatterPort&#x27; defines strategy interface with methods: format</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/ports/outbound.py:39:1</span></div><div class="item" style="padding: 4px 0; border-left: 3px solid #a855f7; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #c084fc; font-weight: 700; font-family: monospace;">+25%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[STRATEGY_RECORD_STRATEGY_IMPL]</span> <span style="color: #e2e8f0;">Record &#x27;MarkdownReportFormatter&#x27; provides concrete strategy implementation for protocol &#x27;ReportFormatterPort&#x27;</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/markdown_report_formatter.py:10:1</span></div><div class="item" style="padding: 4px 0; border-left: 3px solid #a855f7; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #c084fc; font-weight: 700; font-family: monospace;">+25%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[STRATEGY_RECORD_STRATEGY_IMPL]</span> <span style="color: #e2e8f0;">Record &#x27;HtmlReportFormatter&#x27; provides concrete strategy implementation for protocol &#x27;ReportFormatterPort&#x27;</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/html_report_formatter.py:529:1</span></div><div class="item" style="padding: 4px 0; border-left: 3px solid #a855f7; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #c084fc; font-weight: 700; font-family: monospace;">+25%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[STRATEGY_RECORD_STRATEGY_IMPL]</span> <span style="color: #e2e8f0;">Record &#x27;ConsoleReportFormatter&#x27; provides concrete strategy implementation for protocol &#x27;ReportFormatterPort&#x27;</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/console_report_formatter.py:19:1</span></div>
                     </div>
                 </div>
-                <div style="margin-top: 10px; font-size: 12px; color: #94a3b8;"><strong>Related Locations:</strong><div style="margin-top: 4px;"><span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/markdown_report_formatter.py:10:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/html_report_formatter.py:430:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/console_report_formatter.py:19:1</span></div></div>
+                <div style="margin-top: 10px; font-size: 12px; color: #94a3b8;"><strong>Related Locations:</strong><div style="margin-top: 4px;"><span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/markdown_report_formatter.py:10:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/html_report_formatter.py:529:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/console_report_formatter.py:19:1</span></div></div>
             </div>
         </div>
         
@@ -508,7 +859,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">83% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#10</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#12</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini violet label">OPEN_CLOSED</span>
                     <span style="color: #cbd5e1; font-weight: 600;">ocp_polymorphic_hierarchy:</span>
@@ -542,7 +893,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">83% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#11</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#13</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini violet label">OPEN_CLOSED</span>
                     <span style="color: #cbd5e1; font-weight: 600;">ocp_polymorphic_hierarchy:</span>
@@ -576,7 +927,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">83% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#12</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#14</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini violet label">OPEN_CLOSED</span>
                     <span style="color: #cbd5e1; font-weight: 600;">ocp_polymorphic_hierarchy:</span>
@@ -610,7 +961,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">80% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#13</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#15</span>
                     <span class="ui mini green label"><i class="magic icon"></i> CREATIONAL</span>
                     <span class="ui mini teal label">FACTORY_METHOD</span>
                     <span style="color: #cbd5e1; font-weight: 600;">factory_method_protocol:</span>
@@ -630,10 +981,10 @@
                         <i class="search icon"></i> Evidence Trail (2 heuristics):
                     </div>
                     <div class="ui inverted list">
-                        <div class="item" style="padding: 4px 0; border-left: 3px solid #10b981; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #34d399; font-weight: 700; font-family: monospace;">+55%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[FACTORY_METHOD_FACTORY_METHOD_PROTOCOL]</span> <span style="color: #e2e8f0;">Protocol &#x27;SourceProviderPort&#x27; defines Factory Method creation contract: get_sources</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/ports/outbound.py:23:1</span></div><div class="item" style="padding: 4px 0; border-left: 3px solid #10b981; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #34d399; font-weight: 700; font-family: monospace;">+35%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[FACTORY_METHOD_CONCRETE_CREATOR_IMPL]</span> <span style="color: #e2e8f0;">Concrete creator &#x27;FileSourceProvider&#x27; overrides factory method(s) to produce specific products</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/filesystem/file_source_provider.py:10:1</span></div>
+                        <div class="item" style="padding: 4px 0; border-left: 3px solid #10b981; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #34d399; font-weight: 700; font-family: monospace;">+55%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[FACTORY_METHOD_FACTORY_METHOD_PROTOCOL]</span> <span style="color: #e2e8f0;">Protocol &#x27;SourceProviderPort&#x27; defines Factory Method creation contract: get_sources</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/ports/outbound.py:23:1</span></div><div class="item" style="padding: 4px 0; border-left: 3px solid #10b981; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #34d399; font-weight: 700; font-family: monospace;">+35%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[FACTORY_METHOD_CONCRETE_CREATOR_IMPL]</span> <span style="color: #e2e8f0;">Concrete creator &#x27;FileSourceProvider&#x27; overrides factory method(s) to produce specific products</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/filesystem/file_source_provider.py:31:1</span></div>
                     </div>
                 </div>
-                <div style="margin-top: 10px; font-size: 12px; color: #94a3b8;"><strong>Related Locations:</strong><div style="margin-top: 4px;"><span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/filesystem/file_source_provider.py:10:1</span></div></div>
+                <div style="margin-top: 10px; font-size: 12px; color: #94a3b8;"><strong>Related Locations:</strong><div style="margin-top: 4px;"><span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/filesystem/file_source_provider.py:31:1</span></div></div>
             </div>
         </div>
         
@@ -644,7 +995,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">79% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#14</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#16</span>
                     <span class="ui mini green label"><i class="magic icon"></i> CREATIONAL</span>
                     <span class="ui mini green label">SINGLETON</span>
                     <span style="color: #cbd5e1; font-weight: 600;">singleton_class:</span>
@@ -678,7 +1029,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">77% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#15</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#17</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini pink label">OBSERVER</span>
                     <span style="color: #cbd5e1; font-weight: 600;">subject_class:</span>
@@ -712,7 +1063,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">77% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#16</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#18</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini violet label">STRATEGY</span>
                     <span style="color: #cbd5e1; font-weight: 600;">protocol_strategy:</span>
@@ -746,7 +1097,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">77% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#17</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#19</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini violet label">STRATEGY</span>
                     <span style="color: #cbd5e1; font-weight: 600;">protocol_strategy:</span>
@@ -780,7 +1131,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">77% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#18</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#20</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini purple label">CHAIN_OF_RESPONSIBILITY</span>
                     <span style="color: #cbd5e1; font-weight: 600;">chain_handler_class:</span>
@@ -814,7 +1165,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">77% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#19</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#21</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini purple label">CHAIN_OF_RESPONSIBILITY</span>
                     <span style="color: #cbd5e1; font-weight: 600;">chain_handler_class:</span>
@@ -848,7 +1199,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">77% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#20</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#22</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini purple label">CHAIN_OF_RESPONSIBILITY</span>
                     <span style="color: #cbd5e1; font-weight: 600;">chain_handler_class:</span>
@@ -882,7 +1233,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">77% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#21</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#23</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini purple label">CHAIN_OF_RESPONSIBILITY</span>
                     <span style="color: #cbd5e1; font-weight: 600;">chain_handler_class:</span>
@@ -916,7 +1267,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">77% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#22</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#24</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini purple label">CHAIN_OF_RESPONSIBILITY</span>
                     <span style="color: #cbd5e1; font-weight: 600;">chain_handler_class:</span>
@@ -950,7 +1301,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#23</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#25</span>
                     <span class="ui mini blue label"><i class="cubes icon"></i> STRUCTURAL</span>
                     <span class="ui mini teal label">ADAPTER</span>
                     <span style="color: #cbd5e1; font-weight: 600;">adapter_class:</span>
@@ -984,7 +1335,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#24</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#26</span>
                     <span class="ui mini blue label"><i class="cubes icon"></i> STRUCTURAL</span>
                     <span class="ui mini teal label">FACADE</span>
                     <span style="color: #cbd5e1; font-weight: 600;">facade_class:</span>
@@ -1011,108 +1362,6 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="interface_segregation" data-category="principle" data-status="adherence" data-target="ResultRepositoryPort" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
-            <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
-                    <span class="ui mini green label" style="font-weight: 700;"><i class="check circle icon"></i> GOOD PRACTICE (ADHERENCE)</span>
-                    <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
-                </div>
-                <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#25</span>
-                    <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
-                    <span class="ui mini blue label">INTERFACE_SEGREGATION</span>
-                    <span style="color: #cbd5e1; font-weight: 600;">segregated_role_interface:</span>
-                    <span style="color: #38bdf8; font-family: monospace; font-weight: 700;">ResultRepositoryPort</span>
-                </div>
-            </div>
-            <div class="content" style="padding: 14px 16px; font-size: 13px;">
-                <div class="ui mini positive message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #86efac;"><i class="check circle outline icon"></i> <strong>SOLID Adherence:</strong> Code adheres cleanly to architectural principles (No fix required).</div>
-                <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
-                    <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> ISP Adherence: Role interface &#x27;ResultRepositoryPort&#x27; is segregated and focused (1 methods)
-                </div>
-                <div style="margin-bottom: 10px; color: #94a3b8;">
-                    <i class="map marker alternate icon" style="color: #f43f5e;"></i> <strong>Primary Location:</strong> <span class="code-pill">/Volumes/External/Code/DPX-Py/src/pattern_detector/ports/outbound.py:31:1</span>
-                </div>
-                <div class="evidence-section" style="margin-top: 12px;">
-                    <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
-                        <i class="search icon"></i> Evidence Trail (2 heuristics):
-                    </div>
-                    <div class="ui inverted list">
-                        <div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+50%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[INTERFACE_SEGREGATION_ISP_ROLE_INTERFACE]</span> <span style="color: #e2e8f0;">Interface &#x27;ResultRepositoryPort&#x27; follows ISP as a cohesive role interface with only 1 method(s)</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/ports/outbound.py:31:1</span></div><div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+30%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[INTERFACE_SEGREGATION_ISP_CLEAN_IMPLEMENTATION]</span> <span style="color: #e2e8f0;">Implemented by 4 targeted classes without bloated contract obligations</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/ports/outbound.py:31:1</span></div>
-                    </div>
-                </div>
-                <div style="margin-top: 10px; font-size: 12px; color: #94a3b8;"><strong>Related Locations:</strong><div style="margin-top: 4px;"><span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/json_result_repository.py:12:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/file_result_repositories.py:14:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/file_result_repositories.py:27:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/file_result_repositories.py:40:1</span></div></div>
-            </div>
-        </div>
-        
-        <div class="ui fluid inverted card pattern-card" data-pattern="interface_segregation" data-category="principle" data-status="adherence" data-target="ReportFormatterPort" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
-            <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
-                    <span class="ui mini green label" style="font-weight: 700;"><i class="check circle icon"></i> GOOD PRACTICE (ADHERENCE)</span>
-                    <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
-                </div>
-                <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#26</span>
-                    <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
-                    <span class="ui mini blue label">INTERFACE_SEGREGATION</span>
-                    <span style="color: #cbd5e1; font-weight: 600;">segregated_role_interface:</span>
-                    <span style="color: #38bdf8; font-family: monospace; font-weight: 700;">ReportFormatterPort</span>
-                </div>
-            </div>
-            <div class="content" style="padding: 14px 16px; font-size: 13px;">
-                <div class="ui mini positive message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #86efac;"><i class="check circle outline icon"></i> <strong>SOLID Adherence:</strong> Code adheres cleanly to architectural principles (No fix required).</div>
-                <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
-                    <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> ISP Adherence: Role interface &#x27;ReportFormatterPort&#x27; is segregated and focused (1 methods)
-                </div>
-                <div style="margin-bottom: 10px; color: #94a3b8;">
-                    <i class="map marker alternate icon" style="color: #f43f5e;"></i> <strong>Primary Location:</strong> <span class="code-pill">/Volumes/External/Code/DPX-Py/src/pattern_detector/ports/outbound.py:39:1</span>
-                </div>
-                <div class="evidence-section" style="margin-top: 12px;">
-                    <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
-                        <i class="search icon"></i> Evidence Trail (2 heuristics):
-                    </div>
-                    <div class="ui inverted list">
-                        <div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+50%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[INTERFACE_SEGREGATION_ISP_ROLE_INTERFACE]</span> <span style="color: #e2e8f0;">Interface &#x27;ReportFormatterPort&#x27; follows ISP as a cohesive role interface with only 1 method(s)</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/ports/outbound.py:39:1</span></div><div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+30%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[INTERFACE_SEGREGATION_ISP_CLEAN_IMPLEMENTATION]</span> <span style="color: #e2e8f0;">Implemented by 3 targeted classes without bloated contract obligations</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/ports/outbound.py:39:1</span></div>
-                    </div>
-                </div>
-                <div style="margin-top: 10px; font-size: 12px; color: #94a3b8;"><strong>Related Locations:</strong><div style="margin-top: 4px;"><span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/markdown_report_formatter.py:10:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/html_report_formatter.py:430:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/console_report_formatter.py:19:1</span></div></div>
-            </div>
-        </div>
-        
-        <div class="ui fluid inverted card pattern-card" data-pattern="interface_segregation" data-category="principle" data-status="adherence" data-target="BasePatternRule" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
-            <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
-                    <span class="ui mini green label" style="font-weight: 700;"><i class="check circle icon"></i> GOOD PRACTICE (ADHERENCE)</span>
-                    <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
-                </div>
-                <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#27</span>
-                    <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
-                    <span class="ui mini blue label">INTERFACE_SEGREGATION</span>
-                    <span style="color: #cbd5e1; font-weight: 600;">segregated_role_interface:</span>
-                    <span style="color: #38bdf8; font-family: monospace; font-weight: 700;">BasePatternRule</span>
-                </div>
-            </div>
-            <div class="content" style="padding: 14px 16px; font-size: 13px;">
-                <div class="ui mini positive message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #86efac;"><i class="check circle outline icon"></i> <strong>SOLID Adherence:</strong> Code adheres cleanly to architectural principles (No fix required).</div>
-                <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
-                    <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> ISP Adherence: Role interface &#x27;BasePatternRule&#x27; is segregated and focused (2 methods)
-                </div>
-                <div style="margin-bottom: 10px; color: #94a3b8;">
-                    <i class="map marker alternate icon" style="color: #f43f5e;"></i> <strong>Primary Location:</strong> <span class="code-pill">/Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/base.py:49:1</span>
-                </div>
-                <div class="evidence-section" style="margin-top: 12px;">
-                    <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
-                        <i class="search icon"></i> Evidence Trail (2 heuristics):
-                    </div>
-                    <div class="ui inverted list">
-                        <div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+50%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[INTERFACE_SEGREGATION_ISP_ROLE_INTERFACE]</span> <span style="color: #e2e8f0;">Interface &#x27;BasePatternRule&#x27; follows ISP as a cohesive role interface with only 2 method(s)</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/base.py:49:1</span></div><div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+30%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[INTERFACE_SEGREGATION_ISP_CLEAN_IMPLEMENTATION]</span> <span style="color: #e2e8f0;">Implemented by 35 targeted classes without bloated contract obligations</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/base.py:49:1</span></div>
-                    </div>
-                </div>
-                <div style="margin-top: 10px; font-size: 12px; color: #94a3b8;"><strong>Related Locations:</strong><div style="margin-top: 4px;"><span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/builder_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/law_of_demeter_rule.py:15:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/srp_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/composition_over_inheritance_rule.py:11:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/abstract_factory_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/observer_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/factory_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/chain_of_responsibility_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/lifecycle_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/ocp_rule.py:18:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/mediator_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/prototype_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/strategy_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/template_method_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/dip_rule.py:21:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/proxy_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/facade_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/state_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/interpreter_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/lsp_rule.py:11:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/circular_dependency_rule.py:11:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/composite_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/dry_rule.py:17:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/cohesion_coupling_rule.py:11:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/adapter_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/isp_rule.py:11:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/command_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/iterator_rule.py:11:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/memento_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/bridge_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/flyweight_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/decorator_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/kiss_rule.py:15:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/singleton_rule.py:18:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/visitor_rule.py:13:1</span></div></div>
-            </div>
-        </div>
-        
         <div class="ui fluid inverted card pattern-card" data-pattern="interface_segregation" data-category="principle" data-status="adherence" data-target="PaymentStrategy" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
                 <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
@@ -1120,7 +1369,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#28</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#27</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini blue label">INTERFACE_SEGREGATION</span>
                     <span style="color: #cbd5e1; font-weight: 600;">segregated_role_interface:</span>
@@ -1154,7 +1403,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#29</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#28</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini blue label">INTERFACE_SEGREGATION</span>
                     <span style="color: #cbd5e1; font-weight: 600;">segregated_role_interface:</span>
@@ -1188,7 +1437,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#30</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#29</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini blue label">INTERFACE_SEGREGATION</span>
                     <span style="color: #cbd5e1; font-weight: 600;">segregated_role_interface:</span>
@@ -1222,7 +1471,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#31</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#30</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini blue label">INTERFACE_SEGREGATION</span>
                     <span style="color: #cbd5e1; font-weight: 600;">segregated_role_interface:</span>
@@ -1249,6 +1498,108 @@
             </div>
         </div>
         
+        <div class="ui fluid inverted card pattern-card" data-pattern="interface_segregation" data-category="principle" data-status="adherence" data-target="ResultRepositoryPort" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
+            <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini green label" style="font-weight: 700;"><i class="check circle icon"></i> GOOD PRACTICE (ADHERENCE)</span>
+                    <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
+                </div>
+                <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#31</span>
+                    <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
+                    <span class="ui mini blue label">INTERFACE_SEGREGATION</span>
+                    <span style="color: #cbd5e1; font-weight: 600;">segregated_role_interface:</span>
+                    <span style="color: #38bdf8; font-family: monospace; font-weight: 700;">ResultRepositoryPort</span>
+                </div>
+            </div>
+            <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                <div class="ui mini positive message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #86efac;"><i class="check circle outline icon"></i> <strong>SOLID Adherence:</strong> Code adheres cleanly to architectural principles (No fix required).</div>
+                <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
+                    <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> ISP Adherence: Role interface &#x27;ResultRepositoryPort&#x27; is segregated and focused (1 methods)
+                </div>
+                <div style="margin-bottom: 10px; color: #94a3b8;">
+                    <i class="map marker alternate icon" style="color: #f43f5e;"></i> <strong>Primary Location:</strong> <span class="code-pill">/Volumes/External/Code/DPX-Py/src/pattern_detector/ports/outbound.py:31:1</span>
+                </div>
+                <div class="evidence-section" style="margin-top: 12px;">
+                    <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
+                        <i class="search icon"></i> Evidence Trail (2 heuristics):
+                    </div>
+                    <div class="ui inverted list">
+                        <div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+50%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[INTERFACE_SEGREGATION_ISP_ROLE_INTERFACE]</span> <span style="color: #e2e8f0;">Interface &#x27;ResultRepositoryPort&#x27; follows ISP as a cohesive role interface with only 1 method(s)</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/ports/outbound.py:31:1</span></div><div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+30%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[INTERFACE_SEGREGATION_ISP_CLEAN_IMPLEMENTATION]</span> <span style="color: #e2e8f0;">Implemented by 4 targeted classes without bloated contract obligations</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/ports/outbound.py:31:1</span></div>
+                    </div>
+                </div>
+                <div style="margin-top: 10px; font-size: 12px; color: #94a3b8;"><strong>Related Locations:</strong><div style="margin-top: 4px;"><span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/json_result_repository.py:12:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/file_result_repositories.py:14:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/file_result_repositories.py:27:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/file_result_repositories.py:40:1</span></div></div>
+            </div>
+        </div>
+        
+        <div class="ui fluid inverted card pattern-card" data-pattern="interface_segregation" data-category="principle" data-status="adherence" data-target="ReportFormatterPort" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
+            <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini green label" style="font-weight: 700;"><i class="check circle icon"></i> GOOD PRACTICE (ADHERENCE)</span>
+                    <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
+                </div>
+                <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#32</span>
+                    <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
+                    <span class="ui mini blue label">INTERFACE_SEGREGATION</span>
+                    <span style="color: #cbd5e1; font-weight: 600;">segregated_role_interface:</span>
+                    <span style="color: #38bdf8; font-family: monospace; font-weight: 700;">ReportFormatterPort</span>
+                </div>
+            </div>
+            <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                <div class="ui mini positive message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #86efac;"><i class="check circle outline icon"></i> <strong>SOLID Adherence:</strong> Code adheres cleanly to architectural principles (No fix required).</div>
+                <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
+                    <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> ISP Adherence: Role interface &#x27;ReportFormatterPort&#x27; is segregated and focused (1 methods)
+                </div>
+                <div style="margin-bottom: 10px; color: #94a3b8;">
+                    <i class="map marker alternate icon" style="color: #f43f5e;"></i> <strong>Primary Location:</strong> <span class="code-pill">/Volumes/External/Code/DPX-Py/src/pattern_detector/ports/outbound.py:39:1</span>
+                </div>
+                <div class="evidence-section" style="margin-top: 12px;">
+                    <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
+                        <i class="search icon"></i> Evidence Trail (2 heuristics):
+                    </div>
+                    <div class="ui inverted list">
+                        <div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+50%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[INTERFACE_SEGREGATION_ISP_ROLE_INTERFACE]</span> <span style="color: #e2e8f0;">Interface &#x27;ReportFormatterPort&#x27; follows ISP as a cohesive role interface with only 1 method(s)</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/ports/outbound.py:39:1</span></div><div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+30%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[INTERFACE_SEGREGATION_ISP_CLEAN_IMPLEMENTATION]</span> <span style="color: #e2e8f0;">Implemented by 3 targeted classes without bloated contract obligations</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/ports/outbound.py:39:1</span></div>
+                    </div>
+                </div>
+                <div style="margin-top: 10px; font-size: 12px; color: #94a3b8;"><strong>Related Locations:</strong><div style="margin-top: 4px;"><span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/markdown_report_formatter.py:10:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/html_report_formatter.py:529:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/console_report_formatter.py:19:1</span></div></div>
+            </div>
+        </div>
+        
+        <div class="ui fluid inverted card pattern-card" data-pattern="interface_segregation" data-category="principle" data-status="adherence" data-target="BasePatternRule" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
+            <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini green label" style="font-weight: 700;"><i class="check circle icon"></i> GOOD PRACTICE (ADHERENCE)</span>
+                    <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
+                </div>
+                <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#33</span>
+                    <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
+                    <span class="ui mini blue label">INTERFACE_SEGREGATION</span>
+                    <span style="color: #cbd5e1; font-weight: 600;">segregated_role_interface:</span>
+                    <span style="color: #38bdf8; font-family: monospace; font-weight: 700;">BasePatternRule</span>
+                </div>
+            </div>
+            <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                <div class="ui mini positive message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #86efac;"><i class="check circle outline icon"></i> <strong>SOLID Adherence:</strong> Code adheres cleanly to architectural principles (No fix required).</div>
+                <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
+                    <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> ISP Adherence: Role interface &#x27;BasePatternRule&#x27; is segregated and focused (2 methods)
+                </div>
+                <div style="margin-bottom: 10px; color: #94a3b8;">
+                    <i class="map marker alternate icon" style="color: #f43f5e;"></i> <strong>Primary Location:</strong> <span class="code-pill">/Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/base.py:49:1</span>
+                </div>
+                <div class="evidence-section" style="margin-top: 12px;">
+                    <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
+                        <i class="search icon"></i> Evidence Trail (2 heuristics):
+                    </div>
+                    <div class="ui inverted list">
+                        <div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+50%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[INTERFACE_SEGREGATION_ISP_ROLE_INTERFACE]</span> <span style="color: #e2e8f0;">Interface &#x27;BasePatternRule&#x27; follows ISP as a cohesive role interface with only 2 method(s)</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/base.py:49:1</span></div><div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+30%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[INTERFACE_SEGREGATION_ISP_CLEAN_IMPLEMENTATION]</span> <span style="color: #e2e8f0;">Implemented by 35 targeted classes without bloated contract obligations</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/base.py:49:1</span></div>
+                    </div>
+                </div>
+                <div style="margin-top: 10px; font-size: 12px; color: #94a3b8;"><strong>Related Locations:</strong><div style="margin-top: 4px;"><span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/builder_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/law_of_demeter_rule.py:15:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/srp_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/composition_over_inheritance_rule.py:11:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/abstract_factory_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/observer_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/factory_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/chain_of_responsibility_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/lifecycle_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/ocp_rule.py:18:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/mediator_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/prototype_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/strategy_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/template_method_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/dip_rule.py:21:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/proxy_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/facade_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/state_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/interpreter_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/lsp_rule.py:11:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/circular_dependency_rule.py:11:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/composite_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/dry_rule.py:17:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/cohesion_coupling_rule.py:11:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/adapter_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/isp_rule.py:11:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/command_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/iterator_rule.py:11:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/memento_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/bridge_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/flyweight_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/decorator_rule.py:13:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/kiss_rule.py:15:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/singleton_rule.py:18:1</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/rules/visitor_rule.py:13:1</span></div></div>
+            </div>
+        </div>
+        
         <div class="ui fluid inverted card pattern-card" data-pattern="singleton" data-category="creational" data-status="pattern" data-target="DatabaseConnection._instance" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
                 <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
@@ -1256,7 +1607,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">74% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#32</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#34</span>
                     <span class="ui mini green label"><i class="magic icon"></i> CREATIONAL</span>
                     <span class="ui mini green label">SINGLETON</span>
                     <span style="color: #cbd5e1; font-weight: 600;">static_singleton_state:</span>
@@ -1290,7 +1641,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">71% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#33</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#35</span>
                     <span class="ui mini blue label"><i class="cubes icon"></i> STRUCTURAL</span>
                     <span class="ui mini teal label">ADAPTER</span>
                     <span style="color: #cbd5e1; font-weight: 600;">adapter_class:</span>
@@ -1324,7 +1675,7 @@
                     <span class="ui mini orange label" style="font-weight: 700;">68% [MEDIUM]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#34</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#36</span>
                     <span class="ui mini green label"><i class="magic icon"></i> CREATIONAL</span>
                     <span class="ui mini green label">SINGLETON</span>
                     <span style="color: #cbd5e1; font-weight: 600;">singleton_class:</span>
@@ -1358,7 +1709,7 @@
                     <span class="ui mini orange label" style="font-weight: 700;">68% [MEDIUM]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#35</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#37</span>
                     <span class="ui mini green label"><i class="magic icon"></i> CREATIONAL</span>
                     <span class="ui mini green label">SINGLETON</span>
                     <span style="color: #cbd5e1; font-weight: 600;">singleton_class:</span>
@@ -1392,7 +1743,7 @@
                     <span class="ui mini orange label" style="font-weight: 700;">57% [MEDIUM]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#36</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#38</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini pink label">OBSERVER</span>
                     <span style="color: #cbd5e1; font-weight: 600;">subject_class:</span>
@@ -1506,6 +1857,66 @@
                 filterCards();
             });
         });
+
+        function copyArchMapForLlm() {
+            const rawText = document.getElementById('llmArchMapRaw').value;
+            const btn = document.getElementById('copyLlmBtn');
+            const originalHtml = btn.innerHTML;
+
+            function showSuccess() {
+                btn.innerHTML = '<i class="check icon"></i> Copied to Clipboard!';
+                btn.classList.remove('purple');
+                btn.classList.add('green');
+
+                const toast = document.getElementById('copyToast');
+                if (toast) {
+                    toast.style.display = 'block';
+                    setTimeout(() => { toast.style.display = 'none'; }, 4000);
+                }
+
+                setTimeout(() => {
+                    btn.innerHTML = originalHtml;
+                    btn.classList.remove('green');
+                    btn.classList.add('purple');
+                }, 2500);
+            }
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(rawText).then(showSuccess).catch(err => {
+                    fallbackCopy(rawText, showSuccess);
+                });
+            } else {
+                fallbackCopy(rawText, showSuccess);
+            }
+        }
+
+        function fallbackCopy(text, callback) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                callback();
+            } catch (e) {
+                console.error('Fallback copy failed', e);
+            }
+            document.body.removeChild(textarea);
+        }
+
+        function toggleArchMapPreview() {
+            const container = document.getElementById('archMapPreviewContainer');
+            const btnText = document.getElementById('toggleArchMapText');
+            if (container.style.display === 'none') {
+                container.style.display = 'block';
+                btnText.textContent = 'Hide Map Preview';
+            } else {
+                container.style.display = 'none';
+                btnText.textContent = 'View Map Preview';
+            }
+        }
 
         updateStatusCounts();
     </script>
