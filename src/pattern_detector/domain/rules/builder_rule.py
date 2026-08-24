@@ -134,6 +134,8 @@ class BuilderPatternRule(BasePatternRule):
 
         # 3. Class-based Builder (Fluent Builder / GoF Builder)
         for rec in model.all_records():
+            if rec.name.endswith("Rule") or rec.name.endswith("Test"):
+                continue
             name_lower = rec.name.lower()
             step_methods = [
                 m for m in rec.methods

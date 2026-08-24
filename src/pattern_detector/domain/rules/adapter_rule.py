@@ -99,13 +99,10 @@ class AdapterPatternRule(BasePatternRule):
                 if any(k in f.lower() for k in ("adaptee", "delegate", "target", "source", "wrapped", "impl", "client"))
             ]
 
-            # Exclude non-adapter GoF roles when class is not explicitly named Adapter
-            if not is_adapter_named and any(
-                k in name_lower for k in ("abstraction", "bridge", "proxy", "decorator", "flyweight", "observer", "subject", "mediator", "state", "command", "strategy", "visitor")
-            ):
+            if rec.name.endswith("Rule") or rec.name.endswith("Test"):
                 continue
 
-            if (is_adapter_named and (implemented_protocols or adaptee_fields)) or (implemented_protocols and adaptee_fields):
+            if is_adapter_named or (implemented_protocols and adaptee_fields):
                 evidences = []
                 related_locs = []
 

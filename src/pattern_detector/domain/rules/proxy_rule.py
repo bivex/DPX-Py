@@ -56,80 +56,45 @@ class ProxyPatternRule(BasePatternRule):
                     )
                 )
 
-        # 2. Inspect Functions using native `proxy`
-        for fn in model.all_functions():
-            if "proxy" in fn.calls or "(proxy " in fn.body_text or "(proxy[" in fn.body_text:
-                evidences = [
-                    self.evidence(
-                        description=f"Function '{fn.name}' instantiates a dynamic host proxy surrogate using (proxy ...)",
-                        weight=0.70,
-                        location=fn.location,
-                        code_suffix="NATIVE_PROXY_MACRO",
-                    ),
-                ]
-                if fn.returns_closure:
-                    evidences.append(
-                        self.evidence(
-                            description="Returns proxy surrogate instance encapsulated within closure",
-                            weight=0.25,
-                            location=fn.location,
-                            code_suffix="RETURNS_PROXY_CLOSURE",
-                        )
-                    )
-                detections.append(
-                    self.create_detection(
-                        target_name=fn.name,
-                        target_kind="proxy_factory_fn",
-                        evidences=evidences,
-                        primary_location=fn.location,
-                        related_locations=[],
-                        summary=f"Proxy pattern: '{fn.name}' generates surrogate proxy object wrapping target behavior",
-                        base_score=0.25,
-                    )
-                )
-
-        # 3. OOP Proxy Pattern in Python
+        # 2. OOP Proxy Pattern in Python
         for rec in model.all_records():
+            if rec.name.endswith("Rule") or rec.name.endswith("Test"):
+                continue
             name_lower = rec.name.lower()
             if "proxy" in name_lower:
-                evidences = [
-                    self.evidence(
-                        description=f"Class '{rec.name}' follows Proxy surrogate naming convention",
-                        weight=0.50,
-                        location=rec.location,
-                        code_suffix="PROXY_CLASS_NAMING",
-                    )
-                ]
                 has_subject_field = any(
-                    k in f.lower() for f in rec.fields for k in ("subject", "real", "target", "service", "impl")
+                    k in f.lower() for f in rec.fields for k in ("subject", "_subject", "real", "_real", "target", "_target")
                 )
-                if has_subject_field:
-                    evidences.append(
+                if has_subject_field and rec.implemented_protocols:
+                    evidences = [
                         self.evidence(
-                            description=f"Class '{rec.name}' maintains reference to wrapped real subject: {', '.join([f for f in rec.fields if any(k in f.lower() for k in ('subject', 'real', 'target', 'service', 'impl'))])}",
+                            description=f"Class '{rec.name}' follows Proxy surrogate naming convention",
+                            weight=0.50,
+                            location=rec.location,
+                            code_suffix="PROXY_CLASS_NAMING",
+                        ),
+                        self.evidence(
+                            description=f"Class '{rec.name}' maintains reference to wrapped real subject: {', '.join([f for f in rec.fields if any(k in f.lower() for k in ('subject', 'real', 'target'))])}",
                             weight=0.40,
                             location=rec.location,
                             code_suffix="PROXY_TARGET_FIELD",
-                        )
-                    )
-                if rec.implemented_protocols:
-                    evidences.append(
+                        ),
                         self.evidence(
                             description=f"Implements subject interface '{', '.join(rec.implemented_protocols)}' to act as polymorphic surrogate",
                             weight=0.35,
                             location=rec.location,
                             code_suffix="PROXY_IMPLEMENTS_SUBJECT",
+                        ),
+                    ]
+                    detections.append(
+                        self.create_detection(
+                            target_name=rec.name,
+                            target_kind="proxy_class",
+                            evidences=evidences,
+                            primary_location=rec.location,
+                            summary=f"Proxy pattern: class '{rec.name}' acts as surrogate controlling access to real subject",
+                            base_score=0.30,
                         )
                     )
-                detections.append(
-                    self.create_detection(
-                        target_name=rec.name,
-                        target_kind="proxy_class",
-                        evidences=evidences,
-                        primary_location=rec.location,
-                        summary=f"Proxy pattern: class '{rec.name}' acts as surrogate controlling access to real subject",
-                        base_score=0.30,
-                    )
-                )
 
         return detections

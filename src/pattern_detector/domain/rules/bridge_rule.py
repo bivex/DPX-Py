@@ -29,22 +29,24 @@ class BridgePatternRule(BasePatternRule):
             for p in model.all_protocols()
             if any(
                 k in p.name.lower()
-                for k in ("implementor", "driver", "backend", "engine", "platform", "provider", "codec", "impl")
+                for k in ("implementor", "driver", "backend", "renderingengine", "platformapi")
             )
         ]
 
         for driver_p in driver_protos:
             # Look for abstraction records that hold an implementation driver
             for rec in model.all_records():
-                has_driver_field = any(
-                    k in f.lower()
-                    for f in rec.fields
-                    for k in ("imp", "impl", "driver", "backend", "engine", "adapter", "provider")
-                )
-                if has_driver_field:
+                if rec.name.endswith("Rule") or rec.name.endswith("Test") or rec.implements_protocol(driver_p.name):
+                    continue
+
+                matching_fields = [
+                    f for f in rec.fields
+                    if f.lower() in ("driver", "_driver", "implementor", "_implementor", "backend", "_backend", driver_p.name.lower(), f"_{driver_p.name.lower()}")
+                ]
+                if matching_fields:
                     evidences = [
                         self.evidence(
-                            description=f"Record '{rec.name}' maintains decoupled bridge reference to implementation driver field: {', '.join([f for f in rec.fields if any(k in f.lower() for k in ('driver', 'backend', 'engine', 'impl'))])}",
+                            description=f"Record '{rec.name}' maintains decoupled bridge reference to implementation driver field: {', '.join(matching_fields)}",
                             weight=0.55,
                             location=rec.location,
                             code_suffix="BRIDGE_ABSTRACTION_RECORD",

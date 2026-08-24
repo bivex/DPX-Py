@@ -24,59 +24,13 @@ class IteratorPatternRule(BasePatternRule):
     def detect(self, model: CodeModel) -> list[Detection]:
         detections: list[Detection] = []
 
-        # 1. Custom Lazy-Seq Iterator Functions
-        for fn in model.all_functions():
-            if fn.is_multimethod or fn.parent_multimethod:
-                continue
-            has_lazy_seq = "lazy-seq" in fn.calls or "lazy-seq" in fn.body_text or "(lazy-seq" in fn.body_text
-            is_seq_named = fn.name.endswith(("-seq", "_seq", "-stream", "_stream", "-iterator", "_iterator"))
-
-            if has_lazy_seq:
-                evidences = [
-                    self.evidence(
-                        description=f"Function '{fn.name}' generates lazy sequence stream iterator via (lazy-seq ...)",
-                        weight=0.60,
-                        location=fn.location,
-                        code_suffix="LAZY_SEQ_GENERATOR",
-                    ),
-                ]
-                if is_seq_named:
-                    evidences.append(
-                        self.evidence(
-                            description=f"Follows sequence generator naming convention: '{fn.name}'",
-                            weight=0.30,
-                            location=fn.location,
-                            code_suffix="ITERATOR_NAMING",
-                        )
-                    )
-                # Check recursive self invocation
-                if fn.name in fn.calls:
-                    evidences.append(
-                        self.evidence(
-                            description="Uses recursive stream expansion to produce sequential element generator",
-                            weight=0.25,
-                            location=fn.location,
-                            code_suffix="RECURSIVE_STREAM",
-                        )
-                    )
-
-                detections.append(
-                    self.create_detection(
-                        target_name=fn.name,
-                        target_kind="lazy_seq_iterator",
-                        evidences=evidences,
-                        primary_location=fn.location,
-                        related_locations=[],
-                        summary=f"Iterator pattern: '{fn.name}' provides lazy sequential traversal over elements",
-                        base_score=0.25,
-                    )
-                )
-
-        # 2. Iterator / Iterable Protocols
+        # 1. Custom Iterator Protocols / Interfaces
         for proto in model.all_protocols():
-            methods_lower = [m.name.lower() for m in proto.methods]
-            is_iter_proto = any(m in ("next", "has-next?", "has_next", "current", "peek") for m in methods_lower)
-            if is_iter_proto or "iterator" in proto.name.lower() or "iterable" in proto.name.lower():
+            if proto.name.endswith("Rule") or proto.name.endswith("Test"):
+                continue
+            methods_lower = [m.name.split(".")[-1].lower() for m in proto.methods]
+            has_next = any(m in ("next", "has_next", "current_item", "is_done", "first") for m in methods_lower)
+            if has_next and ("iterator" in proto.name.lower() or "iterable" in proto.name.lower() or len(methods_lower) >= 2):
                 evidences = [
                     self.evidence(
                         description=f"Protocol '{proto.name}' defines iterator traversal methods: {', '.join(m.name for m in proto.methods)}",

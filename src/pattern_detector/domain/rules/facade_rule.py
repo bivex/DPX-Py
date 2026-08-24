@@ -85,6 +85,8 @@ class FacadePatternRule(BasePatternRule):
 
         # 2. Python OOP Facade Pattern (Classes aggregating multiple subsystem components)
         for rec in model.all_records():
+            if rec.name.endswith("Rule") or rec.name.endswith("Test"):
+                continue
             name_lower = rec.name.lower()
             is_facade_named = "facade" in name_lower
 
@@ -94,7 +96,7 @@ class FacadePatternRule(BasePatternRule):
                 if any(k in f.lower() for k in ("subsystem", "service", "module", "engine", "system", "parser", "lexer", "db", "client", "worker"))
             ]
 
-            if is_facade_named or len(subsystem_fields) >= 2:
+            if (is_facade_named and subsystem_fields) or len(subsystem_fields) >= 2:
                 evidences = []
                 if is_facade_named:
                     evidences.append(

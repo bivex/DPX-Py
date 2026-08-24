@@ -71,39 +71,39 @@ class FlyweightPatternRule(BasePatternRule):
 
         # 3. Python OOP Flyweight Pattern (Flyweight Factory & Flyweight protocols)
         for rec in model.all_records():
+            if rec.name.endswith("Rule") or rec.name.endswith("Test"):
+                continue
             name_lower = rec.name.lower()
             if "flyweight" in name_lower:
-                evidences = [
-                    self.evidence(
-                        description=f"Class '{rec.name}' participates in Flyweight pattern to share fine-grained state",
-                        weight=0.55,
-                        location=rec.location,
-                        code_suffix="FLYWEIGHT_CLASS_NAMING",
-                    )
-                ]
                 has_pool = any(
                     any(k in f.lower() for k in ("flyweight", "pool", "cache", "map", "table"))
                     for f in rec.fields
                 )
                 if has_pool:
-                    evidences.append(
+                    evidences = [
+                        self.evidence(
+                            description=f"Class '{rec.name}' participates in Flyweight pattern to share fine-grained state",
+                            weight=0.55,
+                            location=rec.location,
+                            code_suffix="FLYWEIGHT_CLASS_NAMING",
+                        ),
                         self.evidence(
                             description=f"Maintains flyweight instance pool/cache: {', '.join([f for f in rec.fields if any(k in f.lower() for k in ('flyweight', 'pool', 'cache', 'map', 'table'))])}",
                             weight=0.45,
                             location=rec.location,
                             code_suffix="FLYWEIGHT_POOL_FIELD",
+                        ),
+                    ]
+                    detections.append(
+                        self.create_detection(
+                            target_name=rec.name,
+                            target_kind="flyweight_class",
+                            evidences=evidences,
+                            primary_location=rec.location,
+                            related_locations=[],
+                            summary=f"Flyweight pattern: class '{rec.name}' shares fine-grained intrinsic state",
+                            base_score=0.35,
                         )
                     )
-                detections.append(
-                    self.create_detection(
-                        target_name=rec.name,
-                        target_kind="flyweight_class",
-                        evidences=evidences,
-                        primary_location=rec.location,
-                        related_locations=[],
-                        summary=f"Flyweight pattern: class '{rec.name}' shares fine-grained intrinsic state",
-                        base_score=0.35,
-                    )
-                )
 
         return detections

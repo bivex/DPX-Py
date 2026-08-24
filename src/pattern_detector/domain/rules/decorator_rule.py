@@ -130,13 +130,16 @@ class DecoratorPatternRule(BasePatternRule):
                 or any(p.lower() in f.lower() for p in implemented_protocols)
             ]
 
+            if rec.name.endswith("Rule") or rec.name.endswith("Test"):
+                continue
+
             # Exclude non-decorator GoF roles when class is not explicitly named Decorator
             if not is_decorator_named and any(
                 k in name_lower for k in ("flyweight", "observer", "subject", "mediator", "proxy", "bridge", "abstraction", "state", "command", "strategy", "visitor")
             ):
                 continue
 
-            if (is_decorator_named and (implemented_protocols or component_fields)) or (implemented_protocols and component_fields):
+            if implemented_protocols and component_fields:
                 evidences = []
                 related_locs = []
 

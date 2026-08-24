@@ -25,20 +25,23 @@ class LiskovSubstitutionRule(BasePatternRule):
         detections: list[Detection] = []
 
         for rec in model.all_records():
-            if not rec.implemented_protocols:
+            if not rec.implemented_protocols or rec.is_type:
                 continue
 
             for method in rec.methods:
                 body = method.body_text or ""
-                # Check for refusal of parent contract
+                lines = [line.strip() for line in body.split("\n")]
+                # Check for explicit raise statement refusing parent contract
                 has_unsupported_op = any(
-                    exc.lower() in body.lower()
-                    for exc in (
-                        "unsupportedoperation",
-                        "notimplemented",
-                        "unsupported",
-                        "logic_error",
+                    line.startswith("raise ") and any(
+                        exc in line for exc in (
+                            "NotImplementedError",
+                            "UnsupportedOperation",
+                            "UnsupportedOperationException",
+                            "IllegalStateException",
+                        )
                     )
+                    for line in lines
                 )
 
                 if has_unsupported_op:

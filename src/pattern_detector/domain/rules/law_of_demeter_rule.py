@@ -41,6 +41,10 @@ class LawOfDemeterRule(BasePatternRule):
             "isequal", "iterator", "next", "hasnext", "getclass", "getname", "getsimplename",
             "tolowercase", "touppercase", "addall", "put", "putall", "remove", "clear", "resources",
             "registerpattern", "registerhints", "registertype",
+            "split", "pop", "setdefault", "extend", "lower", "upper", "lstrip", "rstrip", "keys",
+            "values", "items", "get", "encode", "decode", "read", "write", "close", "elements",
+            "removeclass", "addclass", "neighborhood", "getelementbyid", "addeventlistener", "sort",
+            "reverse", "dumps", "loads",
         }
 
         for fn in model.all_functions():

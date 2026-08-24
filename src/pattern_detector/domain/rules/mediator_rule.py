@@ -26,12 +26,14 @@ class MediatorPatternRule(BasePatternRule):
 
         # 1. Mediator Protocols (e.g. EventBus, MessageBroker)
         for proto in model.all_protocols():
+            if proto.name.endswith("Rule") or proto.name.endswith("Test"):
+                continue
             name_lower = proto.name.lower()
-            methods_lower = [m.name.lower() for m in proto.methods]
-            is_mediator_proto = any(k in name_lower for k in ("mediator", "bus", "broker", "dispatcher", "hub"))
-            has_pubsub_methods = any(m in ("publish", "subscribe", "broadcast", "dispatch", "emit") for m in methods_lower)
+            methods_lower = [m.name.split(".")[-1].lower() for m in proto.methods]
+            is_mediator_proto = any(k in name_lower for k in ("mediator", "eventbus", "messagebroker", "dispatcherhub"))
+            has_pubsub_methods = any(m in ("publish", "subscribe", "broadcast", "dispatch", "emit", "send_message", "notify_colleagues") for m in methods_lower)
 
-            if is_mediator_proto or has_pubsub_methods:
+            if (is_mediator_proto and has_pubsub_methods) or (len(methods_lower) >= 2 and has_pubsub_methods):
                 evidences = [
                     self.evidence(
                         description=f"Protocol '{proto.name}' defines central mediator message coordination methods: {', '.join(m.name for m in proto.methods)}",
@@ -67,8 +69,14 @@ class MediatorPatternRule(BasePatternRule):
 
         # 2. Mediator Records (e.g. EventBus record holding subscriber registry)
         for rec in model.all_records():
+            if rec.name.endswith("Rule") or rec.name.endswith("Test"):
+                continue
             name_lower = rec.name.lower()
-            if any(k in name_lower for k in ("eventbus", "messagehub", "mediator", "eventbroker")):
+            has_colleagues = any(
+                any(k in f.lower() for k in ("subscriber", "listener", "handler", "colleague", "sub", "registry"))
+                for f in rec.fields
+            )
+            if any(k in name_lower for k in ("eventbus", "messagehub", "mediator", "eventbroker")) and has_colleagues:
                 evidences = [
                     self.evidence(
                         description=f"Record '{rec.name}' encapsulates centralized mediator broker state and subscriber registry",

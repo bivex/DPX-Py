@@ -31,30 +31,36 @@ class DependencyInversionRule(BasePatternRule):
         protocols_names = {p.name for p in model.all_protocols()}
 
         for rec in model.all_records():
+            if rec.name.endswith("Rule") or rec.name.endswith("Test") or len(rec.methods) == 0:
+                continue
+
             # Check fields and constructor injection
             interface_deps: list[str] = []
             for f in rec.fields:
-                # If a field name matches an interface name or convention
+                f_norm = f.lower().lstrip("_")
                 for proto_name in protocols_names:
-                    if proto_name.lower() in f.lower() or f.lower() in proto_name.lower():
+                    p_norm = proto_name.lower().lstrip("i")
+                    if f_norm == p_norm or f_norm == proto_name.lower() or f_norm == f"{p_norm}_service" or f_norm == f"{p_norm}_port":
                         interface_deps.append(proto_name)
 
             # Check direct instantiation of low-level dependencies inside methods
             concrete_instantiations: list[str] = []
             for m in rec.methods:
+                if m.name.split(".")[-1] in ("__init__", "__post_init__"):
+                    continue
                 body = m.body_text or ""
                 matches = _NEW_EXPR_RE.findall(body)
                 py_matches = _PYTHON_CONSTRUCTOR_RE.findall(body)
                 for raw_match in matches:
                     cl = next((item for item in raw_match if item), "")
-                    if any(cl.endswith(sfx) for sfx in ("Repository", "Service", "Client", "Database", "Dao", "Gateway", "Sender")):
+                    if any(cl.endswith(sfx) for sfx in ("Repository", "Client", "Database", "Dao", "Gateway")):
                         concrete_instantiations.append(cl)
                 for cl in py_matches + m.calls:
-                    if any(cl.endswith(sfx) for sfx in ("Repository", "Service", "Client", "Database", "Dao", "Gateway", "Sender")) and cl != rec.name:
+                    if any(cl.endswith(sfx) for sfx in ("Repository", "Client", "Database", "Dao", "Gateway")) and cl != rec.name:
                         concrete_instantiations.append(cl)
 
             # 1. DIP Violation: Hardcoded concrete infrastructure dependencies
-            if concrete_instantiations and ("Service" in rec.name or "Controller" in rec.name or "Manager" in rec.name):
+            if concrete_instantiations and any(sfx in rec.name for sfx in ("Service", "Controller", "UseCase", "Manager")):
                 unique_news = sorted(set(concrete_instantiations))
                 evidences = [
                     self.evidence(

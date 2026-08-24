@@ -27,11 +27,13 @@ class MementoPatternRule(BasePatternRule):
         for ns in model.namespaces.values():
             memento_fns = []
             for fn in ns.functions.values():
-                name_lower = fn.name.lower()
-                if any(k in name_lower for k in ("snapshot", "memento", "checkpoint", "undo", "redo", "save-state", "restore-state")):
+                if "Rule" in fn.name or "Test" in fn.name:
+                    continue
+                local_name = fn.name.split(".")[-1].lower()
+                if any(k in local_name for k in ("snapshot", "memento", "checkpoint", "undo", "redo", "save_state", "restore_state")):
                     memento_fns.append(fn)
 
-            if len(memento_fns) >= 2 or any("memento" in f.name.lower() or "snapshot" in f.name.lower() for f in memento_fns):
+            if len(memento_fns) >= 2 or any("memento" in f.name.split(".")[-1].lower() or "snapshot" in f.name.split(".")[-1].lower() for f in memento_fns):
                 evidences: list[Evidence] = []
                 related_locs: list[SourceLocation] = []
 
