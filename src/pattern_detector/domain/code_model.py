@@ -324,25 +324,15 @@ class CodeModel:
         all_ns_names = set(self.namespaces.keys())
 
         for ns_name, ns in self.namespaces.items():
-            # 1. Inspect explicit requires & #include imports
-            for req in ns.requires:
-                clean_req = os.path.splitext(os.path.basename(req))[0]
+            # 1. Inspect explicit requires & imports
+            all_imported_symbols = set(ns.requires) | set(ns.imports)
+            for raw_sym in all_imported_symbols:
+                sym_clean = os.path.splitext(os.path.basename(raw_sym))[0]
                 for other_name, other_ns in self.namespaces.items():
-                    if other_name != ns_name and (
-                        clean_req == other_name
-                        or clean_req in other_ns.records
-                        or (other_ns.file_path and clean_req in os.path.basename(other_ns.file_path))
-                    ):
-                        graph[ns_name].add(other_name)
-
-            for imp in ns.imports:
-                clean_imp = os.path.splitext(os.path.basename(imp))[0]
-                for other_name, other_ns in self.namespaces.items():
-                    if other_name != ns_name and (
-                        clean_imp == other_name
-                        or clean_imp in other_ns.records
-                        or (other_ns.file_path and clean_imp in os.path.basename(other_ns.file_path))
-                    ):
+                    if other_name == ns_name:
+                        continue
+                    other_base = os.path.splitext(os.path.basename(other_ns.file_path))[0] if other_ns.file_path else other_name
+                    if sym_clean == other_name or sym_clean == other_base or sym_clean in other_ns.records or raw_sym in other_ns.records:
                         graph[ns_name].add(other_name)
 
             # 2. Inspect qualified calls / member calls (e.g. other_mod.func or other_ns::Class)

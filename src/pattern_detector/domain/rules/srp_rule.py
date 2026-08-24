@@ -25,11 +25,11 @@ class SingleResponsibilityRule(BasePatternRule):
         detections: list[Detection] = []
 
         concern_keywords = {
-            "persistence": ("save", "find", "delete", "query", "insert", "update", "repository", "dao", "db"),
-            "http_web": ("handle", "request", "response", "get", "post", "endpoint", "controller", "route"),
-            "serialization": ("json", "xml", "serialize", "deserialize", "parse", "format"),
-            "auth_security": ("authenticate", "authorize", "token", "password", "crypto", "hash", "session"),
-            "business_logic": ("calculate", "compute", "process", "validate", "execute", "apply"),
+            "database_persistence": ("save_to_db", "insert_record", "execute_sql", "delete_from_db", "commit_tx", "query_db"),
+            "http_transport": ("http_get", "http_post", "send_request", "handle_request", "serve_route", "web_controller"),
+            "serialization": ("to_json", "from_json", "to_xml", "from_xml", "serialize_bytes", "deserialize_bytes"),
+            "auth_security": ("authenticate_user", "verify_password", "generate_jwt", "encrypt_secret", "decrypt_secret"),
+            "billing_domain": ("process_payment", "calculate_tax", "charge_card", "refund_invoice", "apply_discount"),
         }
 
         for rec in model.all_records():

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Annotated
 
@@ -262,7 +263,13 @@ def dataflow(
     ] = 15,
 ) -> None:
     """Trace forward (Data Flow Out) or backward (Data Flow In) propagation graph for one or ALL variables."""
-    target_path = str(Path(path).resolve())
+    # If target is actually an existing directory or file path, treat it as the analysis path
+    if target and (os.path.isdir(target) or os.path.isfile(target)):
+        target_path = str(Path(target).resolve())
+        target = None
+    else:
+        target_path = str(Path(path).resolve())
+
     container = create_container()
 
     # If no target specified or --all requested: Analyze ALL variables
