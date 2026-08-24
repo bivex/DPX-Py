@@ -119,11 +119,9 @@ class HtmlReportFormatter(ReportFormatterPort):
     """Renders a standalone, responsive, interactive Semantic UI (Fomantic-UI) HTML dashboard for DetectionReport."""
 
     def format(self, report: DetectionReport, verbose: bool = False) -> str:
-        counts = self._count_confidence_levels(report.detections)
-        vh_count = counts.get(ConfidenceLevel.VERY_HIGH, 0)
-        h_count = counts.get(ConfidenceLevel.HIGH, 0)
-        m_count = counts.get(ConfidenceLevel.MEDIUM, 0)
-        l_count = counts.get(ConfidenceLevel.LOW, 0)
+        total_violations = sum(1 for d in report.detections if self._classify_detection_status(d) == "violation")
+        total_adherences = sum(1 for d in report.detections if self._classify_detection_status(d) == "adherence")
+        total_patterns = sum(1 for d in report.detections if self._classify_detection_status(d) == "pattern")
 
         cards_html = self._render_cards_list(report.detections)
         category_filters = self._render_category_filters(report)
@@ -192,6 +190,11 @@ class HtmlReportFormatter(ReportFormatterPort):
             box-shadow: 0 4px 20px rgba(56, 189, 248, 0.15) !important;
             transform: translateY(-2px);
         }}
+
+        .status-filter-btn.active {{
+            background-color: #1e293b !important;
+            font-weight: 700 !important;
+        }}
     </style>
 </head>
 <body>
@@ -225,26 +228,26 @@ class HtmlReportFormatter(ReportFormatterPort):
                     <div class="label" style="color: #94a3b8;">Total Detections</div>
                 </div>
                 <div class="statistic">
-                    <div class="value" style="color: #4ade80;">{vh_count + h_count}</div>
-                    <div class="label" style="color: #94a3b8;">High Confidence (≥70%)</div>
+                    <div class="value" style="color: #f87171;">{total_violations}</div>
+                    <div class="label" style="color: #94a3b8;">⚠️ Needs Fix / Violations</div>
                 </div>
                 <div class="statistic">
-                    <div class="value" style="color: #fbbf24;">{m_count + l_count}</div>
-                    <div class="label" style="color: #94a3b8;">Med / Low (<70%)</div>
+                    <div class="value" style="color: #4ade80;">{total_adherences}</div>
+                    <div class="label" style="color: #94a3b8;">✅ Clean / Adherences</div>
                 </div>
                 <div class="statistic">
-                    <div class="value" style="color: #c084fc;">{report.scanned_files_count}</div>
-                    <div class="label" style="color: #94a3b8;">Files Scanned</div>
+                    <div class="value" style="color: #38bdf8;">{total_patterns}</div>
+                    <div class="label" style="color: #94a3b8;">🔷 Design Patterns</div>
                 </div>
                 <div class="statistic">
-                    <div class="value" style="color: #34d399;">{report.elapsed_seconds:.3f}s</div>
-                    <div class="label" style="color: #94a3b8;">Scan Duration</div>
+                    <div class="value" style="color: #c084fc;">{report.scanned_files_count} files ({report.elapsed_seconds:.3f}s)</div>
+                    <div class="label" style="color: #94a3b8;">Scan Scope</div>
                 </div>
             </div>
         </div>
 
-        <!-- Filter Menu (Semantic UI Secondary Pointing Menu) -->
-        <div class="ui mini inverted secondary pointing menu" style="border-bottom: 1px solid #1e293b; margin-bottom: 16px;">
+        <!-- Filter Menu (Semantic UI Secondary Pointing Menu for Categories) -->
+        <div class="ui mini inverted secondary pointing menu" style="border-bottom: 1px solid #1e293b; margin-bottom: 14px;">
             <a class="active item cat-filter-btn" data-filter="all">
                 <i class="cubes icon"></i> All Categories
                 <div class="ui mini blue label">{report.total_detections_count}</div>
@@ -252,10 +255,46 @@ class HtmlReportFormatter(ReportFormatterPort):
             {"".join(category_filters)}
         </div>
 
+        <!-- Action Status Sub-Tabs Bar -->
+        <div class="ui inverted segment" style="background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; margin-bottom: 16px; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+            <div style="font-size: 13px; color: #94a3b8; font-weight: 600;">
+                <i class="filter icon" style="color: #38bdf8;"></i> Findings Action Filter:
+            </div>
+            <div class="ui mini inverted basic buttons" id="statusFilterGroup">
+                <button class="ui button active status-filter-btn" data-status="all">
+                    <i class="eye icon"></i> All Findings <span class="ui mini blue label" id="statusCountAll">{report.total_detections_count}</span>
+                </button>
+                <button class="ui button status-filter-btn" data-status="violation" style="color: #f87171 !important;">
+                    <i class="exclamation triangle icon" style="color: #f87171;"></i> ⚠️ Needs Fix (Violations) <span class="ui mini red label" id="statusCountViolation">{total_violations}</span>
+                </button>
+                <button class="ui button status-filter-btn" data-status="adherence" style="color: #4ade80 !important;">
+                    <i class="check circle icon" style="color: #4ade80;"></i> ✅ Clean (Adherences) <span class="ui mini green label" id="statusCountAdherence">{total_adherences}</span>
+                </button>
+                <button class="ui button status-filter-btn" data-status="pattern" style="color: #38bdf8 !important;">
+                    <i class="cube icon" style="color: #38bdf8;"></i> 🔷 Design Patterns <span class="ui mini teal label" id="statusCountPattern">{total_patterns}</span>
+                </button>
+            </div>
+        </div>
+
         <!-- Search Bar -->
         <div class="ui fluid icon inverted input" style="margin-bottom: 20px;">
-            <input type="text" id="searchInput" placeholder="🔎 Instant search by pattern name, category, target class/function, or rule (e.g. observer, singleton, strategy, dependency_inversion)..." style="background: #0f172a; border: 1px solid #1e293b; color: #f8fafc; padding: 12px 16px;">
+            <input type="text" id="searchInput" placeholder="🔎 Instant search by pattern name, category, target class/function, or rule (e.g. ocp, singleton, strategy, kiss)..." style="background: #0f172a; border: 1px solid #1e293b; color: #f8fafc; padding: 12px 16px;">
             <i class="search icon"></i>
+        </div>
+
+        <!-- Zero Violations Alert Message (shown when filtering by violation and 0 exist) -->
+        <div id="noViolationsAlert" class="ui positive icon message" style="display: none; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #86efac; margin-bottom: 20px; border-radius: 8px;">
+            <i class="check circle outline icon" style="color: #34d399;"></i>
+            <div class="content">
+                <div class="header" style="color: #34d399; font-size: 16px; font-weight: 700;">Zero Violations Found!</div>
+                <p style="color: #cbd5e1; margin-top: 4px;">All evaluated code conforms cleanly to SOLID & Clean Code architecture. No refactoring or bug fixes required.</p>
+            </div>
+        </div>
+
+        <!-- No Matching Results Message -->
+        <div id="noResultsMessage" class="ui inverted segment" style="display: none; background: #0f172a; border: 1px solid #1e293b; text-align: center; padding: 30px; border-radius: 8px;">
+            <i class="search icon" style="font-size: 24px; color: #64748b; margin-bottom: 10px;"></i>
+            <div style="color: #94a3b8; font-size: 15px;">No findings match the selected category, action status, or search query.</div>
         </div>
 
         <!-- Pattern Cards Container -->
@@ -267,8 +306,31 @@ class HtmlReportFormatter(ReportFormatterPort):
     <script>
         const searchInput = document.getElementById('searchInput');
         const cards = document.querySelectorAll('.pattern-card');
-        const filterBtns = document.querySelectorAll('.cat-filter-btn');
+        const categoryBtns = document.querySelectorAll('.cat-filter-btn');
+        const statusBtns = document.querySelectorAll('.status-filter-btn');
+        const noViolationsAlert = document.getElementById('noViolationsAlert');
+        const noResultsMessage = document.getElementById('noResultsMessage');
+
         let selectedCategory = 'all';
+        let selectedStatus = 'all';
+
+        function updateStatusCounts() {{
+            let total = 0, violations = 0, adherences = 0, patterns = 0;
+            cards.forEach(card => {{
+                const category = card.dataset.category || '';
+                const status = card.dataset.status || '';
+                if (selectedCategory === 'all' || category === selectedCategory) {{
+                    total++;
+                    if (status === 'violation') violations++;
+                    if (status === 'adherence') adherences++;
+                    if (status === 'pattern') patterns++;
+                }}
+            }});
+            document.getElementById('statusCountAll').textContent = total;
+            document.getElementById('statusCountViolation').textContent = violations;
+            document.getElementById('statusCountAdherence').textContent = adherences;
+            document.getElementById('statusCountPattern').textContent = patterns;
+        }}
 
         function filterCards() {{
             const query = searchInput.value.toLowerCase();
@@ -279,33 +341,122 @@ class HtmlReportFormatter(ReportFormatterPort):
                 const pattern = card.dataset.pattern || '';
                 const category = card.dataset.category || '';
                 const target = card.dataset.target || '';
+                const status = card.dataset.status || '';
 
                 const matchesCategory = (selectedCategory === 'all' || category === selectedCategory);
+                const matchesStatus = (selectedStatus === 'all' || status === selectedStatus);
                 const matchesSearch = (!query || text.includes(query) || pattern.includes(query) || category.includes(query) || target.includes(query));
 
-                if (matchesCategory && matchesSearch) {{
+                if (matchesCategory && matchesStatus && matchesSearch) {{
                     card.style.display = 'block';
                     visibleCount++;
                 }} else {{
                     card.style.display = 'none';
                 }}
             }});
+
+            if (selectedStatus === 'violation' && visibleCount === 0) {{
+                noViolationsAlert.style.display = 'flex';
+                noResultsMessage.style.display = 'none';
+            }} else if (visibleCount === 0) {{
+                noViolationsAlert.style.display = 'none';
+                noResultsMessage.style.display = 'block';
+            }} else {{
+                noViolationsAlert.style.display = 'none';
+                noResultsMessage.style.display = 'none';
+            }}
         }}
 
         searchInput.addEventListener('input', filterCards);
 
-        filterBtns.forEach(btn => {{
+        categoryBtns.forEach(btn => {{
             btn.addEventListener('click', () => {{
-                filterBtns.forEach(b => b.classList.remove('active'));
+                categoryBtns.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 selectedCategory = btn.dataset.filter;
+                updateStatusCounts();
                 filterCards();
             }});
         }});
+
+        statusBtns.forEach(btn => {{
+            btn.addEventListener('click', () => {{
+                statusBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedStatus = btn.dataset.status;
+                filterCards();
+            }});
+        }});
+
+        updateStatusCounts();
     </script>
 </body>
 </html>
 """
+
+    @classmethod
+    def _classify_detection_status(cls, det: Any) -> str:
+        """Classifies detection as 'violation' (needs fix), 'adherence' (clean practice), or 'pattern'."""
+        kind = getattr(det, "target_kind", "").lower()
+        summary = getattr(det, "summary", "").lower()
+        cat = getattr(det, "pattern_category", None)
+
+        violation_terms = (
+            "violation",
+            "smell",
+            "god",
+            "broken",
+            "fat",
+            "train_wreck",
+            "duplicate",
+            "complexity",
+            "circular",
+            "breach",
+            "unsupported",
+            "high_fan_out",
+            "kiss_cyclomatic",
+            "kiss_complexity",
+        )
+        if any(t in kind for t in violation_terms):
+            return "violation"
+        if any(
+            t in summary
+            for t in ("violation", "god class", "train wreck", "breaks parent contract", "circular dependency")
+        ):
+            return "violation"
+
+        for ev in getattr(det, "evidences", []):
+            code = getattr(ev, "rule_code", "").upper()
+            if any(
+                code.endswith(sfx)
+                for sfx in (
+                    "_VIOLATION",
+                    "_CASCADE",
+                    "_GOD_CLASS",
+                    "_MIXED_CONCERNS",
+                    "_FAT_INTERFACE",
+                    "_UNSUPPORTED_OPERATION",
+                    "_CONTRACT_BREACH",
+                    "_CONCRETE_INSTANTIATION",
+                    "_TRAIN_WRECK_CHAIN",
+                    "_HIGH_CYCLOMATIC_COMPLEXITY",
+                    "_LONG_PARAMETER_LIST",
+                    "_DEEP_INHERITANCE_TREE",
+                    "_DUPLICATE_BLOCK",
+                    "_HIGH_FAN_OUT",
+                    "_STRUCTURAL_COUPLING",
+                    "_FRAGILE_MODIFICATION",
+                )
+            ):
+                return "violation"
+
+        if "adherence" in summary or "polymorphic_hierarchy" in kind or "segregated_role_interface" in kind:
+            return "adherence"
+
+        if cat == PatternCategory.PRINCIPLE:
+            return "adherence"
+
+        return "pattern"
 
     def _render_detection_card(self, idx: int, det: Any) -> str:
         cat_style = CATEGORY_STYLES.get(
@@ -331,13 +482,28 @@ class HtmlReportFormatter(ReportFormatterPort):
             ConfidenceLevel.LOW: "red",
         }.get(det.level, "blue")
 
+        status = self._classify_detection_status(det)
+        if status == "violation":
+            status_badge = '<span class="ui mini red label" style="font-weight: 700;"><i class="exclamation triangle icon"></i> ACTION REQUIRED (VIOLATION)</span>'
+            status_banner = '<div class="ui mini negative message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(244, 63, 94, 0.12); border: 1px solid rgba(244, 63, 94, 0.35); color: #fca5a5;"><i class="warning sign icon"></i> <strong>Anti-Pattern / Violation:</strong> Refactoring recommended to resolve this code smell.</div>'
+            card_border = "#f43f5e"
+        elif status == "adherence":
+            status_badge = '<span class="ui mini green label" style="font-weight: 700;"><i class="check circle icon"></i> GOOD PRACTICE (ADHERENCE)</span>'
+            status_banner = '<div class="ui mini positive message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #86efac;"><i class="check circle outline icon"></i> <strong>SOLID Adherence:</strong> Code adheres cleanly to architectural principles (No fix required).</div>'
+            card_border = "#10b981"
+        else:
+            status_badge = '<span class="ui mini blue label" style="font-weight: 700;"><i class="cube icon"></i> DESIGN PATTERN</span>'
+            status_banner = ""
+            card_border = cat_style["accent"]
+
         evidences_html = self._render_evidences_html(det, cat_style)
         related_html = self._render_related_locations_html(det)
 
         return f"""
-        <div class="ui fluid inverted card pattern-card" data-pattern="{html.escape(det.pattern_type.value)}" data-category="{html.escape(det.pattern_category.value)}" data-target="{html.escape(det.target_name)}" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid {cat_style["accent"]} !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="{html.escape(det.pattern_type.value)}" data-category="{html.escape(det.pattern_category.value)}" data-status="{status}" data-target="{html.escape(det.target_name)}" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid {card_border} !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    {status_badge}
                     <span class="ui mini {badge_color} label" style="font-weight: 700;">{det.confidence.percentage_str} [{det.level.value}]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
@@ -349,6 +515,7 @@ class HtmlReportFormatter(ReportFormatterPort):
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                {status_banner}
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> {html.escape(det.summary)}
                 </div>

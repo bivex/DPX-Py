@@ -61,6 +61,11 @@
             box-shadow: 0 4px 20px rgba(56, 189, 248, 0.15) !important;
             transform: translateY(-2px);
         }
+
+        .status-filter-btn.active {
+            background-color: #1e293b !important;
+            font-weight: 700 !important;
+        }
     </style>
 </head>
 <body>
@@ -90,33 +95,33 @@
         <div class="ui inverted segment" style="background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; margin-bottom: 20px; padding: 16px 20px;">
             <div class="ui five mini inverted statistics">
                 <div class="statistic">
-                    <div class="value" style="color: #38bdf8;">36</div>
+                    <div class="value" style="color: #38bdf8;">38</div>
                     <div class="label" style="color: #94a3b8;">Total Detections</div>
                 </div>
                 <div class="statistic">
-                    <div class="value" style="color: #4ade80;">33</div>
-                    <div class="label" style="color: #94a3b8;">High Confidence (≥70%)</div>
+                    <div class="value" style="color: #f87171;">2</div>
+                    <div class="label" style="color: #94a3b8;">⚠️ Needs Fix / Violations</div>
                 </div>
                 <div class="statistic">
-                    <div class="value" style="color: #fbbf24;">3</div>
-                    <div class="label" style="color: #94a3b8;">Med / Low (<70%)</div>
+                    <div class="value" style="color: #4ade80;">14</div>
+                    <div class="label" style="color: #94a3b8;">✅ Clean / Adherences</div>
                 </div>
                 <div class="statistic">
-                    <div class="value" style="color: #c084fc;">88</div>
-                    <div class="label" style="color: #94a3b8;">Files Scanned</div>
+                    <div class="value" style="color: #38bdf8;">22</div>
+                    <div class="label" style="color: #94a3b8;">🔷 Design Patterns</div>
                 </div>
                 <div class="statistic">
-                    <div class="value" style="color: #34d399;">0.271s</div>
-                    <div class="label" style="color: #94a3b8;">Scan Duration</div>
+                    <div class="value" style="color: #c084fc;">88 files (0.283s)</div>
+                    <div class="label" style="color: #94a3b8;">Scan Scope</div>
                 </div>
             </div>
         </div>
 
-        <!-- Filter Menu (Semantic UI Secondary Pointing Menu) -->
-        <div class="ui mini inverted secondary pointing menu" style="border-bottom: 1px solid #1e293b; margin-bottom: 16px;">
+        <!-- Filter Menu (Semantic UI Secondary Pointing Menu for Categories) -->
+        <div class="ui mini inverted secondary pointing menu" style="border-bottom: 1px solid #1e293b; margin-bottom: 14px;">
             <a class="active item cat-filter-btn" data-filter="all">
                 <i class="cubes icon"></i> All Categories
-                <div class="ui mini blue label">36</div>
+                <div class="ui mini blue label">38</div>
             </a>
             
                     <a class="item cat-filter-btn" data-filter="creational">
@@ -140,27 +145,132 @@
                     <a class="item cat-filter-btn" data-filter="principle">
                         <i class="shield alternate icon" style="color: #6366f1;"></i>
                         Principles & SOLID
-                        <div class="ui mini teal label">14</div>
+                        <div class="ui mini teal label">16</div>
                     </a>
                     
         </div>
 
+        <!-- Action Status Sub-Tabs Bar -->
+        <div class="ui inverted segment" style="background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; margin-bottom: 16px; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+            <div style="font-size: 13px; color: #94a3b8; font-weight: 600;">
+                <i class="filter icon" style="color: #38bdf8;"></i> Findings Action Filter:
+            </div>
+            <div class="ui mini inverted basic buttons" id="statusFilterGroup">
+                <button class="ui button active status-filter-btn" data-status="all">
+                    <i class="eye icon"></i> All Findings <span class="ui mini blue label" id="statusCountAll">38</span>
+                </button>
+                <button class="ui button status-filter-btn" data-status="violation" style="color: #f87171 !important;">
+                    <i class="exclamation triangle icon" style="color: #f87171;"></i> ⚠️ Needs Fix (Violations) <span class="ui mini red label" id="statusCountViolation">2</span>
+                </button>
+                <button class="ui button status-filter-btn" data-status="adherence" style="color: #4ade80 !important;">
+                    <i class="check circle icon" style="color: #4ade80;"></i> ✅ Clean (Adherences) <span class="ui mini green label" id="statusCountAdherence">14</span>
+                </button>
+                <button class="ui button status-filter-btn" data-status="pattern" style="color: #38bdf8 !important;">
+                    <i class="cube icon" style="color: #38bdf8;"></i> 🔷 Design Patterns <span class="ui mini teal label" id="statusCountPattern">22</span>
+                </button>
+            </div>
+        </div>
+
         <!-- Search Bar -->
         <div class="ui fluid icon inverted input" style="margin-bottom: 20px;">
-            <input type="text" id="searchInput" placeholder="🔎 Instant search by pattern name, category, target class/function, or rule (e.g. observer, singleton, strategy, dependency_inversion)..." style="background: #0f172a; border: 1px solid #1e293b; color: #f8fafc; padding: 12px 16px;">
+            <input type="text" id="searchInput" placeholder="🔎 Instant search by pattern name, category, target class/function, or rule (e.g. ocp, singleton, strategy, kiss)..." style="background: #0f172a; border: 1px solid #1e293b; color: #f8fafc; padding: 12px 16px;">
             <i class="search icon"></i>
+        </div>
+
+        <!-- Zero Violations Alert Message (shown when filtering by violation and 0 exist) -->
+        <div id="noViolationsAlert" class="ui positive icon message" style="display: none; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #86efac; margin-bottom: 20px; border-radius: 8px;">
+            <i class="check circle outline icon" style="color: #34d399;"></i>
+            <div class="content">
+                <div class="header" style="color: #34d399; font-size: 16px; font-weight: 700;">Zero Violations Found!</div>
+                <p style="color: #cbd5e1; margin-top: 4px;">All evaluated code conforms cleanly to SOLID & Clean Code architecture. No refactoring or bug fixes required.</p>
+            </div>
+        </div>
+
+        <!-- No Matching Results Message -->
+        <div id="noResultsMessage" class="ui inverted segment" style="display: none; background: #0f172a; border: 1px solid #1e293b; text-align: center; padding: 30px; border-radius: 8px;">
+            <i class="search icon" style="font-size: 24px; color: #64748b; margin-bottom: 10px;"></i>
+            <div style="color: #94a3b8; font-size: 15px;">No findings match the selected category, action status, or search query.</div>
         </div>
 
         <!-- Pattern Cards Container -->
         <div id="cardsContainer">
             
-        <div class="ui fluid inverted card pattern-card" data-pattern="strategy" data-category="behavioral" data-target="ResultRepositoryPort" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #a855f7 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="kiss" data-category="principle" data-status="violation" data-target="HtmlReportFormatter.format" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #f43f5e !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
-                    <span class="ui mini green label" style="font-weight: 700;">87% [VERY_HIGH]</span>
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini red label" style="font-weight: 700;"><i class="exclamation triangle icon"></i> ACTION REQUIRED (VIOLATION)</span>
+                    <span class="ui mini green label" style="font-weight: 700;">88% [VERY_HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                     <span style="color: #64748b; font-weight: 700; font-size: 13px;">#1</span>
+                    <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
+                    <span class="ui mini olive label">KISS</span>
+                    <span style="color: #cbd5e1; font-weight: 600;">kiss_cyclomatic_complexity:</span>
+                    <span style="color: #38bdf8; font-family: monospace; font-weight: 700;">HtmlReportFormatter.format</span>
+                </div>
+            </div>
+            <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                <div class="ui mini negative message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(244, 63, 94, 0.12); border: 1px solid rgba(244, 63, 94, 0.35); color: #fca5a5;"><i class="warning sign icon"></i> <strong>Anti-Pattern / Violation:</strong> Refactoring recommended to resolve this code smell.</div>
+                <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
+                    <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> KISS Violation (High Complexity): Method &#x27;HtmlReportFormatter.format&#x27; has 14 control flow branches
+                </div>
+                <div style="margin-bottom: 10px; color: #94a3b8;">
+                    <i class="map marker alternate icon" style="color: #f43f5e;"></i> <strong>Primary Location:</strong> <span class="code-pill">/Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/html_report_formatter.py:121:5</span>
+                </div>
+                <div class="evidence-section" style="margin-top: 12px;">
+                    <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
+                        <i class="search icon"></i> Evidence Trail (2 heuristics):
+                    </div>
+                    <div class="ui inverted list">
+                        <div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+70%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[KISS_KISS_HIGH_CYCLOMATIC_COMPLEXITY]</span> <span style="color: #e2e8f0;">Method &#x27;HtmlReportFormatter.format&#x27; has high cyclomatic complexity (14 branch points), violating KISS</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/html_report_formatter.py:121:5</span></div><div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+35%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[KISS_KISS_DECOMPOSITION_NEEDED]</span> <span style="color: #e2e8f0;">Complex nested conditionals are difficult to test and maintain; decompose into smaller functions</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/html_report_formatter.py:121:5</span></div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="ui fluid inverted card pattern-card" data-pattern="kiss" data-category="principle" data-status="violation" data-target="HtmlReportFormatter._classify_detection_status" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #f43f5e !important; margin-bottom: 14px;">
+            <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini red label" style="font-weight: 700;"><i class="exclamation triangle icon"></i> ACTION REQUIRED (VIOLATION)</span>
+                    <span class="ui mini green label" style="font-weight: 700;">88% [VERY_HIGH]</span>
+                </div>
+                <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#2</span>
+                    <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
+                    <span class="ui mini olive label">KISS</span>
+                    <span style="color: #cbd5e1; font-weight: 600;">kiss_cyclomatic_complexity:</span>
+                    <span style="color: #38bdf8; font-family: monospace; font-weight: 700;">HtmlReportFormatter._classify_detection_status</span>
+                </div>
+            </div>
+            <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                <div class="ui mini negative message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(244, 63, 94, 0.12); border: 1px solid rgba(244, 63, 94, 0.35); color: #fca5a5;"><i class="warning sign icon"></i> <strong>Anti-Pattern / Violation:</strong> Refactoring recommended to resolve this code smell.</div>
+                <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
+                    <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> KISS Violation (High Complexity): Method &#x27;HtmlReportFormatter._classify_detection_status&#x27; has 9 control flow branches
+                </div>
+                <div style="margin-bottom: 10px; color: #94a3b8;">
+                    <i class="map marker alternate icon" style="color: #f43f5e;"></i> <strong>Primary Location:</strong> <span class="code-pill">/Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/html_report_formatter.py:398:5</span>
+                </div>
+                <div class="evidence-section" style="margin-top: 12px;">
+                    <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
+                        <i class="search icon"></i> Evidence Trail (2 heuristics):
+                    </div>
+                    <div class="ui inverted list">
+                        <div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+70%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[KISS_KISS_HIGH_CYCLOMATIC_COMPLEXITY]</span> <span style="color: #e2e8f0;">Method &#x27;HtmlReportFormatter._classify_detection_status&#x27; has high cyclomatic complexity (9 branch points), violating KISS</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/html_report_formatter.py:398:5</span></div><div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+35%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[KISS_KISS_DECOMPOSITION_NEEDED]</span> <span style="color: #e2e8f0;">Complex nested conditionals are difficult to test and maintain; decompose into smaller functions</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/adapters/outbound/persistence/html_report_formatter.py:398:5</span></div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="ui fluid inverted card pattern-card" data-pattern="strategy" data-category="behavioral" data-status="pattern" data-target="ResultRepositoryPort" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #a855f7 !important; margin-bottom: 14px;">
+            <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini blue label" style="font-weight: 700;"><i class="cube icon"></i> DESIGN PATTERN</span>
+                    <span class="ui mini green label" style="font-weight: 700;">87% [VERY_HIGH]</span>
+                </div>
+                <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#3</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini violet label">STRATEGY</span>
                     <span style="color: #cbd5e1; font-weight: 600;">protocol_strategy:</span>
@@ -168,6 +278,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> Strategy pattern: protocol &#x27;ResultRepositoryPort&#x27; defines strategy interface implemented by 4 concrete types
                 </div>
@@ -186,13 +297,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="builder" data-category="creational" data-target="HttpRequestBuilder" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="builder" data-category="creational" data-status="pattern" data-target="HttpRequestBuilder" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini blue label" style="font-weight: 700;"><i class="cube icon"></i> DESIGN PATTERN</span>
                     <span class="ui mini green label" style="font-weight: 700;">87% [VERY_HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#2</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#4</span>
                     <span class="ui mini green label"><i class="magic icon"></i> CREATIONAL</span>
                     <span class="ui mini green label">BUILDER</span>
                     <span style="color: #cbd5e1; font-weight: 600;">builder_class:</span>
@@ -200,6 +312,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> Builder pattern: class &#x27;HttpRequestBuilder&#x27; provides fluent step-by-step assembly with 4 steps
                 </div>
@@ -218,13 +331,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="composite" data-category="structural" data-target="BasePatternRule" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #0ea5e9 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="composite" data-category="structural" data-status="pattern" data-target="BasePatternRule" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #0ea5e9 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini blue label" style="font-weight: 700;"><i class="cube icon"></i> DESIGN PATTERN</span>
                     <span class="ui mini green label" style="font-weight: 700;">87% [VERY_HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#3</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#5</span>
                     <span class="ui mini blue label"><i class="cubes icon"></i> STRUCTURAL</span>
                     <span class="ui mini blue label">COMPOSITE</span>
                     <span style="color: #cbd5e1; font-weight: 600;">composite_hierarchy:</span>
@@ -232,6 +346,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> Composite pattern: protocol &#x27;BasePatternRule&#x27; unifies leaf and composite container records in part-whole hierarchy
                 </div>
@@ -250,13 +365,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="composite" data-category="structural" data-target="FileSystemNode" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #0ea5e9 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="composite" data-category="structural" data-status="pattern" data-target="FileSystemNode" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #0ea5e9 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini blue label" style="font-weight: 700;"><i class="cube icon"></i> DESIGN PATTERN</span>
                     <span class="ui mini green label" style="font-weight: 700;">87% [VERY_HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#4</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#6</span>
                     <span class="ui mini blue label"><i class="cubes icon"></i> STRUCTURAL</span>
                     <span class="ui mini blue label">COMPOSITE</span>
                     <span style="color: #cbd5e1; font-weight: 600;">composite_hierarchy:</span>
@@ -264,6 +380,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> Composite pattern: protocol &#x27;FileSystemNode&#x27; unifies leaf and composite container records in part-whole hierarchy
                 </div>
@@ -282,13 +399,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="open_closed" data-category="principle" data-target="ResultRepositoryPort" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #6366f1 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="open_closed" data-category="principle" data-status="adherence" data-target="ResultRepositoryPort" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini green label" style="font-weight: 700;"><i class="check circle icon"></i> GOOD PRACTICE (ADHERENCE)</span>
                     <span class="ui mini green label" style="font-weight: 700;">87% [VERY_HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#5</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#7</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini violet label">OPEN_CLOSED</span>
                     <span style="color: #cbd5e1; font-weight: 600;">ocp_polymorphic_hierarchy:</span>
@@ -296,6 +414,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                <div class="ui mini positive message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #86efac;"><i class="check circle outline icon"></i> <strong>SOLID Adherence:</strong> Code adheres cleanly to architectural principles (No fix required).</div>
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> OCP Adherence: Interface &#x27;ResultRepositoryPort&#x27; supports open extension with 4 implementations
                 </div>
@@ -314,13 +433,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="open_closed" data-category="principle" data-target="ReportFormatterPort" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #6366f1 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="open_closed" data-category="principle" data-status="adherence" data-target="ReportFormatterPort" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini green label" style="font-weight: 700;"><i class="check circle icon"></i> GOOD PRACTICE (ADHERENCE)</span>
                     <span class="ui mini green label" style="font-weight: 700;">87% [VERY_HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#6</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#8</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini violet label">OPEN_CLOSED</span>
                     <span style="color: #cbd5e1; font-weight: 600;">ocp_polymorphic_hierarchy:</span>
@@ -328,6 +448,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                <div class="ui mini positive message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #86efac;"><i class="check circle outline icon"></i> <strong>SOLID Adherence:</strong> Code adheres cleanly to architectural principles (No fix required).</div>
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> OCP Adherence: Interface &#x27;ReportFormatterPort&#x27; supports open extension with 3 implementations
                 </div>
@@ -346,13 +467,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="open_closed" data-category="principle" data-target="BasePatternRule" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #6366f1 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="open_closed" data-category="principle" data-status="adherence" data-target="BasePatternRule" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini green label" style="font-weight: 700;"><i class="check circle icon"></i> GOOD PRACTICE (ADHERENCE)</span>
                     <span class="ui mini green label" style="font-weight: 700;">87% [VERY_HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#7</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#9</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini violet label">OPEN_CLOSED</span>
                     <span style="color: #cbd5e1; font-weight: 600;">ocp_polymorphic_hierarchy:</span>
@@ -360,6 +482,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                <div class="ui mini positive message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #86efac;"><i class="check circle outline icon"></i> <strong>SOLID Adherence:</strong> Code adheres cleanly to architectural principles (No fix required).</div>
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> OCP Adherence: Interface &#x27;BasePatternRule&#x27; supports open extension with 35 implementations
                 </div>
@@ -378,13 +501,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="open_closed" data-category="principle" data-target="IPaymentMethodHandler" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #6366f1 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="open_closed" data-category="principle" data-status="adherence" data-target="IPaymentMethodHandler" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini green label" style="font-weight: 700;"><i class="check circle icon"></i> GOOD PRACTICE (ADHERENCE)</span>
                     <span class="ui mini green label" style="font-weight: 700;">87% [VERY_HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#8</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#10</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini violet label">OPEN_CLOSED</span>
                     <span style="color: #cbd5e1; font-weight: 600;">ocp_polymorphic_hierarchy:</span>
@@ -392,6 +516,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                <div class="ui mini positive message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #86efac;"><i class="check circle outline icon"></i> <strong>SOLID Adherence:</strong> Code adheres cleanly to architectural principles (No fix required).</div>
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> OCP Adherence: Interface &#x27;IPaymentMethodHandler&#x27; supports open extension with 3 implementations
                 </div>
@@ -410,13 +535,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="strategy" data-category="behavioral" data-target="ReportFormatterPort" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #a855f7 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="strategy" data-category="behavioral" data-status="pattern" data-target="ReportFormatterPort" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #a855f7 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini blue label" style="font-weight: 700;"><i class="cube icon"></i> DESIGN PATTERN</span>
                     <span class="ui mini teal label" style="font-weight: 700;">83% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#9</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#11</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini violet label">STRATEGY</span>
                     <span style="color: #cbd5e1; font-weight: 600;">protocol_strategy:</span>
@@ -424,6 +550,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> Strategy pattern: protocol &#x27;ReportFormatterPort&#x27; defines strategy interface implemented by 3 concrete types
                 </div>
@@ -442,13 +569,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="open_closed" data-category="principle" data-target="PaymentStrategy" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #6366f1 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="open_closed" data-category="principle" data-status="adherence" data-target="PaymentStrategy" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini green label" style="font-weight: 700;"><i class="check circle icon"></i> GOOD PRACTICE (ADHERENCE)</span>
                     <span class="ui mini teal label" style="font-weight: 700;">83% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#10</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#12</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini violet label">OPEN_CLOSED</span>
                     <span style="color: #cbd5e1; font-weight: 600;">ocp_polymorphic_hierarchy:</span>
@@ -456,6 +584,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                <div class="ui mini positive message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #86efac;"><i class="check circle outline icon"></i> <strong>SOLID Adherence:</strong> Code adheres cleanly to architectural principles (No fix required).</div>
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> OCP Adherence: Interface &#x27;PaymentStrategy&#x27; supports open extension with 2 implementations
                 </div>
@@ -474,13 +603,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="open_closed" data-category="principle" data-target="FileSystemNode" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #6366f1 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="open_closed" data-category="principle" data-status="adherence" data-target="FileSystemNode" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini green label" style="font-weight: 700;"><i class="check circle icon"></i> GOOD PRACTICE (ADHERENCE)</span>
                     <span class="ui mini teal label" style="font-weight: 700;">83% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#11</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#13</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini violet label">OPEN_CLOSED</span>
                     <span style="color: #cbd5e1; font-weight: 600;">ocp_polymorphic_hierarchy:</span>
@@ -488,6 +618,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                <div class="ui mini positive message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #86efac;"><i class="check circle outline icon"></i> <strong>SOLID Adherence:</strong> Code adheres cleanly to architectural principles (No fix required).</div>
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> OCP Adherence: Interface &#x27;FileSystemNode&#x27; supports open extension with 2 implementations
                 </div>
@@ -506,13 +637,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="open_closed" data-category="principle" data-target="BaseRepository" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #6366f1 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="open_closed" data-category="principle" data-status="adherence" data-target="BaseRepository" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini green label" style="font-weight: 700;"><i class="check circle icon"></i> GOOD PRACTICE (ADHERENCE)</span>
                     <span class="ui mini teal label" style="font-weight: 700;">83% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#12</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#14</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini violet label">OPEN_CLOSED</span>
                     <span style="color: #cbd5e1; font-weight: 600;">ocp_polymorphic_hierarchy:</span>
@@ -520,6 +652,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                <div class="ui mini positive message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #86efac;"><i class="check circle outline icon"></i> <strong>SOLID Adherence:</strong> Code adheres cleanly to architectural principles (No fix required).</div>
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> OCP Adherence: Interface &#x27;BaseRepository&#x27; supports open extension with 2 implementations
                 </div>
@@ -538,13 +671,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="factory_method" data-category="creational" data-target="SourceProviderPort" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="factory_method" data-category="creational" data-status="pattern" data-target="SourceProviderPort" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini blue label" style="font-weight: 700;"><i class="cube icon"></i> DESIGN PATTERN</span>
                     <span class="ui mini teal label" style="font-weight: 700;">80% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#13</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#15</span>
                     <span class="ui mini green label"><i class="magic icon"></i> CREATIONAL</span>
                     <span class="ui mini teal label">FACTORY_METHOD</span>
                     <span style="color: #cbd5e1; font-weight: 600;">factory_method_protocol:</span>
@@ -552,6 +686,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> Factory Method pattern: &#x27;SourceProviderPort&#x27; declares factory creation contract implemented by 1 concrete creator(s)
                 </div>
@@ -570,13 +705,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="singleton" data-category="creational" data-target="DatabaseConnection" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="singleton" data-category="creational" data-status="pattern" data-target="DatabaseConnection" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini blue label" style="font-weight: 700;"><i class="cube icon"></i> DESIGN PATTERN</span>
                     <span class="ui mini teal label" style="font-weight: 700;">79% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#14</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#16</span>
                     <span class="ui mini green label"><i class="magic icon"></i> CREATIONAL</span>
                     <span class="ui mini green label">SINGLETON</span>
                     <span style="color: #cbd5e1; font-weight: 600;">singleton_class:</span>
@@ -584,6 +720,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> Singleton pattern: class &#x27;DatabaseConnection&#x27; guarantees a single global instance
                 </div>
@@ -602,13 +739,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="observer" data-category="behavioral" data-target="ObservableState" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #a855f7 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="observer" data-category="behavioral" data-status="pattern" data-target="ObservableState" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #a855f7 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini blue label" style="font-weight: 700;"><i class="cube icon"></i> DESIGN PATTERN</span>
                     <span class="ui mini teal label" style="font-weight: 700;">77% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#15</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#17</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini pink label">OBSERVER</span>
                     <span style="color: #cbd5e1; font-weight: 600;">subject_class:</span>
@@ -616,6 +754,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> Observer pattern: class &#x27;ObservableState&#x27; manages and notifies observers of state changes
                 </div>
@@ -634,13 +773,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="strategy" data-category="behavioral" data-target="PaymentStrategy" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #a855f7 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="strategy" data-category="behavioral" data-status="pattern" data-target="PaymentStrategy" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #a855f7 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini blue label" style="font-weight: 700;"><i class="cube icon"></i> DESIGN PATTERN</span>
                     <span class="ui mini teal label" style="font-weight: 700;">77% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#16</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#18</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini violet label">STRATEGY</span>
                     <span style="color: #cbd5e1; font-weight: 600;">protocol_strategy:</span>
@@ -648,6 +788,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> Strategy pattern: protocol &#x27;PaymentStrategy&#x27; defines strategy interface implemented by 2 concrete types
                 </div>
@@ -666,13 +807,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="strategy" data-category="behavioral" data-target="BaseRepository" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #a855f7 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="strategy" data-category="behavioral" data-status="pattern" data-target="BaseRepository" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #a855f7 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini blue label" style="font-weight: 700;"><i class="cube icon"></i> DESIGN PATTERN</span>
                     <span class="ui mini teal label" style="font-weight: 700;">77% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#17</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#19</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini violet label">STRATEGY</span>
                     <span style="color: #cbd5e1; font-weight: 600;">protocol_strategy:</span>
@@ -680,6 +822,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> Strategy pattern: protocol &#x27;BaseRepository&#x27; defines strategy interface implemented by 2 concrete types
                 </div>
@@ -698,13 +841,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="chain_of_responsibility" data-category="behavioral" data-target="IPaymentMethodHandler" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #a855f7 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="chain_of_responsibility" data-category="behavioral" data-status="pattern" data-target="IPaymentMethodHandler" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #a855f7 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini blue label" style="font-weight: 700;"><i class="cube icon"></i> DESIGN PATTERN</span>
                     <span class="ui mini teal label" style="font-weight: 700;">77% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#18</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#20</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini purple label">CHAIN_OF_RESPONSIBILITY</span>
                     <span style="color: #cbd5e1; font-weight: 600;">chain_handler_class:</span>
@@ -712,6 +856,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> Chain of Responsibility: class &#x27;IPaymentMethodHandler&#x27; processes requests and/or delegates to successor handler
                 </div>
@@ -730,13 +875,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="chain_of_responsibility" data-category="behavioral" data-target="CardPaymentMethodHandler" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #a855f7 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="chain_of_responsibility" data-category="behavioral" data-status="pattern" data-target="CardPaymentMethodHandler" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #a855f7 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini blue label" style="font-weight: 700;"><i class="cube icon"></i> DESIGN PATTERN</span>
                     <span class="ui mini teal label" style="font-weight: 700;">77% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#19</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#21</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini purple label">CHAIN_OF_RESPONSIBILITY</span>
                     <span style="color: #cbd5e1; font-weight: 600;">chain_handler_class:</span>
@@ -744,6 +890,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> Chain of Responsibility: class &#x27;CardPaymentMethodHandler&#x27; processes requests and/or delegates to successor handler
                 </div>
@@ -762,13 +909,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="chain_of_responsibility" data-category="behavioral" data-target="PayPalPaymentMethodHandler" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #a855f7 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="chain_of_responsibility" data-category="behavioral" data-status="pattern" data-target="PayPalPaymentMethodHandler" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #a855f7 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini blue label" style="font-weight: 700;"><i class="cube icon"></i> DESIGN PATTERN</span>
                     <span class="ui mini teal label" style="font-weight: 700;">77% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#20</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#22</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini purple label">CHAIN_OF_RESPONSIBILITY</span>
                     <span style="color: #cbd5e1; font-weight: 600;">chain_handler_class:</span>
@@ -776,6 +924,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> Chain of Responsibility: class &#x27;PayPalPaymentMethodHandler&#x27; processes requests and/or delegates to successor handler
                 </div>
@@ -794,13 +943,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="chain_of_responsibility" data-category="behavioral" data-target="CryptoPaymentMethodHandler" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #a855f7 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="chain_of_responsibility" data-category="behavioral" data-status="pattern" data-target="CryptoPaymentMethodHandler" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #a855f7 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini blue label" style="font-weight: 700;"><i class="cube icon"></i> DESIGN PATTERN</span>
                     <span class="ui mini teal label" style="font-weight: 700;">77% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#21</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#23</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini purple label">CHAIN_OF_RESPONSIBILITY</span>
                     <span style="color: #cbd5e1; font-weight: 600;">chain_handler_class:</span>
@@ -808,6 +958,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> Chain of Responsibility: class &#x27;CryptoPaymentMethodHandler&#x27; processes requests and/or delegates to successor handler
                 </div>
@@ -826,13 +977,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="chain_of_responsibility" data-category="behavioral" data-target="PaymentProcessor" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #a855f7 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="chain_of_responsibility" data-category="behavioral" data-status="pattern" data-target="PaymentProcessor" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #a855f7 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini blue label" style="font-weight: 700;"><i class="cube icon"></i> DESIGN PATTERN</span>
                     <span class="ui mini teal label" style="font-weight: 700;">77% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#22</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#24</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini purple label">CHAIN_OF_RESPONSIBILITY</span>
                     <span style="color: #cbd5e1; font-weight: 600;">chain_handler_class:</span>
@@ -840,6 +992,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> Chain of Responsibility: class &#x27;PaymentProcessor&#x27; processes requests and/or delegates to successor handler
                 </div>
@@ -858,13 +1011,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="adapter" data-category="structural" data-target="PyParserAdapter" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #0ea5e9 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="adapter" data-category="structural" data-status="pattern" data-target="PyParserAdapter" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #0ea5e9 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini blue label" style="font-weight: 700;"><i class="cube icon"></i> DESIGN PATTERN</span>
                     <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#23</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#25</span>
                     <span class="ui mini blue label"><i class="cubes icon"></i> STRUCTURAL</span>
                     <span class="ui mini teal label">ADAPTER</span>
                     <span style="color: #cbd5e1; font-weight: 600;">adapter_class:</span>
@@ -872,6 +1026,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> Adapter pattern: class &#x27;PyParserAdapter&#x27; adapts adaptee to target interface
                 </div>
@@ -890,13 +1045,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="facade" data-category="structural" data-target="ScanningService" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #0ea5e9 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="facade" data-category="structural" data-status="pattern" data-target="ScanningService" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #0ea5e9 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini blue label" style="font-weight: 700;"><i class="cube icon"></i> DESIGN PATTERN</span>
                     <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#24</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#26</span>
                     <span class="ui mini blue label"><i class="cubes icon"></i> STRUCTURAL</span>
                     <span class="ui mini teal label">FACADE</span>
                     <span style="color: #cbd5e1; font-weight: 600;">facade_class:</span>
@@ -904,6 +1060,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> Facade pattern: class &#x27;ScanningService&#x27; exposes unified high-level interface over subsystems
                 </div>
@@ -922,13 +1079,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="interface_segregation" data-category="principle" data-target="ResultRepositoryPort" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #6366f1 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="interface_segregation" data-category="principle" data-status="adherence" data-target="ResultRepositoryPort" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini green label" style="font-weight: 700;"><i class="check circle icon"></i> GOOD PRACTICE (ADHERENCE)</span>
                     <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#25</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#27</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini blue label">INTERFACE_SEGREGATION</span>
                     <span style="color: #cbd5e1; font-weight: 600;">segregated_role_interface:</span>
@@ -936,6 +1094,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                <div class="ui mini positive message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #86efac;"><i class="check circle outline icon"></i> <strong>SOLID Adherence:</strong> Code adheres cleanly to architectural principles (No fix required).</div>
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> ISP Adherence: Role interface &#x27;ResultRepositoryPort&#x27; is segregated and focused (1 methods)
                 </div>
@@ -954,13 +1113,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="interface_segregation" data-category="principle" data-target="ReportFormatterPort" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #6366f1 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="interface_segregation" data-category="principle" data-status="adherence" data-target="ReportFormatterPort" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini green label" style="font-weight: 700;"><i class="check circle icon"></i> GOOD PRACTICE (ADHERENCE)</span>
                     <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#26</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#28</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini blue label">INTERFACE_SEGREGATION</span>
                     <span style="color: #cbd5e1; font-weight: 600;">segregated_role_interface:</span>
@@ -968,6 +1128,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                <div class="ui mini positive message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #86efac;"><i class="check circle outline icon"></i> <strong>SOLID Adherence:</strong> Code adheres cleanly to architectural principles (No fix required).</div>
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> ISP Adherence: Role interface &#x27;ReportFormatterPort&#x27; is segregated and focused (1 methods)
                 </div>
@@ -986,13 +1147,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="interface_segregation" data-category="principle" data-target="BasePatternRule" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #6366f1 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="interface_segregation" data-category="principle" data-status="adherence" data-target="BasePatternRule" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini green label" style="font-weight: 700;"><i class="check circle icon"></i> GOOD PRACTICE (ADHERENCE)</span>
                     <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#27</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#29</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini blue label">INTERFACE_SEGREGATION</span>
                     <span style="color: #cbd5e1; font-weight: 600;">segregated_role_interface:</span>
@@ -1000,6 +1162,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                <div class="ui mini positive message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #86efac;"><i class="check circle outline icon"></i> <strong>SOLID Adherence:</strong> Code adheres cleanly to architectural principles (No fix required).</div>
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> ISP Adherence: Role interface &#x27;BasePatternRule&#x27; is segregated and focused (2 methods)
                 </div>
@@ -1018,13 +1181,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="interface_segregation" data-category="principle" data-target="PaymentStrategy" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #6366f1 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="interface_segregation" data-category="principle" data-status="adherence" data-target="PaymentStrategy" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini green label" style="font-weight: 700;"><i class="check circle icon"></i> GOOD PRACTICE (ADHERENCE)</span>
                     <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#28</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#30</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini blue label">INTERFACE_SEGREGATION</span>
                     <span style="color: #cbd5e1; font-weight: 600;">segregated_role_interface:</span>
@@ -1032,6 +1196,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                <div class="ui mini positive message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #86efac;"><i class="check circle outline icon"></i> <strong>SOLID Adherence:</strong> Code adheres cleanly to architectural principles (No fix required).</div>
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> ISP Adherence: Role interface &#x27;PaymentStrategy&#x27; is segregated and focused (1 methods)
                 </div>
@@ -1050,13 +1215,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="interface_segregation" data-category="principle" data-target="FileSystemNode" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #6366f1 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="interface_segregation" data-category="principle" data-status="adherence" data-target="FileSystemNode" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini green label" style="font-weight: 700;"><i class="check circle icon"></i> GOOD PRACTICE (ADHERENCE)</span>
                     <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#29</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#31</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini blue label">INTERFACE_SEGREGATION</span>
                     <span style="color: #cbd5e1; font-weight: 600;">segregated_role_interface:</span>
@@ -1064,6 +1230,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                <div class="ui mini positive message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #86efac;"><i class="check circle outline icon"></i> <strong>SOLID Adherence:</strong> Code adheres cleanly to architectural principles (No fix required).</div>
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> ISP Adherence: Role interface &#x27;FileSystemNode&#x27; is segregated and focused (1 methods)
                 </div>
@@ -1082,13 +1249,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="interface_segregation" data-category="principle" data-target="IPaymentMethodHandler" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #6366f1 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="interface_segregation" data-category="principle" data-status="adherence" data-target="IPaymentMethodHandler" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini green label" style="font-weight: 700;"><i class="check circle icon"></i> GOOD PRACTICE (ADHERENCE)</span>
                     <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#30</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#32</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini blue label">INTERFACE_SEGREGATION</span>
                     <span style="color: #cbd5e1; font-weight: 600;">segregated_role_interface:</span>
@@ -1096,6 +1264,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                <div class="ui mini positive message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #86efac;"><i class="check circle outline icon"></i> <strong>SOLID Adherence:</strong> Code adheres cleanly to architectural principles (No fix required).</div>
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> ISP Adherence: Role interface &#x27;IPaymentMethodHandler&#x27; is segregated and focused (1 methods)
                 </div>
@@ -1114,13 +1283,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="interface_segregation" data-category="principle" data-target="BaseRepository" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #6366f1 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="interface_segregation" data-category="principle" data-status="adherence" data-target="BaseRepository" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini green label" style="font-weight: 700;"><i class="check circle icon"></i> GOOD PRACTICE (ADHERENCE)</span>
                     <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#31</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#33</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini blue label">INTERFACE_SEGREGATION</span>
                     <span style="color: #cbd5e1; font-weight: 600;">segregated_role_interface:</span>
@@ -1128,6 +1298,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                <div class="ui mini positive message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #86efac;"><i class="check circle outline icon"></i> <strong>SOLID Adherence:</strong> Code adheres cleanly to architectural principles (No fix required).</div>
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> ISP Adherence: Role interface &#x27;BaseRepository&#x27; is segregated and focused (1 methods)
                 </div>
@@ -1146,13 +1317,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="singleton" data-category="creational" data-target="DatabaseConnection._instance" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="singleton" data-category="creational" data-status="pattern" data-target="DatabaseConnection._instance" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini blue label" style="font-weight: 700;"><i class="cube icon"></i> DESIGN PATTERN</span>
                     <span class="ui mini teal label" style="font-weight: 700;">74% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#32</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#34</span>
                     <span class="ui mini green label"><i class="magic icon"></i> CREATIONAL</span>
                     <span class="ui mini green label">SINGLETON</span>
                     <span style="color: #cbd5e1; font-weight: 600;">static_singleton_state:</span>
@@ -1160,6 +1332,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> Singleton pattern: static single-instance management for &#x27;DatabaseConnection._instance&#x27;
                 </div>
@@ -1178,13 +1351,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="adapter" data-category="structural" data-target="ScanningService" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #0ea5e9 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="adapter" data-category="structural" data-status="pattern" data-target="ScanningService" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #0ea5e9 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini blue label" style="font-weight: 700;"><i class="cube icon"></i> DESIGN PATTERN</span>
                     <span class="ui mini teal label" style="font-weight: 700;">71% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#33</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#35</span>
                     <span class="ui mini blue label"><i class="cubes icon"></i> STRUCTURAL</span>
                     <span class="ui mini teal label">ADAPTER</span>
                     <span style="color: #cbd5e1; font-weight: 600;">adapter_class:</span>
@@ -1192,6 +1366,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> Adapter pattern: class &#x27;ScanningService&#x27; adapts adaptee to target interface
                 </div>
@@ -1210,13 +1385,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="singleton" data-category="creational" data-target="DryRule" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="singleton" data-category="creational" data-status="pattern" data-target="DryRule" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini blue label" style="font-weight: 700;"><i class="cube icon"></i> DESIGN PATTERN</span>
                     <span class="ui mini orange label" style="font-weight: 700;">68% [MEDIUM]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#34</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#36</span>
                     <span class="ui mini green label"><i class="magic icon"></i> CREATIONAL</span>
                     <span class="ui mini green label">SINGLETON</span>
                     <span style="color: #cbd5e1; font-weight: 600;">singleton_class:</span>
@@ -1224,6 +1400,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> Singleton pattern: class &#x27;DryRule&#x27; guarantees a single global instance
                 </div>
@@ -1242,13 +1419,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="singleton" data-category="creational" data-target="SingletonPatternRule" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="singleton" data-category="creational" data-status="pattern" data-target="SingletonPatternRule" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #10b981 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini blue label" style="font-weight: 700;"><i class="cube icon"></i> DESIGN PATTERN</span>
                     <span class="ui mini orange label" style="font-weight: 700;">68% [MEDIUM]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#35</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#37</span>
                     <span class="ui mini green label"><i class="magic icon"></i> CREATIONAL</span>
                     <span class="ui mini green label">SINGLETON</span>
                     <span style="color: #cbd5e1; font-weight: 600;">singleton_class:</span>
@@ -1256,6 +1434,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> Singleton pattern: class &#x27;SingletonPatternRule&#x27; guarantees a single global instance
                 </div>
@@ -1274,13 +1453,14 @@
             </div>
         </div>
         
-        <div class="ui fluid inverted card pattern-card" data-pattern="observer" data-category="behavioral" data-target="StateModel" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #a855f7 !important; margin-bottom: 14px;">
+        <div class="ui fluid inverted card pattern-card" data-pattern="observer" data-category="behavioral" data-status="pattern" data-target="StateModel" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #a855f7 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated">
+                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
+                    <span class="ui mini blue label" style="font-weight: 700;"><i class="cube icon"></i> DESIGN PATTERN</span>
                     <span class="ui mini orange label" style="font-weight: 700;">57% [MEDIUM]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#36</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#38</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini pink label">OBSERVER</span>
                     <span style="color: #cbd5e1; font-weight: 600;">subject_class:</span>
@@ -1288,6 +1468,7 @@
                 </div>
             </div>
             <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                
                 <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
                     <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> Observer pattern: class &#x27;StateModel&#x27; manages and notifies observers of state changes
                 </div>
@@ -1312,8 +1493,31 @@
     <script>
         const searchInput = document.getElementById('searchInput');
         const cards = document.querySelectorAll('.pattern-card');
-        const filterBtns = document.querySelectorAll('.cat-filter-btn');
+        const categoryBtns = document.querySelectorAll('.cat-filter-btn');
+        const statusBtns = document.querySelectorAll('.status-filter-btn');
+        const noViolationsAlert = document.getElementById('noViolationsAlert');
+        const noResultsMessage = document.getElementById('noResultsMessage');
+
         let selectedCategory = 'all';
+        let selectedStatus = 'all';
+
+        function updateStatusCounts() {
+            let total = 0, violations = 0, adherences = 0, patterns = 0;
+            cards.forEach(card => {
+                const category = card.dataset.category || '';
+                const status = card.dataset.status || '';
+                if (selectedCategory === 'all' || category === selectedCategory) {
+                    total++;
+                    if (status === 'violation') violations++;
+                    if (status === 'adherence') adherences++;
+                    if (status === 'pattern') patterns++;
+                }
+            });
+            document.getElementById('statusCountAll').textContent = total;
+            document.getElementById('statusCountViolation').textContent = violations;
+            document.getElementById('statusCountAdherence').textContent = adherences;
+            document.getElementById('statusCountPattern').textContent = patterns;
+        }
 
         function filterCards() {
             const query = searchInput.value.toLowerCase();
@@ -1324,29 +1528,54 @@
                 const pattern = card.dataset.pattern || '';
                 const category = card.dataset.category || '';
                 const target = card.dataset.target || '';
+                const status = card.dataset.status || '';
 
                 const matchesCategory = (selectedCategory === 'all' || category === selectedCategory);
+                const matchesStatus = (selectedStatus === 'all' || status === selectedStatus);
                 const matchesSearch = (!query || text.includes(query) || pattern.includes(query) || category.includes(query) || target.includes(query));
 
-                if (matchesCategory && matchesSearch) {
+                if (matchesCategory && matchesStatus && matchesSearch) {
                     card.style.display = 'block';
                     visibleCount++;
                 } else {
                     card.style.display = 'none';
                 }
             });
+
+            if (selectedStatus === 'violation' && visibleCount === 0) {
+                noViolationsAlert.style.display = 'flex';
+                noResultsMessage.style.display = 'none';
+            } else if (visibleCount === 0) {
+                noViolationsAlert.style.display = 'none';
+                noResultsMessage.style.display = 'block';
+            } else {
+                noViolationsAlert.style.display = 'none';
+                noResultsMessage.style.display = 'none';
+            }
         }
 
         searchInput.addEventListener('input', filterCards);
 
-        filterBtns.forEach(btn => {
+        categoryBtns.forEach(btn => {
             btn.addEventListener('click', () => {
-                filterBtns.forEach(b => b.classList.remove('active'));
+                categoryBtns.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 selectedCategory = btn.dataset.filter;
+                updateStatusCounts();
                 filterCards();
             });
         });
+
+        statusBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                statusBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedStatus = btn.dataset.status;
+                filterCards();
+            });
+        });
+
+        updateStatusCounts();
     </script>
 </body>
 </html>
