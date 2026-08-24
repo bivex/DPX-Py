@@ -150,3 +150,19 @@ class TaintFlow:
     steps: list[TaintFlowStep] = field(default_factory=list)
     summary: str = ""
     remediation_hint: str = ""
+
+
+@dataclass
+class TaintFlowRequest:
+    """Parameter Object capturing all inputs needed to build a TaintFlow.
+
+    Replaces the 6-parameter signature of _build_taint_flow, reducing cognitive
+    load and making call-sites explicit and extensible (KISS / Parameter Object).
+    """
+
+    src_name: str
+    src_pattern: TaintSourcePattern
+    sink_id: str
+    sink_pattern: TaintSinkPattern
+    path_graph: object  # DataFlowGraph — kept as object to avoid circular import
+    src_loc: SourceLocation

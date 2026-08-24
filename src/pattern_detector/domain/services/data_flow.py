@@ -19,6 +19,7 @@ from pattern_detector.domain.taint import (
     DEFAULT_TAINT_SINKS,
     DEFAULT_TAINT_SOURCES,
     TaintFlow,
+    TaintFlowRequest,
     TaintFlowStep,
     TaintSinkPattern,
     TaintSourcePattern,
@@ -157,10 +158,15 @@ class DataFlowService:
                 matched_sink_id = self._find_sink_in_graph(out_graph, sink_pattern.pattern)
                 if matched_sink_id:
                     path_graph = self.trace_relationship_path(model, src_name, matched_sink_id)
-                    flow = self._build_taint_flow(
-                        src_name, src_pattern, matched_sink_id, sink_pattern, path_graph, src_loc
+                    request = TaintFlowRequest(
+                        src_name=src_name,
+                        src_pattern=src_pattern,
+                        sink_id=matched_sink_id,
+                        sink_pattern=sink_pattern,
+                        path_graph=path_graph,
+                        src_loc=src_loc,
                     )
-                    flows.append(flow)
+                    flows.append(self._build_taint_flow(request))
         return flows
 
     def trace_relationship(
@@ -241,27 +247,23 @@ class DataFlowService:
                         discovered.append((r_var, sp, fn.location))
         return discovered
 
-    def _build_taint_flow(
-        self,
-        src_name: str,
-        src_pattern: TaintSourcePattern,
-        sink_id: str,
-        sink_pattern: TaintSinkPattern,
-        path_graph: DataFlowGraph,
-        src_loc: SourceLocation,
-    ) -> TaintFlow:
-        steps = self._build_taint_flow_steps(path_graph, sink_id)
+    def _build_taint_flow(self, req: TaintFlowRequest) -> TaintFlow:
+        """Build a TaintFlow from a TaintFlowRequest Parameter Object."""
+
+        path_graph: DataFlowGraph = req.path_graph  # type: ignore[assignment]
+        steps = self._build_taint_flow_steps(path_graph, req.sink_id)
+        sp, sk = req.src_pattern, req.sink_pattern
         return TaintFlow(
-            id=f"taint_{src_pattern.category.value}_{sink_pattern.category.value}_{len(steps)}",
-            category=sink_pattern.category,
-            severity=sink_pattern.severity,
-            cwe_id=sink_pattern.cwe_id,
-            source_expr=src_name,
-            sink_target=sink_id,
-            primary_location=src_loc,
+            id=f"taint_{sp.category.value}_{sk.category.value}_{len(steps)}",
+            category=sk.category,
+            severity=sk.severity,
+            cwe_id=sk.cwe_id,
+            source_expr=req.src_name,
+            sink_target=req.sink_id,
+            primary_location=req.src_loc,
             steps=steps,
-            summary=f"Taint Flow: Untrusted input '{src_name}' flows directly into {sink_pattern.description} ('{sink_id}')",
-            remediation_hint=f"Sanitize or validate '{src_name}' before passing it to '{sink_pattern.pattern}'.",
+            summary=f"Taint Flow: Untrusted input '{req.src_name}' flows directly into {sk.description} ('{req.sink_id}')",
+            remediation_hint=f"Sanitize or validate '{req.src_name}' before passing it to '{sk.pattern}'.",
         )
 
     def _build_taint_flow_steps(self, path_graph: DataFlowGraph, sink_id: str) -> list[TaintFlowStep]:
