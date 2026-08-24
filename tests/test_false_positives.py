@@ -1,8 +1,9 @@
 """Comprehensive False Positives Test Suite for DPX-Py.
 
 Verifies that ordinary, standard Python idioms (dataclasses, DTOs, standard library functions,
-built-in collections, operator methods, and pure utility functions)
-do not produce false positive detections for Design Patterns or SOLID Principle violations.
+built-in collections, operator methods, vector math, linked list data structures,
+and pure utility functions) do not produce false positive detections for Design Patterns
+or SOLID Principle violations.
 """
 
 from pattern_detector.adapters.outbound.python_ast.py_parser_adapter import PyParserAdapter
@@ -36,7 +37,6 @@ class MathUtils:
         return n * MathUtils.factorial(n - 1)
 """
     report = _scan_snippet({"math_utils.py": code})
-    # Pure standard utilities must not trigger any false detections
     assert report.total_detections_count == 0
 
 
@@ -137,3 +137,154 @@ class StringHelpers:
         if d.pattern_type == PatternType.FACTORY_METHOD and d.confidence.level in (ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH)
     ]
     assert len(factory_detections) == 0
+
+
+def test_immutable_vector2d_math_not_flagged_as_builder() -> None:
+    code = """
+class Vector2D:
+    def __init__(self, x: float, y: float) -> None:
+        self.x = x
+        self.y = y
+
+    def add(self, other: "Vector2D") -> "Vector2D":
+        return Vector2D(self.x + other.x, self.y + other.y)
+
+    def scale(self, factor: float) -> "Vector2D":
+        return Vector2D(self.x * factor, self.y * factor)
+"""
+    report = _scan_snippet({"vector.py": code})
+    builder_detections = [
+        d for d in report.detections
+        if d.pattern_type == PatternType.BUILDER and d.confidence.level in (ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH)
+    ]
+    assert len(builder_detections) == 0
+
+
+def test_class_with_normal_cache_not_flagged_as_singleton() -> None:
+    code = """
+class ImageCache:
+    def __init__(self) -> None:
+        self.cache: dict[str, bytes] = {}
+        self.hits: int = 0
+        self.misses: int = 0
+
+    def get_image(self, key: str) -> bytes | None:
+        if key in self.cache:
+            self.hits += 1
+            return self.cache[key]
+        self.misses += 1
+        return None
+"""
+    report = _scan_snippet({"image_cache.py": code})
+    singleton_detections = [
+        d for d in report.detections
+        if d.pattern_type == PatternType.SINGLETON and d.confidence.level in (ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH)
+    ]
+    assert len(singleton_detections) == 0
+
+
+def test_linked_list_node_not_flagged_as_chain_of_responsibility() -> None:
+    code = """
+class ListNode:
+    def __init__(self, val: int = 0, next_node: "ListNode | None" = None) -> None:
+        self.val = val
+        self.next = next_node
+
+    def get_length(self) -> int:
+        count = 0
+        curr: ListNode | None = self
+        while curr:
+            count += 1
+            curr = curr.next
+        return count
+"""
+    report = _scan_snippet({"list_node.py": code})
+    cor_detections = [
+        d for d in report.detections
+        if d.pattern_type == PatternType.CHAIN_OF_RESPONSIBILITY and d.confidence.level in (ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH)
+    ]
+    assert len(cor_detections) == 0
+
+
+def test_binary_search_tree_not_flagged_as_composite_pattern() -> None:
+    code = """
+class TreeNode:
+    def __init__(self, key: int) -> None:
+        self.key = key
+        self.left: "TreeNode | None" = None
+        self.right: "TreeNode | None" = None
+
+    def insert(self, val: int) -> None:
+        if val < self.key:
+            if self.left is None:
+                self.left = TreeNode(val)
+            else:
+                self.left.insert(val)
+        else:
+            if self.right is None:
+                self.right = TreeNode(val)
+            else:
+                self.right.insert(val)
+"""
+    report = _scan_snippet({"bst.py": code})
+    composite_detections = [
+        d for d in report.detections
+        if d.pattern_type == PatternType.COMPOSITE and d.confidence.level in (ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH)
+    ]
+    assert len(composite_detections) == 0
+
+
+def test_simple_event_logger_not_flagged_as_observer_subject() -> None:
+    code = """
+class EventLogger:
+    def __init__(self) -> None:
+        self.logs: list[str] = []
+
+    def log(self, message: str) -> None:
+        self.logs.append(message)
+
+    def flush(self) -> None:
+        self.logs.clear()
+"""
+    report = _scan_snippet({"logger.py": code})
+    observer_detections = [
+        d for d in report.detections
+        if d.pattern_type == PatternType.OBSERVER and d.confidence.level in (ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH)
+    ]
+    assert len(observer_detections) == 0
+
+
+def test_batch_script_with_run_method_not_flagged_as_command_pattern() -> None:
+    code = """
+class DatabaseMigrationScript:
+    def __init__(self, db_url: str) -> None:
+        self.db_url = db_url
+
+    def run(self) -> None:
+        # Simple standalone script execution, no abstract Command interface
+        print(f"Connecting to {self.db_url}")
+"""
+    report = _scan_snippet({"migration.py": code})
+    command_detections = [
+        d for d in report.detections
+        if d.pattern_type == PatternType.COMMAND and d.confidence.level in (ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH)
+    ]
+    assert len(command_detections) == 0
+
+
+def test_url_crawler_with_visit_method_not_flagged_as_visitor_pattern() -> None:
+    code = """
+class WebCrawler:
+    def __init__(self) -> None:
+        self.visited_urls: set[str] = set()
+
+    def visit(self, url: str) -> None:
+        if url not in self.visited_urls:
+            self.visited_urls.add(url)
+"""
+    report = _scan_snippet({"crawler.py": code})
+    visitor_detections = [
+        d for d in report.detections
+        if d.pattern_type == PatternType.VISITOR and d.confidence.level in (ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH)
+    ]
+    assert len(visitor_detections) == 0
