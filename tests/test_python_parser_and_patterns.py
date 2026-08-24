@@ -72,3 +72,19 @@ class CanvasContainer(IGraphic):
         or PatternType.COMPOSITE in pattern_types
         or PatternType.OPEN_CLOSED in pattern_types
     )
+
+
+def test_observer_callback_with_old_and_new_state_is_detected() -> None:
+    py_code = """
+def on_value_change(key: str, ref: object, old_state: object, new_state: object) -> None:
+    print(f"Key {key} changed from {old_state} to {new_state}")
+"""
+    adapter = PyParserAdapter()
+    model = adapter.parse_sources({"watcher.py": py_code})
+    detector = PatternDetectorService(rules=get_default_rules())
+    report = detector.detect_all(model)
+
+    obs_detections = [d for d in report.detections if d.pattern_type == PatternType.OBSERVER]
+    assert len(obs_detections) == 1
+    assert obs_detections[0].target_name == "on_value_change"
+

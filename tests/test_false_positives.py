@@ -336,3 +336,34 @@ class AstExtractor(NodeVisitorBase):
     report = _scan_snippet({"detector.py": code})
     lsp_detections = [d for d in report.detections if d.pattern_type == PatternType.LISKOV_SUBSTITUTION]
     assert len(lsp_detections) == 0
+
+
+def test_generator_render_method_not_flagged_as_observer_callback() -> None:
+    code = """
+from typing import List, Optional
+
+class ChordLabel:
+    pass
+
+class Scale:
+    pass
+
+class RenderContext:
+    pass
+
+class NoteInfo:
+    pass
+
+class Generator:
+    def render(self, chords: List[ChordLabel], key: Scale, duration_beats: float, context: Optional[RenderContext] = None) -> List[NoteInfo]:
+        return []
+
+def standalone_generator_render(chords: List[ChordLabel], key: Scale, duration_beats: float, context: Optional[RenderContext] = None) -> List[NoteInfo]:
+    return []
+"""
+    report = _scan_snippet({"generator.py": code})
+    observer_detections = [
+        d for d in report.detections if d.pattern_type == PatternType.OBSERVER
+    ]
+    assert len(observer_detections) == 0
+

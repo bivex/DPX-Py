@@ -122,11 +122,7 @@ class ObserverPatternRule(BasePatternRule):
         results: list[Detection] = []
         for fn in model.all_functions():
             if fn.name not in recorded_targets and any(
-                len(p) == 4
-                and any(
-                    "old" in k.lower() or "state" in k.lower() or "ref" in k.lower() or "key" in k.lower() for k in p
-                )
-                for p in fn.parameter_lists
+                self._has_observer_callback_signature(p) for p in fn.parameter_lists
             ):
                 evidences = [
                     self.evidence(
@@ -146,6 +142,31 @@ class ObserverPatternRule(BasePatternRule):
                     )
                 )
         return results
+
+    def _has_observer_callback_signature(self, params: list[str]) -> bool:
+        """Determines if a 4-arity parameter list matches Clojure/Observer watch callback semantics.
+
+        Standard watcher signature: [key ref old-state new-state].
+        Requires strong transition semantics (both old and new state) or at least 3 distinct
+        observer role markers to avoid false positives on standard 4-arg functions (e.g., render(chords, key, duration, context)).
+        """
+        if len(params) != 4:
+            return False
+        param_names = [p.lower() for p in params]
+
+        has_old = any(any(k in p for k in ("old", "prev", "before", "prior")) for p in param_names)
+        has_new = any(any(k in p for k in ("new", "curr", "next", "after")) for p in param_names)
+        has_ref = any(any(k in p for k in ("ref", "atom", "subject", "source", "observable")) for p in param_names)
+        has_key = any(any(k in p for k in ("key", "watch_key", "observer_key")) for p in param_names)
+        has_state = any("state" in p or "val" in p for p in param_names)
+
+        # 1. Old state and new state present (e.g., [key, ref, old, new], [k, r, old_val, new_val])
+        if has_old and has_new:
+            return True
+
+        # 2. Or at least 3 distinct matching watcher concepts
+        roles_count = sum([has_key, has_ref, (has_old or has_new), has_state])
+        return roles_count >= 3
 
     def _detect_observer_protocols(self, model: CodeModel) -> list[Detection]:
         results: list[Detection] = []
