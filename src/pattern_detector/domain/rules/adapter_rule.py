@@ -94,7 +94,7 @@ class AdapterPatternRule(BasePatternRule):
     def _analyze_adapter_record(self, rec: Any, model: CodeModel) -> Detection | None:
         name_lower = rec.name.lower()
         is_adapter_named = "adapter" in name_lower or "wrapper" in name_lower
-        implemented_protocols = self._find_implemented_protocols(rec, model)
+        implemented_protocols = self.find_implemented_protocols(rec, model)
         adaptee_fields = self._find_adaptee_fields(rec.fields)
 
         if not (is_adapter_named or (implemented_protocols and adaptee_fields)):
@@ -110,15 +110,6 @@ class AdapterPatternRule(BasePatternRule):
             summary=f"Adapter pattern: class '{rec.name}' adapts adaptee to target interface",
             base_score=0.25,
         )
-
-    def _find_implemented_protocols(self, rec: Any, model: CodeModel) -> list[str]:
-        results = []
-        for proto in model.all_protocols():
-            if rec.implements_protocol(proto.name) or any(
-                r.name == rec.name for r in model.find_records_implementing(proto.name)
-            ):
-                results.append(proto.name)
-        return results
 
     def _find_adaptee_fields(self, fields: list[str]) -> list[str]:
         keywords = ("adaptee", "delegate", "target", "source", "wrapped", "impl", "client")

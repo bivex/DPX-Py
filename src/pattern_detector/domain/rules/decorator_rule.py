@@ -140,7 +140,7 @@ class DecoratorPatternRule(BasePatternRule):
         if not is_decorator_named and self._is_excluded_gof_name(name_lower):
             return None
 
-        implemented_protocols = self._find_implemented_protocols(rec, model)
+        implemented_protocols = self.find_implemented_protocols(rec, model)
         component_fields = self._find_decorator_component_fields(rec.fields, implemented_protocols)
 
         if not (implemented_protocols and component_fields):
@@ -174,15 +174,6 @@ class DecoratorPatternRule(BasePatternRule):
             "visitor",
         )
         return any(k in name_lower for k in excluded)
-
-    def _find_implemented_protocols(self, rec: Any, model: CodeModel) -> list[str]:
-        results = []
-        for proto in model.all_protocols():
-            if rec.implements_protocol(proto.name) or any(
-                r.name == rec.name for r in model.find_records_implementing(proto.name)
-            ):
-                results.append(proto.name)
-        return results
 
     def _find_decorator_component_fields(self, fields: list[str], implemented_protocols: list[str]) -> list[str]:
         results = []

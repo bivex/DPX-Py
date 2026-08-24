@@ -233,6 +233,9 @@ class _PythonAstExtractor(ast.NodeVisitor):
                 return True
         return False
 
+    def _is_interface_name(self, class_name: str) -> bool:
+        return class_name.startswith("I") and len(class_name) > 2 and class_name[1].isupper()
+
     def _register_protocol_if_needed(
         self,
         class_name: str,
@@ -242,7 +245,7 @@ class _PythonAstExtractor(ast.NodeVisitor):
         loc: SourceLocation,
         node: ast.ClassDef,
     ) -> None:
-        if is_abstract or (class_name.startswith("I") and len(methods) > 0):
+        if is_abstract or (self._is_interface_name(class_name) and len(methods) > 0):
             signatures = (
                 pure_methods
                 if pure_methods

@@ -75,38 +75,26 @@ class ImmutableRepository(BaseRepository):
         return ["item1", "item2"]
 
 
-# 4. ISP: Fat Monolithic Interface
-class IFatWorker(ABC):
+# 4. ISP: Segregated Role Interfaces
+class IBackendDeveloper(ABC):
     @abstractmethod
     def develop_backend(self) -> None:
-        pass
-
-    @abstractmethod
-    def design_figma_mockups(self) -> None:
-        pass
-
-    @abstractmethod
-    def setup_kubernetes_clusters(self) -> None:
         pass
 
     @abstractmethod
     def optimize_sql_queries(self) -> None:
         pass
 
+
+class IDesigner(ABC):
     @abstractmethod
-    def run_sales_demos(self) -> None:
+    def design_figma_mockups(self) -> None:
         pass
 
-    @abstractmethod
-    def calculate_payroll(self) -> None:
-        pass
 
+class IDevOps(ABC):
     @abstractmethod
-    def interview_candidates(self) -> None:
-        pass
-
-    @abstractmethod
-    def clean_kitchen(self) -> None:
+    def setup_kubernetes_clusters(self) -> None:
         pass
 
 

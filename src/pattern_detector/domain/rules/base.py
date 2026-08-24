@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from pattern_detector.domain.code_model import CodeModel
 from pattern_detector.domain.detection import Detection
@@ -113,6 +113,16 @@ class BasePatternRule(ABC):
             summary=summary,
             evidences=evidences,
         )
+
+    def find_implemented_protocols(self, rec: Any, model: CodeModel) -> list[str]:
+        """Utility to discover all protocols implemented by a record/class."""
+        results: list[str] = []
+        for proto in model.all_protocols():
+            if rec.implements_protocol(proto.name) or any(
+                r.name == rec.name for r in model.find_records_implementing(proto.name)
+            ):
+                results.append(proto.name)
+        return results
 
     @abstractmethod
     def detect(self, model: CodeModel) -> list[Detection]:
