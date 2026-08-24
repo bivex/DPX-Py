@@ -23,9 +23,15 @@ class ParserPort(Protocol):
 class SourceProviderPort(Protocol):
     """Port for fetching source code files from a storage medium (filesystem, git, zip, memory)."""
 
-    def get_sources(self, path: str, extensions: list[str] | None = None) -> dict[str, str]:
+    def get_sources(
+        self,
+        path: str,
+        extensions: list[str] | None = None,
+        exclude_dirs: list[str] | None = None,
+    ) -> dict[str, str]:
         """Read and return map of file_path -> source_content."""
         ...
+
 
 
 class ResultRepositoryPort(Protocol):

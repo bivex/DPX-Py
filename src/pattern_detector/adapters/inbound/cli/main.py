@@ -100,6 +100,14 @@ def scan(
             help="Output token-efficient structured XML/Markdown context optimized for LLMs and AI coding agents.",
         ),
     ] = False,
+    exclude: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--exclude",
+            "-e",
+            help="Directory name(s) or relative paths to exclude from scanning (e.g. -e test -e benchmarks -e examples).",
+        ),
+    ] = None,
     verbose: Annotated[
         bool,
         typer.Option(
@@ -119,8 +127,10 @@ def scan(
         output_html_path=html_output,
         output_markdown_path=markdown_output,
         output_sarif_path=sarif_output,
+        exclude_dirs=exclude or [],
         verbose=verbose,
     )
+
 
     if llm:
         _handle_llm_scan(container, target_path, options, insights)

@@ -21,7 +21,9 @@ class ScanOptions:
     output_html_path: str | None = None
     output_markdown_path: str | None = None
     output_sarif_path: str | None = None
+    exclude_dirs: list[str] = field(default_factory=list)
     verbose: bool = False
+
 
 
 @dataclass

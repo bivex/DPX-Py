@@ -129,7 +129,12 @@ class ScanningService(ScannerPort, DetectorPort, DataFlowPort):
         opts = options or ScanOptions()
 
         # 1. Fetch sources via Outbound Port
-        sources = self._source_provider.get_sources(target_path, extensions=opts.file_extensions)
+        sources = self._source_provider.get_sources(
+            target_path,
+            extensions=opts.file_extensions,
+            exclude_dirs=opts.exclude_dirs,
+        )
+
         if not sources:
             return DetectionReport(
                 project_path=target_path,

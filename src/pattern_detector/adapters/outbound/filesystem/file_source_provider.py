@@ -31,9 +31,15 @@ _IGNORED_DIR_NAMES = frozenset(
 class FileSourceProvider(SourceProviderPort):
     """Fetches source code files from the local filesystem."""
 
-    def get_sources(self, path: str, extensions: list[str] | None = None) -> dict[str, str]:
-        target = Path(path)
+    def get_sources(
+        self,
+        path: str,
+        extensions: list[str] | None = None,
+        exclude_dirs: list[str] | None = None,
+    ) -> dict[str, str]:
+        target = Path(path).resolve()
         valid_exts = set(extensions) if extensions else {".py", ".pyi"}
+        user_excludes = {ex.strip("/\\") for ex in (exclude_dirs or []) if ex.strip("/\\")}
 
         if not target.exists():
             return {}
@@ -41,7 +47,7 @@ class FileSourceProvider(SourceProviderPort):
         if target.is_file():
             return self._read_single_file(target)
 
-        return self._scan_directory(target, valid_exts)
+        return self._scan_directory(target, valid_exts, user_excludes)
 
     def _read_single_file(self, target: Path) -> dict[str, str]:
         try:
@@ -50,13 +56,31 @@ class FileSourceProvider(SourceProviderPort):
         except (OSError, UnicodeDecodeError):
             return {}
 
-    def _scan_directory(self, target: Path, valid_exts: set[str]) -> dict[str, str]:
+    def _scan_directory(
+        self,
+        target: Path,
+        valid_exts: set[str],
+        user_excludes: set[str],
+    ) -> dict[str, str]:
         sources: dict[str, str] = {}
-        target_str = str(target.resolve())
 
-        for root, dirs, files in os.walk(target_str):
-            # In-place directory pruning to avoid traversing ignored subtrees
-            dirs[:] = [d for d in dirs if not d.startswith(".") and d not in _IGNORED_DIR_NAMES]
+        for root, dirs, files in os.walk(str(target)):
+            dirs[:] = [
+                d
+                for d in dirs
+                if not d.startswith(".")
+                and d not in _IGNORED_DIR_NAMES
+                and d not in user_excludes
+                and not any(ex == d or ex in f"{root}/{d}".split(os.sep) for ex in user_excludes)
+            ]
+
+            try:
+                rel_parts = set(Path(root).resolve().relative_to(target).parts)
+                if any(ex in rel_parts for ex in user_excludes):
+                    continue
+            except ValueError:
+                pass
+
             for file_name in files:
                 if file_name.startswith("."):
                     continue
