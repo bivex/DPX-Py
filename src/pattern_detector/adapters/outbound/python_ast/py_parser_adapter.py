@@ -172,17 +172,6 @@ class _PythonAstExtractor(ast.NodeVisitor):
                 is_dynamic=True,
             )
 
-        for f in fields:
-            if f in ("_instance", "instance", "current", "default"):
-                self.states[f"{class_name}.{f}"] = StateModel(
-                    name=f"{class_name}.{f}",
-                    namespace=self.module_name,
-                    location=loc,
-                    kind="atom",
-                    is_once=True,
-                    is_dynamic=True,
-                )
-
         self._current_class = prev_class
 
     def _extract_class_attribute(self, class_name: str, node: ast.Assign | ast.AnnAssign) -> None:
