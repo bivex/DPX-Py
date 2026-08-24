@@ -95,11 +95,11 @@
         <div class="ui inverted segment" style="background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; margin-bottom: 20px; padding: 16px 20px;">
             <div class="ui five mini inverted statistics">
                 <div class="statistic">
-                    <div class="value" style="color: #38bdf8;">39</div>
+                    <div class="value" style="color: #38bdf8;">37</div>
                     <div class="label" style="color: #94a3b8;">Total Detections</div>
                 </div>
                 <div class="statistic">
-                    <div class="value" style="color: #f87171;">3</div>
+                    <div class="value" style="color: #f87171;">1</div>
                     <div class="label" style="color: #94a3b8;">⚠️ Needs Fix / Violations</div>
                 </div>
                 <div class="statistic">
@@ -111,7 +111,7 @@
                     <div class="label" style="color: #94a3b8;">🔷 Design Patterns</div>
                 </div>
                 <div class="statistic">
-                    <div class="value" style="color: #c084fc;">91 files (0.364s)</div>
+                    <div class="value" style="color: #c084fc;">91 files (0.350s)</div>
                     <div class="label" style="color: #94a3b8;">Scan Scope</div>
                 </div>
             </div>
@@ -121,7 +121,7 @@
         <div class="ui mini inverted secondary pointing menu" style="border-bottom: 1px solid #1e293b; margin-bottom: 14px;">
             <a class="active item cat-filter-btn" data-filter="all">
                 <i class="cubes icon"></i> All Categories
-                <div class="ui mini blue label">39</div>
+                <div class="ui mini blue label">37</div>
             </a>
             
                     <a class="item cat-filter-btn" data-filter="creational">
@@ -145,7 +145,7 @@
                     <a class="item cat-filter-btn" data-filter="principle">
                         <i class="shield alternate icon" style="color: #6366f1;"></i>
                         Principles & SOLID
-                        <div class="ui mini teal label">17</div>
+                        <div class="ui mini teal label">15</div>
                     </a>
                     
         </div>
@@ -157,10 +157,10 @@
             </div>
             <div class="ui mini inverted basic buttons" id="statusFilterGroup">
                 <button class="ui button active status-filter-btn" data-status="all">
-                    <i class="eye icon"></i> All Findings <span class="ui mini blue label" id="statusCountAll">39</span>
+                    <i class="eye icon"></i> All Findings <span class="ui mini blue label" id="statusCountAll">37</span>
                 </button>
                 <button class="ui button status-filter-btn" data-status="violation" style="color: #f87171 !important;">
-                    <i class="exclamation triangle icon" style="color: #f87171;"></i> ⚠️ Needs Fix (Violations) <span class="ui mini red label" id="statusCountViolation">3</span>
+                    <i class="exclamation triangle icon" style="color: #f87171;"></i> ⚠️ Needs Fix (Violations) <span class="ui mini red label" id="statusCountViolation">1</span>
                 </button>
                 <button class="ui button status-filter-btn" data-status="adherence" style="color: #4ade80 !important;">
                     <i class="check circle icon" style="color: #4ade80;"></i> ✅ Clean (Adherences) <span class="ui mini green label" id="statusCountAdherence">14</span>
@@ -195,74 +195,6 @@
         <!-- Pattern Cards Container -->
         <div id="cardsContainer">
             
-        <div class="ui fluid inverted card pattern-card" data-pattern="kiss" data-category="principle" data-status="violation" data-target="DataFlowService._get_readers_index" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #f43f5e !important; margin-bottom: 14px;">
-            <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
-                    <span class="ui mini red label" style="font-weight: 700;"><i class="exclamation triangle icon"></i> ACTION REQUIRED (VIOLATION)</span>
-                    <span class="ui mini green label" style="font-weight: 700;">88% [VERY_HIGH]</span>
-                </div>
-                <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#1</span>
-                    <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
-                    <span class="ui mini olive label">KISS</span>
-                    <span style="color: #cbd5e1; font-weight: 600;">kiss_cyclomatic_complexity:</span>
-                    <span style="color: #38bdf8; font-family: monospace; font-weight: 700;">DataFlowService._get_readers_index</span>
-                </div>
-            </div>
-            <div class="content" style="padding: 14px 16px; font-size: 13px;">
-                <div class="ui mini negative message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(244, 63, 94, 0.12); border: 1px solid rgba(244, 63, 94, 0.35); color: #fca5a5;"><i class="warning sign icon"></i> <strong>Anti-Pattern / Violation:</strong> Refactoring recommended to resolve this code smell.</div>
-                <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
-                    <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> KISS Violation (High Complexity): Method &#x27;DataFlowService._get_readers_index&#x27; has 10 control flow branches
-                </div>
-                <div style="margin-bottom: 10px; color: #94a3b8;">
-                    <i class="map marker alternate icon" style="color: #f43f5e;"></i> <strong>Primary Location:</strong> <span class="code-pill">/Volumes/External/Code/DPX-Py/src/pattern_detector/domain/services/data_flow.py:296:5</span>
-                </div>
-                <div class="evidence-section" style="margin-top: 12px;">
-                    <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
-                        <i class="search icon"></i> Evidence Trail (2 heuristics):
-                    </div>
-                    <div class="ui inverted list">
-                        <div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+70%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[KISS_KISS_HIGH_CYCLOMATIC_COMPLEXITY]</span> <span style="color: #e2e8f0;">Method &#x27;DataFlowService._get_readers_index&#x27; has high cyclomatic complexity (10 branch points), violating KISS</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/services/data_flow.py:296:5</span></div><div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+35%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[KISS_KISS_DECOMPOSITION_NEEDED]</span> <span style="color: #e2e8f0;">Complex nested conditionals are difficult to test and maintain; decompose into smaller functions</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/services/data_flow.py:296:5</span></div>
-                    </div>
-                </div>
-                
-            </div>
-        </div>
-        
-        <div class="ui fluid inverted card pattern-card" data-pattern="kiss" data-category="principle" data-status="violation" data-target="DataFlowService._expand_backward_function" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #f43f5e !important; margin-bottom: 14px;">
-            <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
-                    <span class="ui mini red label" style="font-weight: 700;"><i class="exclamation triangle icon"></i> ACTION REQUIRED (VIOLATION)</span>
-                    <span class="ui mini green label" style="font-weight: 700;">88% [VERY_HIGH]</span>
-                </div>
-                <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#2</span>
-                    <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
-                    <span class="ui mini olive label">KISS</span>
-                    <span style="color: #cbd5e1; font-weight: 600;">kiss_cyclomatic_complexity:</span>
-                    <span style="color: #38bdf8; font-family: monospace; font-weight: 700;">DataFlowService._expand_backward_function</span>
-                </div>
-            </div>
-            <div class="content" style="padding: 14px 16px; font-size: 13px;">
-                <div class="ui mini negative message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(244, 63, 94, 0.12); border: 1px solid rgba(244, 63, 94, 0.35); color: #fca5a5;"><i class="warning sign icon"></i> <strong>Anti-Pattern / Violation:</strong> Refactoring recommended to resolve this code smell.</div>
-                <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
-                    <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> KISS Violation (High Complexity): Method &#x27;DataFlowService._expand_backward_function&#x27; has 10 control flow branches
-                </div>
-                <div style="margin-bottom: 10px; color: #94a3b8;">
-                    <i class="map marker alternate icon" style="color: #f43f5e;"></i> <strong>Primary Location:</strong> <span class="code-pill">/Volumes/External/Code/DPX-Py/src/pattern_detector/domain/services/data_flow.py:426:5</span>
-                </div>
-                <div class="evidence-section" style="margin-top: 12px;">
-                    <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
-                        <i class="search icon"></i> Evidence Trail (2 heuristics):
-                    </div>
-                    <div class="ui inverted list">
-                        <div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+70%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[KISS_KISS_HIGH_CYCLOMATIC_COMPLEXITY]</span> <span style="color: #e2e8f0;">Method &#x27;DataFlowService._expand_backward_function&#x27; has high cyclomatic complexity (10 branch points), violating KISS</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/services/data_flow.py:426:5</span></div><div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+35%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[KISS_KISS_DECOMPOSITION_NEEDED]</span> <span style="color: #e2e8f0;">Complex nested conditionals are difficult to test and maintain; decompose into smaller functions</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/services/data_flow.py:426:5</span></div>
-                    </div>
-                </div>
-                
-            </div>
-        </div>
-        
         <div class="ui fluid inverted card pattern-card" data-pattern="strategy" data-category="behavioral" data-status="pattern" data-target="ResultRepositoryPort" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #a855f7 !important; margin-bottom: 14px;">
             <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
                 <div class="right floated" style="display: flex; align-items: center; gap: 6px;">
@@ -270,7 +202,7 @@
                     <span class="ui mini green label" style="font-weight: 700;">87% [VERY_HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#3</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#1</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini violet label">STRATEGY</span>
                     <span style="color: #cbd5e1; font-weight: 600;">protocol_strategy:</span>
@@ -304,7 +236,7 @@
                     <span class="ui mini green label" style="font-weight: 700;">87% [VERY_HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#4</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#2</span>
                     <span class="ui mini green label"><i class="magic icon"></i> CREATIONAL</span>
                     <span class="ui mini green label">BUILDER</span>
                     <span style="color: #cbd5e1; font-weight: 600;">builder_class:</span>
@@ -338,7 +270,7 @@
                     <span class="ui mini green label" style="font-weight: 700;">87% [VERY_HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#5</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#3</span>
                     <span class="ui mini blue label"><i class="cubes icon"></i> STRUCTURAL</span>
                     <span class="ui mini blue label">COMPOSITE</span>
                     <span style="color: #cbd5e1; font-weight: 600;">composite_hierarchy:</span>
@@ -372,7 +304,7 @@
                     <span class="ui mini green label" style="font-weight: 700;">87% [VERY_HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#6</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#4</span>
                     <span class="ui mini blue label"><i class="cubes icon"></i> STRUCTURAL</span>
                     <span class="ui mini blue label">COMPOSITE</span>
                     <span style="color: #cbd5e1; font-weight: 600;">composite_hierarchy:</span>
@@ -406,7 +338,7 @@
                     <span class="ui mini green label" style="font-weight: 700;">87% [VERY_HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#7</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#5</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini violet label">OPEN_CLOSED</span>
                     <span style="color: #cbd5e1; font-weight: 600;">ocp_polymorphic_hierarchy:</span>
@@ -440,7 +372,7 @@
                     <span class="ui mini green label" style="font-weight: 700;">87% [VERY_HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#8</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#6</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini violet label">OPEN_CLOSED</span>
                     <span style="color: #cbd5e1; font-weight: 600;">ocp_polymorphic_hierarchy:</span>
@@ -474,7 +406,7 @@
                     <span class="ui mini green label" style="font-weight: 700;">87% [VERY_HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#9</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#7</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini violet label">OPEN_CLOSED</span>
                     <span style="color: #cbd5e1; font-weight: 600;">ocp_polymorphic_hierarchy:</span>
@@ -508,7 +440,7 @@
                     <span class="ui mini green label" style="font-weight: 700;">87% [VERY_HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#10</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#8</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini violet label">OPEN_CLOSED</span>
                     <span style="color: #cbd5e1; font-weight: 600;">ocp_polymorphic_hierarchy:</span>
@@ -542,7 +474,7 @@
                     <span class="ui mini green label" style="font-weight: 700;">85% [VERY_HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#11</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#9</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini olive label">KISS</span>
                     <span style="color: #cbd5e1; font-weight: 600;">kiss_complexity_parameters:</span>
@@ -576,7 +508,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">83% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#12</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#10</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini violet label">STRATEGY</span>
                     <span style="color: #cbd5e1; font-weight: 600;">protocol_strategy:</span>
@@ -610,7 +542,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">83% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#13</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#11</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini violet label">OPEN_CLOSED</span>
                     <span style="color: #cbd5e1; font-weight: 600;">ocp_polymorphic_hierarchy:</span>
@@ -644,7 +576,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">83% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#14</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#12</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini violet label">OPEN_CLOSED</span>
                     <span style="color: #cbd5e1; font-weight: 600;">ocp_polymorphic_hierarchy:</span>
@@ -678,7 +610,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">83% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#15</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#13</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini violet label">OPEN_CLOSED</span>
                     <span style="color: #cbd5e1; font-weight: 600;">ocp_polymorphic_hierarchy:</span>
@@ -712,7 +644,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">80% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#16</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#14</span>
                     <span class="ui mini green label"><i class="magic icon"></i> CREATIONAL</span>
                     <span class="ui mini teal label">FACTORY_METHOD</span>
                     <span style="color: #cbd5e1; font-weight: 600;">factory_method_protocol:</span>
@@ -746,7 +678,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">79% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#17</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#15</span>
                     <span class="ui mini green label"><i class="magic icon"></i> CREATIONAL</span>
                     <span class="ui mini green label">SINGLETON</span>
                     <span style="color: #cbd5e1; font-weight: 600;">singleton_class:</span>
@@ -780,7 +712,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">77% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#18</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#16</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini pink label">OBSERVER</span>
                     <span style="color: #cbd5e1; font-weight: 600;">subject_class:</span>
@@ -814,7 +746,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">77% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#19</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#17</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini violet label">STRATEGY</span>
                     <span style="color: #cbd5e1; font-weight: 600;">protocol_strategy:</span>
@@ -848,7 +780,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">77% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#20</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#18</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini violet label">STRATEGY</span>
                     <span style="color: #cbd5e1; font-weight: 600;">protocol_strategy:</span>
@@ -882,7 +814,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">77% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#21</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#19</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini purple label">CHAIN_OF_RESPONSIBILITY</span>
                     <span style="color: #cbd5e1; font-weight: 600;">chain_handler_class:</span>
@@ -916,7 +848,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">77% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#22</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#20</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini purple label">CHAIN_OF_RESPONSIBILITY</span>
                     <span style="color: #cbd5e1; font-weight: 600;">chain_handler_class:</span>
@@ -950,7 +882,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">77% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#23</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#21</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini purple label">CHAIN_OF_RESPONSIBILITY</span>
                     <span style="color: #cbd5e1; font-weight: 600;">chain_handler_class:</span>
@@ -984,7 +916,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">77% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#24</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#22</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini purple label">CHAIN_OF_RESPONSIBILITY</span>
                     <span style="color: #cbd5e1; font-weight: 600;">chain_handler_class:</span>
@@ -1018,7 +950,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">77% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#25</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#23</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini purple label">CHAIN_OF_RESPONSIBILITY</span>
                     <span style="color: #cbd5e1; font-weight: 600;">chain_handler_class:</span>
@@ -1052,7 +984,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#26</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#24</span>
                     <span class="ui mini blue label"><i class="cubes icon"></i> STRUCTURAL</span>
                     <span class="ui mini teal label">ADAPTER</span>
                     <span style="color: #cbd5e1; font-weight: 600;">adapter_class:</span>
@@ -1086,7 +1018,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#27</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#25</span>
                     <span class="ui mini blue label"><i class="cubes icon"></i> STRUCTURAL</span>
                     <span class="ui mini teal label">FACADE</span>
                     <span style="color: #cbd5e1; font-weight: 600;">facade_class:</span>
@@ -1120,7 +1052,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#28</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#26</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini blue label">INTERFACE_SEGREGATION</span>
                     <span style="color: #cbd5e1; font-weight: 600;">segregated_role_interface:</span>
@@ -1154,7 +1086,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#29</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#27</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini blue label">INTERFACE_SEGREGATION</span>
                     <span style="color: #cbd5e1; font-weight: 600;">segregated_role_interface:</span>
@@ -1188,7 +1120,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#30</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#28</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini blue label">INTERFACE_SEGREGATION</span>
                     <span style="color: #cbd5e1; font-weight: 600;">segregated_role_interface:</span>
@@ -1222,7 +1154,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#31</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#29</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini blue label">INTERFACE_SEGREGATION</span>
                     <span style="color: #cbd5e1; font-weight: 600;">segregated_role_interface:</span>
@@ -1256,7 +1188,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#32</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#30</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini blue label">INTERFACE_SEGREGATION</span>
                     <span style="color: #cbd5e1; font-weight: 600;">segregated_role_interface:</span>
@@ -1290,7 +1222,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#33</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#31</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini blue label">INTERFACE_SEGREGATION</span>
                     <span style="color: #cbd5e1; font-weight: 600;">segregated_role_interface:</span>
@@ -1324,7 +1256,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#34</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#32</span>
                     <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                     <span class="ui mini blue label">INTERFACE_SEGREGATION</span>
                     <span style="color: #cbd5e1; font-weight: 600;">segregated_role_interface:</span>
@@ -1358,7 +1290,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">74% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#35</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#33</span>
                     <span class="ui mini green label"><i class="magic icon"></i> CREATIONAL</span>
                     <span class="ui mini green label">SINGLETON</span>
                     <span style="color: #cbd5e1; font-weight: 600;">static_singleton_state:</span>
@@ -1392,7 +1324,7 @@
                     <span class="ui mini teal label" style="font-weight: 700;">71% [HIGH]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#36</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#34</span>
                     <span class="ui mini blue label"><i class="cubes icon"></i> STRUCTURAL</span>
                     <span class="ui mini teal label">ADAPTER</span>
                     <span style="color: #cbd5e1; font-weight: 600;">adapter_class:</span>
@@ -1426,7 +1358,7 @@
                     <span class="ui mini orange label" style="font-weight: 700;">68% [MEDIUM]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#37</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#35</span>
                     <span class="ui mini green label"><i class="magic icon"></i> CREATIONAL</span>
                     <span class="ui mini green label">SINGLETON</span>
                     <span style="color: #cbd5e1; font-weight: 600;">singleton_class:</span>
@@ -1460,7 +1392,7 @@
                     <span class="ui mini orange label" style="font-weight: 700;">68% [MEDIUM]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#38</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#36</span>
                     <span class="ui mini green label"><i class="magic icon"></i> CREATIONAL</span>
                     <span class="ui mini green label">SINGLETON</span>
                     <span style="color: #cbd5e1; font-weight: 600;">singleton_class:</span>
@@ -1494,7 +1426,7 @@
                     <span class="ui mini orange label" style="font-weight: 700;">57% [MEDIUM]</span>
                 </div>
                 <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#39</span>
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#37</span>
                     <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                     <span class="ui mini pink label">OBSERVER</span>
                     <span style="color: #cbd5e1; font-weight: 600;">subject_class:</span>
