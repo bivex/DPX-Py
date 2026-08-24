@@ -161,7 +161,7 @@ class DataFlowHtmlFormatter:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{html.escape(page_title)} - DPX-Cpp Data Flow</title>
+    <title>{html.escape(page_title)} - DPX-Py Data Flow</title>
     <!-- Vis.js Network CDN -->
     <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
     <style>
@@ -489,7 +489,7 @@ class DataFlowHtmlFormatter:
 <body>
     <header>
         <div class="logo-area">
-            <span class="logo-badge">DPX-Cpp</span>
+            <span class="logo-badge">DPX-Py</span>
             <span class="title">{html.escape(page_title)}</span>
             <span class="direction-pill">Direction: {direction}</span>
         </div>
