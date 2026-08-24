@@ -9,6 +9,7 @@ from typing import Any
 
 from pattern_detector.domain.code_model import (
     CodeModel,
+    ExpressionFlowStep,
     FunctionModel,
     MethodSignature,
     NamespaceModel,
@@ -311,6 +312,7 @@ class _PythonAstExtractor(ast.NodeVisitor):
 
         calls, r_vars, w_vars, m_vars = self._analyze_body(node)
         self._update_class_init_fields(class_name, fn_name, w_vars)
+        flow_steps = self._extract_flow_steps(node, qualified_name)
 
         doc = ast.get_docstring(node) or ""
         body_stmts = "\n".join(ast.unparse(s) for s in node.body) if hasattr(ast, "unparse") else ""
@@ -323,6 +325,8 @@ class _PythonAstExtractor(ast.NodeVisitor):
             parameter_lists=[params],
             body_text=body_stmts,
             calls=sorted(set(calls)),
+            invocations=self._extract_function_invocations(node, qualified_name),
+            flow_steps=flow_steps,
             reads_variables=sorted(set(r_vars)),
             writes_variables=sorted(set(w_vars)),
             modifies_variables=sorted(set(m_vars)),
@@ -375,6 +379,7 @@ class _PythonAstExtractor(ast.NodeVisitor):
             params.append(f"**{node.args.kwarg.arg}")
 
         calls, r_vars, w_vars, m_vars = self._analyze_body(node)
+        flow_steps = self._extract_flow_steps(node, fn_name)
         doc = ast.get_docstring(node) or ""
         body_stmts = "\n".join(ast.unparse(s) for s in node.body) if hasattr(ast, "unparse") else ""
         decorators = [self._extract_name(d) for d in node.decorator_list]
@@ -386,6 +391,8 @@ class _PythonAstExtractor(ast.NodeVisitor):
             parameter_lists=[params],
             body_text=body_stmts,
             calls=sorted(set(calls)),
+            invocations=self._extract_function_invocations(node, fn_name),
+            flow_steps=flow_steps,
             reads_variables=sorted(set(r_vars)),
             writes_variables=sorted(set(w_vars)),
             modifies_variables=sorted(set(m_vars)),
@@ -394,6 +401,148 @@ class _PythonAstExtractor(ast.NodeVisitor):
             is_private=fn_name.startswith("_") and not fn_name.startswith("__"),
         )
         self.functions[fn_name] = fn_model
+
+    def _extract_function_invocations(
+        self, func_node: ast.FunctionDef | ast.AsyncFunctionDef, caller_name: str
+    ) -> list[Any]:
+        from pattern_detector.domain.code_model import FunctionInvocation
+
+        invocations: list[FunctionInvocation] = []
+        for n in ast.walk(func_node):
+            if isinstance(n, ast.Call):
+                t_name = self._extract_name(n.func)
+                if t_name and t_name not in _PYTHON_BUILTINS_AND_KEYWORDS:
+                    snippets = [ast.unparse(a) if hasattr(ast, "unparse") else self._extract_name(a) for a in n.args]
+                    invocations.append(
+                        FunctionInvocation(
+                            caller_name=caller_name,
+                            target_name=t_name,
+                            location=self._get_loc(n),
+                            argument_count=len(n.args),
+                            argument_snippets=snippets,
+                        )
+                    )
+        return invocations
+
+    def _extract_flow_steps(
+        self, func_node: ast.FunctionDef | ast.AsyncFunctionDef, func_name: str
+    ) -> list[ExpressionFlowStep]:
+        steps: list[ExpressionFlowStep] = []
+        # 1. Parameters
+        for arg in func_node.args.args:
+            if arg.arg not in ("self", "cls"):
+                steps.append(
+                    ExpressionFlowStep(
+                        source_expr=f"param:{arg.arg}",
+                        target_expr=arg.arg,
+                        step_kind="param",
+                        location=self._get_loc(arg),
+                    )
+                )
+
+        # 2. Walk statements in body
+        for stmt in ast.walk(func_node):
+            if isinstance(stmt, ast.Assign):
+                self._extract_assign_flow_step(stmt, steps)
+            elif isinstance(stmt, ast.AnnAssign) and stmt.value:
+                self._extract_ann_assign_flow_step(stmt, steps)
+            elif isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Call):
+                self._extract_call_expr_flow_step(stmt.value, steps)
+            elif isinstance(stmt, ast.Return) and stmt.value:
+                self._extract_return_flow_step(stmt, func_name, steps)
+
+        return steps
+
+    def _extract_assign_flow_step(self, node: ast.Assign, steps: list[ExpressionFlowStep]) -> None:
+        val_expr = ast.unparse(node.value) if hasattr(ast, "unparse") else self._extract_name(node.value)
+        loc = self._get_loc(node)
+        step_kind = "assign"
+        call_target = None
+        call_args: list[str] = []
+
+        if isinstance(node.value, ast.Call):
+            step_kind = "call"
+            call_target = self._extract_name(node.value.func)
+            call_args = [ast.unparse(a) if hasattr(ast, "unparse") else self._extract_name(a) for a in node.value.args]
+        elif isinstance(node.value, ast.Subscript):
+            step_kind = "subscript"
+        elif isinstance(node.value, ast.Attribute):
+            step_kind = "attribute"
+
+        for target in node.targets:
+            tgt_expr = ast.unparse(target) if hasattr(ast, "unparse") else self._extract_name(target)
+            if tgt_expr:
+                steps.append(
+                    ExpressionFlowStep(
+                        source_expr=val_expr or "unknown",
+                        target_expr=tgt_expr,
+                        step_kind=step_kind,
+                        location=loc,
+                        call_target=call_target,
+                        call_args=call_args,
+                    )
+                )
+
+    def _extract_ann_assign_flow_step(self, node: ast.AnnAssign, steps: list[ExpressionFlowStep]) -> None:
+        if not node.value:
+            return
+        val_expr = ast.unparse(node.value) if hasattr(ast, "unparse") else self._extract_name(node.value)
+        tgt_expr = ast.unparse(node.target) if hasattr(ast, "unparse") else self._extract_name(node.target)
+        loc = self._get_loc(node)
+        step_kind = "assign"
+        call_target = None
+        call_args: list[str] = []
+
+        if isinstance(node.value, ast.Call):
+            step_kind = "call"
+            call_target = self._extract_name(node.value.func)
+            call_args = [ast.unparse(a) if hasattr(ast, "unparse") else self._extract_name(a) for a in node.value.args]
+        elif isinstance(node.value, ast.Subscript):
+            step_kind = "subscript"
+        elif isinstance(node.value, ast.Attribute):
+            step_kind = "attribute"
+
+        if tgt_expr:
+            steps.append(
+                ExpressionFlowStep(
+                    source_expr=val_expr or "unknown",
+                    target_expr=tgt_expr,
+                    step_kind=step_kind,
+                    location=loc,
+                    call_target=call_target,
+                    call_args=call_args,
+                )
+            )
+
+    def _extract_call_expr_flow_step(self, node: ast.Call, steps: list[ExpressionFlowStep]) -> None:
+        c_name = self._extract_name(node.func)
+        loc = self._get_loc(node)
+        args = [ast.unparse(a) if hasattr(ast, "unparse") else self._extract_name(a) for a in node.args]
+        if c_name:
+            steps.append(
+                ExpressionFlowStep(
+                    source_expr=", ".join(args) if args else "()",
+                    target_expr=c_name,
+                    step_kind="call",
+                    location=loc,
+                    call_target=c_name,
+                    call_args=args,
+                )
+            )
+
+    def _extract_return_flow_step(self, node: ast.Return, func_name: str, steps: list[ExpressionFlowStep]) -> None:
+        if not node.value:
+            return
+        val_expr = ast.unparse(node.value) if hasattr(ast, "unparse") else self._extract_name(node.value)
+        loc = self._get_loc(node)
+        steps.append(
+            ExpressionFlowStep(
+                source_expr=val_expr or "None",
+                target_expr=f"{func_name}.return",
+                step_kind="return",
+                location=loc,
+            )
+        )
 
     def visit_Assign(self, node: ast.Assign) -> None:
         if self._current_class is None:

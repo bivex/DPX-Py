@@ -27,15 +27,22 @@ class DataFlowVariant(str, Enum):
 
 
 class NodeKind(str, Enum):
-    """Kind of graph node."""
+    """Kind of graph node in value and call flow graphs."""
 
     VARIABLE = "variable"
+    SYMBOL = "symbol"
+    ATTRIBUTE = "attribute"
+    SUBSCRIPT = "subscript"
+    CALL = "call"
+    PARAMETER = "parameter"
+    RETURN = "return"
     FUNCTION = "function"
+    LITERAL = "literal"
 
 
 @dataclass
 class DataFlowNode:
-    """Represents a node (variable or function) in the data flow graph."""
+    """Represents a node (variable, attribute, subscript, call, or function) in the data flow graph."""
 
     id: str
     name: str
@@ -44,6 +51,13 @@ class DataFlowNode:
     file_path: str = ""
     line: int = 1
     is_root: bool = False
+    access_path: str = ""
+    parent_symbol: str = ""
+    expression_type: str = ""
+    is_source: bool = False
+    is_sink: bool = False
+    taint_category: str | None = None
+    taint_severity: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
@@ -53,7 +67,7 @@ class DataFlowEdge:
 
     from_id: str
     to_id: str
-    kind: str  # "READS", "WRITES", "MODIFIES"
+    kind: str  # "READS", "WRITES", "MODIFIES", "FLOWS_TO", "CALLS", "PARAM_BIND", "RETURNS_TO"
     location: SourceLocation | None = None
 
 
@@ -88,6 +102,14 @@ class DataFlowGraph:
                 file_path=location.file_path if location else "",
                 line=location.line if location else 1,
                 is_root=is_root,
+                access_path=str(kwargs.get("access_path", "")),
+                parent_symbol=str(kwargs.get("parent_symbol", "")),
+                expression_type=str(kwargs.get("expression_type", "")),
+                is_source=bool(kwargs.get("is_source", False)),
+                is_sink=bool(kwargs.get("is_sink", False)),
+                taint_category=kwargs.get("taint_category"),
+                taint_severity=kwargs.get("taint_severity"),
+                metadata=kwargs.get("metadata", {}),
             )
         return self.nodes[node_id]
 
@@ -103,7 +125,12 @@ class DataFlowGraph:
             f"graph {direction_layout}",
             "    %% Styles",
             "    classDef rootNode fill:#0284c7,stroke:#38bdf8,stroke-width:3px,color:#ffffff,font-weight:bold;",
+            "    classDef sourceNode fill:#78350f,stroke:#f59e0b,stroke-width:2px,color:#fef3c7;",
+            "    classDef sinkNode fill:#881337,stroke:#f43f5e,stroke-width:2px,color:#ffe4e6;",
             "    classDef varNode fill:#1e293b,stroke:#38bdf8,stroke-width:2px,color:#f8fafc;",
+            "    classDef attrNode fill:#134e4a,stroke:#2dd4bf,stroke-width:2px,color:#f0fdfa;",
+            "    classDef subNode fill:#1e3a8a,stroke:#60a5fa,stroke-width:2px,color:#eff6ff;",
+            "    classDef callNode fill:#4c1d95,stroke:#a78bfa,stroke-width:2px,color:#f5f3ff;",
             "    classDef fnNode fill:#0f172a,stroke:#c084fc,stroke-width:2px,color:#f8fafc;",
         ]
 
@@ -135,7 +162,22 @@ class DataFlowGraph:
 
     def _format_mermaid_node(self, node: DataFlowNode, indent: str) -> str:
         node_esc = node.name.replace('"', '\\"')
-        icon = "🔷" if node.kind == NodeKind.VARIABLE else "⚙️"
+        icon_map = {
+            NodeKind.VARIABLE: "🔷",
+            NodeKind.SYMBOL: "🔷",
+            NodeKind.ATTRIBUTE: "🏷️",
+            NodeKind.SUBSCRIPT: "📦",
+            NodeKind.CALL: "⚡",
+            NodeKind.PARAMETER: "📥",
+            NodeKind.RETURN: "📤",
+            NodeKind.FUNCTION: "⚙️",
+            NodeKind.LITERAL: "📄",
+        }
+        icon = icon_map.get(node.kind, "🔷")
+        if node.is_source:
+            icon = "🚨"
+        elif node.is_sink:
+            icon = "🎯"
         return f'{indent}{node.id}["{icon} {node_esc}"]'
 
     def _render_mermaid_edges(self) -> list[str]:
@@ -149,7 +191,22 @@ class DataFlowGraph:
     def _render_mermaid_classes(self) -> list[str]:
         lines: list[str] = []
         for node in self.nodes.values():
-            style_cls = "rootNode" if node.is_root else ("varNode" if node.kind == NodeKind.VARIABLE else "fnNode")
+            if node.is_root:
+                style_cls = "rootNode"
+            elif node.is_source:
+                style_cls = "sourceNode"
+            elif node.is_sink:
+                style_cls = "sinkNode"
+            elif node.kind in (NodeKind.VARIABLE, NodeKind.SYMBOL):
+                style_cls = "varNode"
+            elif node.kind == NodeKind.ATTRIBUTE:
+                style_cls = "attrNode"
+            elif node.kind == NodeKind.SUBSCRIPT:
+                style_cls = "subNode"
+            elif node.kind == NodeKind.CALL:
+                style_cls = "callNode"
+            else:
+                style_cls = "fnNode"
             lines.append(f"    class {node.id} {style_cls};")
         return lines
 

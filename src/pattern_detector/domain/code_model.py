@@ -47,6 +47,18 @@ class FunctionInvocation:
 
 
 @dataclass
+class ExpressionFlowStep:
+    """Represents a fine-grained value/expression flow step inside a function."""
+
+    source_expr: str  # e.g. 'request.json["user_id"]', 'repository.find(user_id)', 'user.email'
+    target_expr: str  # e.g. 'user_id', 'user', 'email'
+    step_kind: str  # 'assign', 'attribute', 'subscript', 'call', 'return', 'param'
+    location: SourceLocation
+    call_target: str | None = None  # e.g. 'repository.find' if step_kind == 'call'
+    call_args: list[str] = field(default_factory=list)  # e.g. ['user_id']
+
+
+@dataclass
 class FunctionModel(NamedCodeEntity):
     """Represents a function, method, multimethod implementation, or macro."""
 
@@ -63,6 +75,7 @@ class FunctionModel(NamedCodeEntity):
     body_text: str = ""
     calls: list[str] = field(default_factory=list)
     invocations: list[FunctionInvocation] = field(default_factory=list)
+    flow_steps: list[ExpressionFlowStep] = field(default_factory=list)
     returns_closure: bool = False
     instantiates_types: list[str] = field(default_factory=list)
     reads_variables: list[str] = field(default_factory=list)
@@ -276,6 +289,17 @@ class CodeModel:
             for p_name, proto in ns.protocols.items():
                 if p_name == norm or proto.name == norm:
                     return proto
+        return None
+
+    def find_function(self, name: str) -> FunctionModel | None:
+        """Look up a function by short name, qualified name, or partial match."""
+        norm = name.split("/")[-1]
+        for ns in self.namespaces.values():
+            if name in ns.functions:
+                return ns.functions[name]
+            for fn_name, fn in ns.functions.items():
+                if fn_name == norm or fn.name == norm or fn.name.endswith(f".{norm}"):
+                    return fn
         return None
 
     def find_records_implementing(self, protocol_name: str) -> list[RecordModel]:
