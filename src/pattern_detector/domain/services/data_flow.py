@@ -250,25 +250,37 @@ class DataFlowService:
         from pattern_detector.adapters.outbound.python_ast.py_parser_adapter import _PYTHON_BUILTINS_AND_KEYWORDS
 
         vars_map: dict[str, Any] = {}
+        self._collect_state_variables(model, file_filter, _PYTHON_BUILTINS_AND_KEYWORDS, vars_map)
+        self._collect_record_field_variables(model, file_filter, _PYTHON_BUILTINS_AND_KEYWORDS, vars_map)
+        self._collect_function_io_variables(model, file_filter, _PYTHON_BUILTINS_AND_KEYWORDS, vars_map)
+        return vars_map
+
+    def _collect_state_variables(
+        self, model: CodeModel, file_filter: str | None, builtins: frozenset[str], vars_map: dict[str, Any]
+    ) -> None:
         for s in model.all_states():
-            if self._is_valid_var(s.name, s.location, file_filter, _PYTHON_BUILTINS_AND_KEYWORDS):
+            if self._is_valid_var(s.name, s.location, file_filter, builtins):
                 vars_map[s.name] = s.location
 
+    def _collect_record_field_variables(
+        self, model: CodeModel, file_filter: str | None, builtins: frozenset[str], vars_map: dict[str, Any]
+    ) -> None:
         for r in model.all_records():
             if file_filter and r.location and file_filter not in r.location.file_path:
                 continue
             for f in r.fields:
-                if f not in vars_map and self._is_valid_var(f, r.location, file_filter, _PYTHON_BUILTINS_AND_KEYWORDS):
+                if f not in vars_map and self._is_valid_var(f, r.location, file_filter, builtins):
                     vars_map[f] = r.location
 
+    def _collect_function_io_variables(
+        self, model: CodeModel, file_filter: str | None, builtins: frozenset[str], vars_map: dict[str, Any]
+    ) -> None:
         for fn in model.all_functions():
             if file_filter and fn.location and file_filter not in fn.location.file_path:
                 continue
             for v in fn.reads_variables + fn.writes_variables + fn.modifies_variables:
-                if v not in vars_map and self._is_valid_var(v, fn.location, file_filter, _PYTHON_BUILTINS_AND_KEYWORDS):
+                if v not in vars_map and self._is_valid_var(v, fn.location, file_filter, builtins):
                     vars_map[v] = fn.location
-
-        return vars_map
 
     def _is_valid_var(self, name: str, loc: Any, file_filter: str | None, builtins: frozenset[str]) -> bool:
         if not name or len(name) < 2 or name in builtins or not (name[0].isalpha() or name[0] == "_"):
@@ -280,7 +292,7 @@ class DataFlowService:
         writers = [e.from_id.replace("fn_", "") for e in graph.edges if e.to_id == var_name and e.kind in ("WRITES", "MODIFIES")]
 
         reach = len(graph.nodes) - 1
-        impact = "HIGH" if reach >= 15 or len(readers) >= 5 else ("MEDIUM" if reach >= 4 or len(readers) >= 2 else "LOW")
+        impact = self._calculate_impact_level(reach, len(readers))
 
         return VariableFlowSummary(
             name=var_name,
@@ -293,3 +305,10 @@ class DataFlowService:
             impact_level=impact,
             graph=graph,
         )
+
+    def _calculate_impact_level(self, reach: int, readers_count: int) -> str:
+        if reach >= 15 or readers_count >= 5:
+            return "HIGH"
+        if reach >= 4 or readers_count >= 2:
+            return "MEDIUM"
+        return "LOW"
