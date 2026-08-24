@@ -53,88 +53,45 @@ class PatternDetectorService:
 
     def _disambiguate_detections(self, detections: list[Detection]) -> list[Detection]:
         """Disambiguates and deduplicates overlapping pattern detections based on structural specificity."""
-        # 1. Identify specific claims on target entities
         claimed_targets: dict[str, set[PatternType]] = {}
         for d in detections:
             claimed_targets.setdefault(d.target_name, set()).add(d.pattern_type)
 
-        NON_STRATEGY_KEYWORDS = (
-            "product",
-            "element",
-            "subject",
-            "prototype",
-            "flyweight",
-            "visitor",
-            "observer",
-            "listener",
-            "state",
-            "command",
-            "builder",
-            "factory",
-            "creator",
-            "mediator",
-            "iterator",
-            "handler",
-            "component",
-            "implementor",
-            "adapter",
-            "proxy",
-            "decorator",
-            "memento",
+        return [d for d in detections if self._should_keep_detection(d, claimed_targets)]
+
+    def _should_keep_detection(self, d: Detection, claimed_targets: dict[str, set[PatternType]]) -> bool:
+        target_lower = d.target_name.lower()
+        other_patterns = claimed_targets.get(d.target_name, set()) - {d.pattern_type}
+
+        if d.pattern_type == PatternType.STRATEGY and self._is_dominated_strategy(other_patterns, target_lower):
+            return False
+        return not self._is_conflicting_factory_or_command(d.pattern_type, other_patterns, target_lower)
+
+    def _is_dominated_strategy(self, other_patterns: set[PatternType], target_lower: str) -> bool:
+        competing = (
+            PatternType.COMPOSITE, PatternType.VISITOR, PatternType.OBSERVER, PatternType.COMMAND,
+            PatternType.STATE, PatternType.BRIDGE, PatternType.BUILDER, PatternType.ABSTRACT_FACTORY,
+            PatternType.FACTORY_METHOD, PatternType.PROTOTYPE, PatternType.FLYWEIGHT, PatternType.MEDIATOR,
+            PatternType.ITERATOR, PatternType.CHAIN_OF_RESPONSIBILITY, PatternType.ADAPTER, PatternType.PROXY,
+            PatternType.DECORATOR,
         )
+        if any(p in other_patterns for p in competing):
+            return True
 
-        filtered: list[Detection] = []
-        for d in detections:
-            target = d.target_name
-            target_lower = target.lower()
-            other_patterns = claimed_targets.get(target, set()) - {d.pattern_type}
+        non_strategy = (
+            "product", "element", "subject", "prototype", "flyweight", "visitor", "observer",
+            "listener", "state", "command", "builder", "factory", "creator", "mediator",
+            "iterator", "handler", "component", "implementor", "adapter", "proxy", "decorator", "memento",
+        )
+        is_other_role = any(k in target_lower for k in non_strategy)
+        is_explicit_strategy = any(k in target_lower for k in ("strategy", "algorithm", "policy"))
+        return is_other_role and not is_explicit_strategy
 
-            # Strategy deduplication: if target is claimed by a more specific structural/behavioral pattern
-            if d.pattern_type == PatternType.STRATEGY:
-                if any(
-                    p in other_patterns
-                    for p in (
-                        PatternType.COMPOSITE,
-                        PatternType.VISITOR,
-                        PatternType.OBSERVER,
-                        PatternType.COMMAND,
-                        PatternType.STATE,
-                        PatternType.BRIDGE,
-                        PatternType.BUILDER,
-                        PatternType.ABSTRACT_FACTORY,
-                        PatternType.FACTORY_METHOD,
-                        PatternType.PROTOTYPE,
-                        PatternType.FLYWEIGHT,
-                        PatternType.MEDIATOR,
-                        PatternType.ITERATOR,
-                        PatternType.CHAIN_OF_RESPONSIBILITY,
-                        PatternType.ADAPTER,
-                        PatternType.PROXY,
-                        PatternType.DECORATOR,
-                    )
-                ):
-                    continue
-
-                # Also prune generic Strategy if target entity belongs to another known GoF role
-                if any(k in target_lower for k in NON_STRATEGY_KEYWORDS) and not any(
-                    k in target_lower for k in ("strategy", "algorithm", "policy")
-                ):
-                    continue
-
-            # Abstract Factory vs Builder / Factory Method deduplication
-            if d.pattern_type == PatternType.ABSTRACT_FACTORY and ("builder" in target_lower or target_lower == "creator"):
-                continue
-
-            # Factory Method deduplication against Abstract Factory
-            if d.pattern_type == PatternType.FACTORY_METHOD and (
-                PatternType.ABSTRACT_FACTORY in other_patterns or "abstract" in target_lower
-            ):
-                continue
-
-            # Command vs Bridge Abstraction / Composite deduplication
-            if d.pattern_type == PatternType.COMMAND and ("abstraction" in target_lower or "component" in target_lower):
-                continue
-
-            filtered.append(d)
-
-        return filtered
+    def _is_conflicting_factory_or_command(
+        self, p_type: PatternType, other_patterns: set[PatternType], target_lower: str
+    ) -> bool:
+        if p_type == PatternType.ABSTRACT_FACTORY and ("builder" in target_lower or target_lower == "creator"):
+            return True
+        if p_type == PatternType.FACTORY_METHOD and (PatternType.ABSTRACT_FACTORY in other_patterns or "abstract" in target_lower):
+            return True
+        return p_type == PatternType.COMMAND and ("abstraction" in target_lower or "component" in target_lower)

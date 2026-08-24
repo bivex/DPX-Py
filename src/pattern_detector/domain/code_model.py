@@ -201,18 +201,16 @@ class CodeModel:
     def all_file_paths(self) -> set[str]:
         files: set[str] = set()
         for ns in self.namespaces.values():
-            if ns.file_path:
-                files.add(ns.file_path)
-            for r in ns.records.values():
-                if r.location and r.location.file_path:
-                    files.add(r.location.file_path)
-            for p in ns.protocols.values():
-                if p.location and p.location.file_path:
-                    files.add(p.location.file_path)
-            for f in ns.functions.values():
-                if f.location and f.location.file_path:
-                    files.add(f.location.file_path)
+            self._collect_ns_files(ns, files)
         return files
+
+    def _collect_ns_files(self, ns: NamespaceModel, files: set[str]) -> None:
+        if ns.file_path:
+            files.add(ns.file_path)
+        items = list(ns.records.values()) + list(ns.protocols.values()) + list(ns.functions.values())
+        for item in items:
+            if item.location and item.location.file_path:
+                files.add(item.location.file_path)
 
     def all_functions(self) -> list[FunctionModel]:
         if self._all_functions_cache is not None:
@@ -221,31 +219,28 @@ class CodeModel:
         res: list[FunctionModel] = []
         seen: set[tuple[str, str, int]] = set()
         for ns in self.namespaces.values():
-            for fn in ns.functions.values():
-                key = (fn.name, fn.location.file_path, fn.location.line)
-                if key not in seen:
-                    seen.add(key)
-                    res.append(fn)
-            for mm_methods in ns.multimethods.values():
-                for fn in mm_methods:
-                    key = (fn.name, fn.location.file_path, fn.location.line)
-                    if key not in seen:
-                        seen.add(key)
-                        res.append(fn)
-            for rec in ns.records.values():
-                for fn in rec.methods:
-                    key = (fn.name, fn.location.file_path, fn.location.line)
-                    if key not in seen:
-                        seen.add(key)
-                        res.append(fn)
-            for ext in ns.extensions:
-                for fn in ext.methods:
-                    key = (fn.name, fn.location.file_path, fn.location.line)
-                    if key not in seen:
-                        seen.add(key)
-                        res.append(fn)
+            self._collect_ns_functions(ns, res, seen)
         self._all_functions_cache = res
         return res
+
+    def _collect_ns_functions(
+        self, ns: NamespaceModel, res: list[FunctionModel], seen: set[tuple[str, str, int]]
+    ) -> None:
+        candidates = list(ns.functions.values())
+        for mm_methods in ns.multimethods.values():
+            candidates.extend(mm_methods)
+        for rec in ns.records.values():
+            candidates.extend(rec.methods)
+        for ext in ns.extensions:
+            candidates.extend(ext.methods)
+
+        for fn in candidates:
+            loc_path = fn.location.file_path if fn.location else ""
+            loc_line = fn.location.line if fn.location else 1
+            key = (fn.name, loc_path, loc_line)
+            if key not in seen:
+                seen.add(key)
+                res.append(fn)
 
     def all_protocols(self) -> list[ProtocolModel]:
         if self._all_protocols_cache is not None:
@@ -299,12 +294,14 @@ class CodeModel:
             for rec in self.all_records():
                 for proto in rec.implemented_protocols:
                     self._implements_cache.setdefault(proto, []).append(rec)
-                    norm = proto.split("/")[-1]
-                    if norm != proto:
-                        self._implements_cache.setdefault(norm, []).append(rec)
-
-        norm_target = protocol_name.split("/")[-1]
-        return self._implements_cache.get(protocol_name, self._implements_cache.get(norm_target, []))
+        norm = protocol_name.split("/")[-1]
+        matches: list[RecordModel] = []
+        for rec in self.all_records():
+            for p in rec.implemented_protocols:
+                if p == protocol_name or p.split("/")[-1] == norm:
+                    matches.append(rec)
+                    break
+        return matches
 
     def find_callers_of(self, fn_name: str) -> list[FunctionModel]:
         norm = fn_name.split("/")[-1]
@@ -324,30 +321,30 @@ class CodeModel:
         all_ns_names = set(self.namespaces.keys())
 
         for ns_name, ns in self.namespaces.items():
-            # 1. Inspect explicit requires & imports
-            all_imported_symbols = set(ns.requires) | set(ns.imports)
-            for raw_sym in all_imported_symbols:
-                sym_clean = os.path.splitext(os.path.basename(raw_sym))[0]
-                for other_name, other_ns in self.namespaces.items():
-                    if other_name == ns_name:
-                        continue
-                    other_base = os.path.splitext(os.path.basename(other_ns.file_path))[0] if other_ns.file_path else other_name
-                    if sym_clean == other_name or sym_clean == other_base or sym_clean in other_ns.records or raw_sym in other_ns.records:
-                        graph[ns_name].add(other_name)
-
-            # 2. Inspect qualified calls / member calls (e.g. other_mod.func or other_ns::Class)
-            for fn in ns.functions.values():
-                for call in fn.calls:
-                    if "." in call:
-                        prefix = call.split(".")[0]
-                        if prefix in all_ns_names and prefix != ns_name:
-                            graph[ns_name].add(prefix)
-                    elif "::" in call:
-                        prefix = call.split("::")[0]
-                        if prefix in all_ns_names and prefix != ns_name:
-                            graph[ns_name].add(prefix)
+            self._connect_import_dependencies(ns_name, ns, graph)
+            self._connect_call_dependencies(ns_name, ns, all_ns_names, graph)
 
         return graph
+
+    def _connect_import_dependencies(self, ns_name: str, ns: NamespaceModel, graph: dict[str, set[str]]) -> None:
+        all_imported_symbols = set(ns.requires) | set(ns.imports)
+        for raw_sym in all_imported_symbols:
+            sym_clean = os.path.splitext(os.path.basename(raw_sym))[0]
+            for other_name, other_ns in self.namespaces.items():
+                if other_name == ns_name:
+                    continue
+                other_base = os.path.splitext(os.path.basename(other_ns.file_path))[0] if other_ns.file_path else other_name
+                if sym_clean == other_name or sym_clean == other_base or sym_clean in other_ns.records or raw_sym in other_ns.records:
+                    graph[ns_name].add(other_name)
+
+    def _connect_call_dependencies(
+        self, ns_name: str, ns: NamespaceModel, all_ns_names: set[str], graph: dict[str, set[str]]
+    ) -> None:
+        for fn in ns.functions.values():
+            for call in fn.calls:
+                prefix = call.split(".")[0] if "." in call else (call.split("::")[0] if "::" in call else None)
+                if prefix and prefix in all_ns_names and prefix != ns_name:
+                    graph[ns_name].add(prefix)
 
     def find_circular_dependencies(self) -> list[list[str]]:
         """Detect all simple circular dependency cycles between namespaces."""

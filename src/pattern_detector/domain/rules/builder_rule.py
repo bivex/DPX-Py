@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from pattern_detector.domain.code_model import CodeModel
 from pattern_detector.domain.detection import Detection
 from pattern_detector.domain.rules.base import BasePatternRule
@@ -24,171 +26,169 @@ class BuilderPatternRule(BasePatternRule):
 
     def detect(self, model: CodeModel) -> list[Detection]:
         detections: list[Detection] = []
+        detections.extend(self._detect_dsl_builders(model))
+        detections.extend(self._detect_protocol_builders(model))
+        detections.extend(self._detect_class_builders(model))
+        return detections
 
+    def _detect_dsl_builders(self, model: CodeModel) -> list[Detection]:
+        results: list[Detection] = []
         for ns in model.namespaces.values():
-            # Group builder step functions in the namespace
-            step_fns = []
-            terminal_build_fns = []
+            det = self._detect_namespace_dsl(ns)
+            if det:
+                results.append(det)
+        return results
 
-            for fn in ns.functions.values():
-                name_lower = fn.name.lower()
-                if fn.is_multimethod or fn.parent_multimethod:
-                    continue
+    def _detect_namespace_dsl(self, ns: Any) -> Detection | None:
+        step_fns = []
+        terminal_build_fns = []
 
-                # Check if it is a terminal build step (e.g. build, build-*, to-*)
-                if name_lower.startswith(("build-", "build_")) or name_lower in ("build", "finish-build"):
-                    terminal_build_fns.append(fn)
+        for fn in ns.functions.values():
+            if fn.is_multimethod or fn.parent_multimethod:
+                continue
+            name_lower = fn.name.lower()
+            if name_lower.startswith(("build-", "build_")) or name_lower in ("build", "finish-build"):
+                terminal_build_fns.append(fn)
+            elif name_lower.startswith(("with-", "set-", "add-", "use-")) and not name_lower.startswith(("with-open", "with-lock", "with-transaction")):
+                has_assoc = any(k in fn.body_text for k in ("assoc", "update", "merge", "assoc-in", "update-in"))
+                params = [p.lower() for plist in fn.parameter_lists for p in plist]
+                has_builder_param = any("builder" in p or "config" in p or "opts" in p or "ctx" in p or p in ("b", "c", "m", "this") for p in params)
+                if has_assoc or has_builder_param:
+                    step_fns.append(fn)
 
-                # Check if it is a builder step function (e.g. with-*, set-*, add-*)
-                elif name_lower.startswith(("with-", "set-", "add-", "use-")) and not name_lower.startswith(("with-open", "with-lock", "with-transaction")):
-                    # Check if body modifies map/record (assoc, update, merge)
-                    has_assoc = any(k in fn.body_text for k in ("assoc", "update", "merge", "assoc-in", "update-in"))
-                    params = [p.lower() for plist in fn.parameter_lists for p in plist]
-                    has_builder_param = any("builder" in p or "config" in p or "opts" in p or "ctx" in p or p in ("b", "c", "m", "this") for p in params)
+        if len(step_fns) < 2 and not (len(step_fns) >= 1 and len(terminal_build_fns) >= 1):
+            return None
 
-                    if has_assoc or has_builder_param:
-                        step_fns.append(fn)
-
-            if len(step_fns) >= 2 or (len(step_fns) >= 1 and len(terminal_build_fns) >= 1):
-                evidences: list[Evidence] = []
-                related_locs: list[SourceLocation] = []
-
-                evidences.append(
-                    self.evidence(
-                        description=f"Namespace '{ns.name}' defines {len(step_fns)} fluent configuration step functions: {', '.join(f.name for f in step_fns[:5])}",
-                        weight=min(0.60, 0.30 + 0.10 * len(step_fns)),
-                        location=step_fns[0].location if step_fns else next(iter(ns.functions.values())).location,
-                        code_suffix="BUILDER_STEP_FUNCTIONS",
-                    )
+        evidences: list[Evidence] = [
+            self.evidence(
+                description=f"Namespace '{ns.name}' defines {len(step_fns)} fluent configuration step functions: {', '.join(f.name for f in step_fns[:5])}",
+                weight=min(0.60, 0.30 + 0.10 * len(step_fns)),
+                location=step_fns[0].location if step_fns else next(iter(ns.functions.values())).location,
+                code_suffix="BUILDER_STEP_FUNCTIONS",
+            )
+        ]
+        related_locs: list[SourceLocation] = [f.location for f in step_fns]
+        if terminal_build_fns:
+            evidences.append(
+                self.evidence(
+                    description=f"Provides terminal build / instantiation function(s): {', '.join(f.name for f in terminal_build_fns)}",
+                    weight=0.35,
+                    location=terminal_build_fns[0].location,
+                    code_suffix="TERMINAL_BUILD_FN",
                 )
+            )
+            related_locs.extend(f.location for f in terminal_build_fns)
 
-                if terminal_build_fns:
+        target_name = terminal_build_fns[0].name if terminal_build_fns else step_fns[0].name
+        primary_loc = step_fns[0].location if step_fns else terminal_build_fns[0].location
+
+        return self.create_detection(
+            target_name=target_name,
+            target_kind="builder_dsl",
+            evidences=evidences,
+            primary_location=primary_loc,
+            related_locations=related_locs,
+            summary=f"Builder pattern: fluent builder DSL in namespace '{ns.name}' with {len(step_fns)} configuration steps",
+            base_score=0.30,
+        )
+
+    def _detect_protocol_builders(self, model: CodeModel) -> list[Detection]:
+        results: list[Detection] = []
+        for proto in model.all_protocols():
+            if "builder" in proto.name.lower():
+                rec_impls = model.find_records_implementing(proto.name)
+                evidences = [
+                    self.evidence(
+                        description=f"Protocol '{proto.name}' defines builder construction interface with methods: {', '.join(m.name for m in proto.methods)}",
+                        weight=0.55,
+                        location=proto.location,
+                        code_suffix="BUILDER_PROTOCOL",
+                    )
+                ]
+                for rec in rec_impls:
                     evidences.append(
                         self.evidence(
-                            description=f"Provides terminal build / instantiation function(s): {', '.join(f.name for f in terminal_build_fns)}",
+                            description=f"Concrete builder '{rec.name}' implements step-by-step assembly for '{proto.name}'",
                             weight=0.35,
-                            location=terminal_build_fns[0].location,
-                            code_suffix="TERMINAL_BUILD_FN",
+                            location=rec.location,
+                            code_suffix="CONCRETE_BUILDER_IMPL",
                         )
                     )
-                    for f in terminal_build_fns:
-                        related_locs.append(f.location)
-
-                for f in step_fns:
-                    related_locs.append(f.location)
-
-                target_name = terminal_build_fns[0].name if terminal_build_fns else step_fns[0].name
-                primary_loc = step_fns[0].location if step_fns else terminal_build_fns[0].location
-
-                detections.append(
+                results.append(
                     self.create_detection(
-                        target_name=target_name,
-                        target_kind="builder_dsl",
+                        target_name=proto.name,
+                        target_kind="builder_protocol",
                         evidences=evidences,
-                        primary_location=primary_loc,
-                        related_locations=related_locs,
-                        summary=f"Builder pattern: fluent builder DSL in namespace '{ns.name}' with {len(step_fns)} configuration steps",
+                        primary_location=proto.location,
+                        related_locations=[r.location for r in rec_impls],
+                        summary=f"Builder pattern: protocol '{proto.name}' defines construction steps implemented by {len(rec_impls)} concrete builders",
                         base_score=0.30,
                     )
                 )
+        return results
 
-        # 2. Builder Protocol / Interface (GoF Builder)
-        for proto in model.all_protocols():
-            name_lower = proto.name.lower()
-            if "builder" in name_lower:
-                build_methods = [
-                    m
-                    for m in proto.methods
-                    if m.name.lower().startswith(("build", "set", "with", "add", "getresult", "getproduct"))
-                ]
-                rec_impls = model.find_records_implementing(proto.name)
-                if build_methods or rec_impls:
-                    evidences = [
-                        self.evidence(
-                            description=f"Protocol '{proto.name}' defines builder construction interface with methods: {', '.join(m.name for m in proto.methods)}",
-                            weight=0.55,
-                            location=proto.location,
-                            code_suffix="BUILDER_PROTOCOL",
-                        )
-                    ]
-                    for rec in rec_impls:
-                        evidences.append(
-                            self.evidence(
-                                description=f"Concrete builder '{rec.name}' implements step-by-step assembly for '{proto.name}'",
-                                weight=0.35,
-                                location=rec.location,
-                                code_suffix="CONCRETE_BUILDER_IMPL",
-                            )
-                        )
-                    detections.append(
-                        self.create_detection(
-                            target_name=proto.name,
-                            target_kind="builder_protocol",
-                            evidences=evidences,
-                            primary_location=proto.location,
-                            related_locations=[r.location for r in rec_impls],
-                            summary=f"Builder pattern: protocol '{proto.name}' defines construction steps implemented by {len(rec_impls)} concrete builders",
-                            base_score=0.30,
-                        )
-                    )
-
-        # 3. Class-based Builder (Fluent Builder / GoF Builder)
+    def _detect_class_builders(self, model: CodeModel) -> list[Detection]:
+        results: list[Detection] = []
         for rec in model.all_records():
             if rec.name.endswith("Rule") or rec.name.endswith("Test"):
                 continue
-            name_lower = rec.name.lower()
-            step_methods = [
-                m for m in rec.methods
-                if (
-                    m.name.split(".")[-1].lower().startswith(("with_", "set_", "add_", "append_", "use_"))
-                    or "return self" in m.body_text.lower()
-                )
-                and m.name.split(".")[-1].lower() not in ("__init__", "build", "create", "construct", "get_result", "to_dict", "to_request")
-                and not m.name.split(".")[-1].lower().startswith(("with_open", "with_lock"))
-            ]
-            has_build_method = any(m.name.split(".")[-1].lower() in ("build", "create", "construct", "get_result", "to_dict", "to_request") for m in rec.methods)
-            is_builder_named = "builder" in name_lower
+            det = self._detect_class_builder(rec)
+            if det:
+                results.append(det)
+        return results
 
-            if (is_builder_named and (step_methods or has_build_method)) or (len(step_methods) >= 2 and has_build_method):
-                evidences = []
-                if is_builder_named:
-                    evidences.append(
-                        self.evidence(
-                            description=f"Class '{rec.name}' follows Builder naming convention for complex object assembly",
-                            weight=0.45,
-                            location=rec.location,
-                            code_suffix="BUILDER_CLASS_NAMING",
-                        )
-                    )
-                if step_methods:
-                    evidences.append(
-                        self.evidence(
-                            description=f"Class '{rec.name}' defines {len(step_methods)} fluent configuration method(s): {', '.join(m.name.split('.')[-1] for m in step_methods[:5])}",
-                            weight=0.45,
-                            location=step_methods[0].location,
-                            code_suffix="BUILDER_STEP_METHODS",
-                        )
-                    )
-                if has_build_method:
-                    build_fn = next(m for m in rec.methods if m.name.split(".")[-1].lower() in ("build", "create", "construct", "get_result", "to_dict", "to_request"))
-                    evidences.append(
-                        self.evidence(
-                            description=f"Class '{rec.name}' provides terminal assembly method '{build_fn.name.split('.')[-1]}()'",
-                            weight=0.40,
-                            location=build_fn.location,
-                            code_suffix="BUILDER_TERMINAL_METHOD",
-                        )
-                    )
-                detections.append(
-                    self.create_detection(
-                        target_name=rec.name,
-                        target_kind="builder_class",
-                        evidences=evidences,
-                        primary_location=rec.location,
-                        related_locations=[m.location for m in step_methods],
-                        summary=f"Builder pattern: class '{rec.name}' provides fluent step-by-step assembly with {len(step_methods)} steps",
-                        base_score=0.30,
-                    )
-                )
+    def _detect_class_builder(self, rec: Any) -> Detection | None:
+        name_lower = rec.name.lower()
+        step_methods = [
+            m for m in rec.methods
+            if (
+                m.name.split(".")[-1].lower().startswith(("with_", "set_", "add_", "append_", "use_"))
+                or "return self" in m.body_text.lower()
+            )
+            and m.name.split(".")[-1].lower() not in ("__init__", "build", "create", "construct", "get_result", "to_dict", "to_request")
+            and not m.name.split(".")[-1].lower().startswith(("with_open", "with_lock"))
+        ]
+        has_build_method = any(m.name.split(".")[-1].lower() in ("build", "create", "construct", "get_result", "to_dict", "to_request") for m in rec.methods)
+        is_builder_named = "builder" in name_lower
 
-        return detections
+        if not ((is_builder_named and (step_methods or has_build_method)) or (len(step_methods) >= 2 and has_build_method)):
+            return None
+
+        evidences = []
+        if is_builder_named:
+            evidences.append(
+                self.evidence(
+                    description=f"Class '{rec.name}' follows Builder naming convention for complex object assembly",
+                    weight=0.45,
+                    location=rec.location,
+                    code_suffix="BUILDER_CLASS_NAMING",
+                )
+            )
+        if step_methods:
+            evidences.append(
+                self.evidence(
+                    description=f"Class '{rec.name}' defines {len(step_methods)} fluent configuration method(s): {', '.join(m.name.split('.')[-1] for m in step_methods[:5])}",
+                    weight=0.45,
+                    location=step_methods[0].location,
+                    code_suffix="BUILDER_STEP_METHODS",
+                )
+            )
+        if has_build_method:
+            build_fn = next(m for m in rec.methods if m.name.split(".")[-1].lower() in ("build", "create", "construct", "get_result", "to_dict", "to_request"))
+            evidences.append(
+                self.evidence(
+                    description=f"Class '{rec.name}' provides terminal assembly method '{build_fn.name.split('.')[-1]}()'",
+                    weight=0.40,
+                    location=build_fn.location,
+                    code_suffix="BUILDER_TERMINAL_METHOD",
+                )
+            )
+        return self.create_detection(
+            target_name=rec.name,
+            target_kind="builder_class",
+            evidences=evidences,
+            primary_location=rec.location,
+            related_locations=[m.location for m in step_methods],
+            summary=f"Builder pattern: class '{rec.name}' provides fluent step-by-step assembly with {len(step_methods)} steps",
+            base_score=0.30,
+        )

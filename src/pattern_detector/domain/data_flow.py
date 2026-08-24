@@ -99,50 +99,59 @@ class DataFlowGraph:
 
     def to_mermaid(self, direction_layout: str = "LR") -> str:
         """Render graph to clean Mermaid.js diagram."""
-        lines = [f"graph {direction_layout}"]
-        lines.append("    %% Styles")
-        lines.append("    classDef rootNode fill:#0284c7,stroke:#38bdf8,stroke-width:3px,color:#ffffff,font-weight:bold;")
-        lines.append("    classDef varNode fill:#1e293b,stroke:#38bdf8,stroke-width:2px,color:#f8fafc;")
-        lines.append("    classDef fnNode fill:#0f172a,stroke:#c084fc,stroke-width:2px,color:#f8fafc;")
+        lines = [
+            f"graph {direction_layout}",
+            "    %% Styles",
+            "    classDef rootNode fill:#0284c7,stroke:#38bdf8,stroke-width:3px,color:#ffffff,font-weight:bold;",
+            "    classDef varNode fill:#1e293b,stroke:#38bdf8,stroke-width:2px,color:#f8fafc;",
+            "    classDef fnNode fill:#0f172a,stroke:#c084fc,stroke-width:2px,color:#f8fafc;",
+        ]
 
-        # Group by cluster if CLUSTER variant
         if self.variant == DataFlowVariant.CLUSTER:
-            clusters: dict[str, list[DataFlowNode]] = {}
-            for node in self.nodes.values():
-                clusters.setdefault(node.cluster or "global", []).append(node)
-
-            for c_name, c_nodes in clusters.items():
-                sanitized_cname = "".join(c if c.isalnum() else "_" for c in c_name)
-                lines.append(f"    subgraph cluster_{sanitized_cname} [\"{c_name}\"]")
-                for node in c_nodes:
-                    node_esc = node.name.replace('"', '\\"')
-                    icon = "🔷" if node.kind == NodeKind.VARIABLE else "⚙️"
-                    lines.append(f"        {node.id}[\"{icon} {node_esc}\"]")
-                lines.append("    end")
+            lines.extend(self._render_mermaid_clusters())
         else:
-            for node in self.nodes.values():
-                node_esc = node.name.replace('"', '\\"')
-                icon = "🔷" if node.kind == NodeKind.VARIABLE else "⚙️"
-                lines.append(f"    {node.id}[\"{icon} {node_esc}\"]")
+            lines.extend(self._render_mermaid_flat_nodes())
 
-        # Edges
+        lines.extend(self._render_mermaid_edges())
+        lines.extend(self._render_mermaid_classes())
+        return "\n".join(lines)
+
+    def _render_mermaid_flat_nodes(self) -> list[str]:
+        return [self._format_mermaid_node(n, indent="    ") for n in self.nodes.values()]
+
+    def _render_mermaid_clusters(self) -> list[str]:
+        clusters: dict[str, list[DataFlowNode]] = {}
+        for node in self.nodes.values():
+            clusters.setdefault(node.cluster or "global", []).append(node)
+
+        lines: list[str] = []
+        for c_name, c_nodes in clusters.items():
+            sanitized_cname = "".join(c if c.isalnum() else "_" for c in c_name)
+            lines.append(f"    subgraph cluster_{sanitized_cname} [\"{c_name}\"]")
+            for node in c_nodes:
+                lines.append(self._format_mermaid_node(node, indent="        "))
+            lines.append("    end")
+        return lines
+
+    def _format_mermaid_node(self, node: DataFlowNode, indent: str) -> str:
+        node_esc = node.name.replace('"', '\\"')
+        icon = "🔷" if node.kind == NodeKind.VARIABLE else "⚙️"
+        return f"{indent}{node.id}[\"{icon} {node_esc}\"]"
+
+    def _render_mermaid_edges(self) -> list[str]:
+        lines: list[str] = []
         for edge in self.edges:
             label = edge.kind.lower()
-            if edge.kind == "MODIFIES":
-                lines.append(f"    {edge.from_id} -.->|{label}| {edge.to_id}")
-            else:
-                lines.append(f"    {edge.from_id} -->|{label}| {edge.to_id}")
+            arrow = "-.->" if edge.kind == "MODIFIES" else "-->"
+            lines.append(f"    {edge.from_id} {arrow}|{label}| {edge.to_id}")
+        return lines
 
-        # Apply classes
+    def _render_mermaid_classes(self) -> list[str]:
+        lines: list[str] = []
         for node in self.nodes.values():
-            if node.is_root:
-                lines.append(f"    class {node.id} rootNode;")
-            elif node.kind == NodeKind.VARIABLE:
-                lines.append(f"    class {node.id} varNode;")
-            else:
-                lines.append(f"    class {node.id} fnNode;")
-
-        return "\n".join(lines)
+            style_cls = "rootNode" if node.is_root else ("varNode" if node.kind == NodeKind.VARIABLE else "fnNode")
+            lines.append(f"    class {node.id} {style_cls};")
+        return lines
 
     def to_rich_tree(self) -> Tree:
         """Render graph as an interactive Rich ASCII Tree for terminal output."""
