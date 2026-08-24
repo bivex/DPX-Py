@@ -115,19 +115,51 @@ PATTERN_TYPE_COLORS: dict[PatternType, dict[str, str]] = {
 }
 
 
-class HtmlReportFormatter(ReportFormatterPort):
-    """Renders a standalone, responsive, interactive Semantic UI (Fomantic-UI) HTML dashboard for DetectionReport."""
+_VIOLATION_TERMS: tuple[str, ...] = (
+    "violation",
+    "smell",
+    "god",
+    "broken",
+    "fat",
+    "train_wreck",
+    "duplicate",
+    "complexity",
+    "circular",
+    "breach",
+    "unsupported",
+    "high_fan_out",
+    "kiss_cyclomatic",
+    "kiss_complexity",
+)
 
-    def format(self, report: DetectionReport, verbose: bool = False) -> str:
-        total_violations = sum(1 for d in report.detections if self._classify_detection_status(d) == "violation")
-        total_adherences = sum(1 for d in report.detections if self._classify_detection_status(d) == "adherence")
-        total_patterns = sum(1 for d in report.detections if self._classify_detection_status(d) == "pattern")
+_VIOLATION_SUMMARY_SUBSTRINGS: tuple[str, ...] = (
+    "violation",
+    "god class",
+    "train wreck",
+    "breaks parent contract",
+    "circular dependency",
+)
 
-        cards_html = self._render_cards_list(report.detections)
-        category_filters = self._render_category_filters(report)
-        project_name = html.escape(report.project_path or "Codebase")
+_VIOLATION_RULE_SUFFIXES: tuple[str, ...] = (
+    "_VIOLATION",
+    "_CASCADE",
+    "_GOD_CLASS",
+    "_MIXED_CONCERNS",
+    "_FAT_INTERFACE",
+    "_UNSUPPORTED_OPERATION",
+    "_CONTRACT_BREACH",
+    "_CONCRETE_INSTANTIATION",
+    "_TRAIN_WRECK_CHAIN",
+    "_HIGH_CYCLOMATIC_COMPLEXITY",
+    "_LONG_PARAMETER_LIST",
+    "_DEEP_INHERITANCE_TREE",
+    "_DUPLICATE_BLOCK",
+    "_HIGH_FAN_OUT",
+    "_STRUCTURAL_COUPLING",
+    "_FRAGILE_MODIFICATION",
+)
 
-        return f"""<!DOCTYPE html>
+_HTML_DASHBOARD_TEMPLATE: str = """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -207,7 +239,7 @@ class HtmlReportFormatter(ReportFormatterPort):
                 <span style="font-weight: 700; font-size: 16px; margin-left: 6px;">DPX-Py Pattern Scanner Report</span>
             </div>
             <div class="item">
-                <span class="ui mini blue label"><i class="folder open outline icon"></i> {html.escape(report.project_path or "Project Repository")}</span>
+                <span class="ui mini blue label"><i class="folder open outline icon"></i> {project_name}</span>
             </div>
             <div class="right menu">
                 <div class="item">
@@ -224,7 +256,7 @@ class HtmlReportFormatter(ReportFormatterPort):
         <div class="ui inverted segment" style="background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; margin-bottom: 20px; padding: 16px 20px;">
             <div class="ui five mini inverted statistics">
                 <div class="statistic">
-                    <div class="value" style="color: #38bdf8;">{report.total_detections_count}</div>
+                    <div class="value" style="color: #38bdf8;">{total_detections}</div>
                     <div class="label" style="color: #94a3b8;">Total Detections</div>
                 </div>
                 <div class="statistic">
@@ -240,7 +272,7 @@ class HtmlReportFormatter(ReportFormatterPort):
                     <div class="label" style="color: #94a3b8;">🔷 Design Patterns</div>
                 </div>
                 <div class="statistic">
-                    <div class="value" style="color: #c084fc;">{report.scanned_files_count} files ({report.elapsed_seconds:.3f}s)</div>
+                    <div class="value" style="color: #c084fc;">{scanned_files} files ({elapsed_seconds}s)</div>
                     <div class="label" style="color: #94a3b8;">Scan Scope</div>
                 </div>
             </div>
@@ -250,9 +282,9 @@ class HtmlReportFormatter(ReportFormatterPort):
         <div class="ui mini inverted secondary pointing menu" style="border-bottom: 1px solid #1e293b; margin-bottom: 14px;">
             <a class="active item cat-filter-btn" data-filter="all">
                 <i class="cubes icon"></i> All Categories
-                <div class="ui mini blue label">{report.total_detections_count}</div>
+                <div class="ui mini blue label">{total_detections}</div>
             </a>
-            {"".join(category_filters)}
+            {category_filters}
         </div>
 
         <!-- Action Status Sub-Tabs Bar -->
@@ -262,7 +294,7 @@ class HtmlReportFormatter(ReportFormatterPort):
             </div>
             <div class="ui mini inverted basic buttons" id="statusFilterGroup">
                 <button class="ui button active status-filter-btn" data-status="all">
-                    <i class="eye icon"></i> All Findings <span class="ui mini blue label" id="statusCountAll">{report.total_detections_count}</span>
+                    <i class="eye icon"></i> All Findings <span class="ui mini blue label" id="statusCountAll">{total_detections}</span>
                 </button>
                 <button class="ui button status-filter-btn" data-status="violation" style="color: #f87171 !important;">
                     <i class="exclamation triangle icon" style="color: #f87171;"></i> ⚠️ Needs Fix (Violations) <span class="ui mini red label" id="statusCountViolation">{total_violations}</span>
@@ -299,7 +331,7 @@ class HtmlReportFormatter(ReportFormatterPort):
 
         <!-- Pattern Cards Container -->
         <div id="cardsContainer">
-            {"".join(cards_html)}
+            {cards_html}
         </div>
     </div>
 
@@ -394,69 +426,91 @@ class HtmlReportFormatter(ReportFormatterPort):
 </html>
 """
 
+
+class HtmlReportFormatter(ReportFormatterPort):
+    """Renders a standalone, responsive, interactive Semantic UI (Fomantic-UI) HTML dashboard for DetectionReport."""
+
+    def format(self, report: DetectionReport, verbose: bool = False) -> str:
+        counts = self._calculate_status_counts(report.detections)
+        cards_html = "".join(self._render_cards_list(report.detections))
+        category_filters = "".join(self._render_category_filters(report))
+        project_name = self._resolve_project_name(report.project_path)
+
+        return _HTML_DASHBOARD_TEMPLATE.format(
+            project_name=project_name,
+            total_detections=report.total_detections_count,
+            total_violations=counts["violation"],
+            total_adherences=counts["adherence"],
+            total_patterns=counts["pattern"],
+            scanned_files=report.scanned_files_count,
+            elapsed_seconds=f"{report.elapsed_seconds:.3f}",
+            category_filters=category_filters,
+            cards_html=cards_html,
+        )
+
+    def _calculate_status_counts(self, detections: list[Any]) -> dict[str, int]:
+        counts = {"violation": 0, "adherence": 0, "pattern": 0}
+        for d in detections:
+            status = self._classify_detection_status(d)
+            counts[status] = counts.get(status, 0) + 1
+        return counts
+
+    def _resolve_project_name(self, project_path: str | None) -> str:
+        if not project_path:
+            return "Codebase"
+        return html.escape(project_path)
+
+    @classmethod
+    def _is_violation_target(cls, kind: str, summary: str) -> bool:
+        for term in _VIOLATION_TERMS:
+            if term in kind:
+                return True
+        for phrase in _VIOLATION_SUMMARY_SUBSTRINGS:
+            if phrase in summary:
+                return True
+        return False
+
+    @classmethod
+    def _has_violation_evidence(cls, evidences: list[Any]) -> bool:
+        for ev in evidences:
+            code = getattr(ev, "rule_code", "").upper()
+            if code.endswith(_VIOLATION_RULE_SUFFIXES):
+                return True
+        return False
+
+    @classmethod
+    def _is_adherence_target(cls, kind: str, summary: str, cat: Any) -> bool:
+        if "adherence" in summary or "polymorphic_hierarchy" in kind or "segregated_role_interface" in kind:
+            return True
+        return cat == PatternCategory.PRINCIPLE
+
     @classmethod
     def _classify_detection_status(cls, det: Any) -> str:
         """Classifies detection as 'violation' (needs fix), 'adherence' (clean practice), or 'pattern'."""
         kind = getattr(det, "target_kind", "").lower()
         summary = getattr(det, "summary", "").lower()
-        cat = getattr(det, "pattern_category", None)
-
-        violation_terms = (
-            "violation",
-            "smell",
-            "god",
-            "broken",
-            "fat",
-            "train_wreck",
-            "duplicate",
-            "complexity",
-            "circular",
-            "breach",
-            "unsupported",
-            "high_fan_out",
-            "kiss_cyclomatic",
-            "kiss_complexity",
-        )
-        if any(t in kind for t in violation_terms):
+        if cls._is_violation_target(kind, summary):
             return "violation"
-        if any(
-            t in summary
-            for t in ("violation", "god class", "train wreck", "breaks parent contract", "circular dependency")
-        ):
+        if cls._has_violation_evidence(getattr(det, "evidences", [])):
             return "violation"
-
-        for ev in getattr(det, "evidences", []):
-            code = getattr(ev, "rule_code", "").upper()
-            if any(
-                code.endswith(sfx)
-                for sfx in (
-                    "_VIOLATION",
-                    "_CASCADE",
-                    "_GOD_CLASS",
-                    "_MIXED_CONCERNS",
-                    "_FAT_INTERFACE",
-                    "_UNSUPPORTED_OPERATION",
-                    "_CONTRACT_BREACH",
-                    "_CONCRETE_INSTANTIATION",
-                    "_TRAIN_WRECK_CHAIN",
-                    "_HIGH_CYCLOMATIC_COMPLEXITY",
-                    "_LONG_PARAMETER_LIST",
-                    "_DEEP_INHERITANCE_TREE",
-                    "_DUPLICATE_BLOCK",
-                    "_HIGH_FAN_OUT",
-                    "_STRUCTURAL_COUPLING",
-                    "_FRAGILE_MODIFICATION",
-                )
-            ):
-                return "violation"
-
-        if "adherence" in summary or "polymorphic_hierarchy" in kind or "segregated_role_interface" in kind:
+        if cls._is_adherence_target(kind, summary, getattr(det, "pattern_category", None)):
             return "adherence"
-
-        if cat == PatternCategory.PRINCIPLE:
-            return "adherence"
-
         return "pattern"
+
+    @classmethod
+    def _get_status_card_theme(cls, status: str, cat_style: dict[str, str]) -> tuple[str, str, str]:
+        if status == "violation":
+            badge = '<span class="ui mini red label" style="font-weight: 700;"><i class="exclamation triangle icon"></i> ACTION REQUIRED (VIOLATION)</span>'
+            banner = '<div class="ui mini negative message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(244, 63, 94, 0.12); border: 1px solid rgba(244, 63, 94, 0.35); color: #fca5a5;"><i class="warning sign icon"></i> <strong>Anti-Pattern / Violation:</strong> Refactoring recommended to resolve this code smell.</div>'
+            return badge, banner, "#f43f5e"
+        if status == "adherence":
+            badge = '<span class="ui mini green label" style="font-weight: 700;"><i class="check circle icon"></i> GOOD PRACTICE (ADHERENCE)</span>'
+            banner = '<div class="ui mini positive message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #86efac;"><i class="check circle outline icon"></i> <strong>SOLID Adherence:</strong> Code adheres cleanly to architectural principles (No fix required).</div>'
+            return badge, banner, "#10b981"
+        badge = (
+            '<span class="ui mini blue label" style="font-weight: 700;"><i class="cube icon"></i> DESIGN PATTERN</span>'
+        )
+        return badge, "", cat_style["accent"]
 
     def _render_detection_card(self, idx: int, det: Any) -> str:
         cat_style = CATEGORY_STYLES.get(
@@ -483,18 +537,7 @@ class HtmlReportFormatter(ReportFormatterPort):
         }.get(det.level, "blue")
 
         status = self._classify_detection_status(det)
-        if status == "violation":
-            status_badge = '<span class="ui mini red label" style="font-weight: 700;"><i class="exclamation triangle icon"></i> ACTION REQUIRED (VIOLATION)</span>'
-            status_banner = '<div class="ui mini negative message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(244, 63, 94, 0.12); border: 1px solid rgba(244, 63, 94, 0.35); color: #fca5a5;"><i class="warning sign icon"></i> <strong>Anti-Pattern / Violation:</strong> Refactoring recommended to resolve this code smell.</div>'
-            card_border = "#f43f5e"
-        elif status == "adherence":
-            status_badge = '<span class="ui mini green label" style="font-weight: 700;"><i class="check circle icon"></i> GOOD PRACTICE (ADHERENCE)</span>'
-            status_banner = '<div class="ui mini positive message" style="padding: 8px 12px; margin-bottom: 12px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #86efac;"><i class="check circle outline icon"></i> <strong>SOLID Adherence:</strong> Code adheres cleanly to architectural principles (No fix required).</div>'
-            card_border = "#10b981"
-        else:
-            status_badge = '<span class="ui mini blue label" style="font-weight: 700;"><i class="cube icon"></i> DESIGN PATTERN</span>'
-            status_banner = ""
-            card_border = cat_style["accent"]
+        status_badge, status_banner, card_border = self._get_status_card_theme(status, cat_style)
 
         evidences_html = self._render_evidences_html(det, cat_style)
         related_html = self._render_related_locations_html(det)
