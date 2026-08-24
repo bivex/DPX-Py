@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -124,7 +125,7 @@ def scan(
     if llm:
         _handle_llm_scan(container, target_path, options, insights)
     else:
-        _handle_terminal_scan(container, path, target_path, options, insights, verbose)
+        _handle_terminal_scan(container, path, target_path, options, insights)
 
 
 def _handle_llm_scan(container: Container, target_path: str, options: ScanOptions, insights: bool) -> None:
@@ -140,13 +141,12 @@ def _handle_terminal_scan(
     target_path: str,
     options: ScanOptions,
     insights: bool,
-    verbose: bool,
 ) -> None:
     scanner = container.get_scanner()
     with console.status(f"[cyan]Scanning [bold]{path}[/bold] using ANTLR parser & Domain Rules...[/cyan]"):
         report = scanner.scan_path(target_path, options=options)
 
-    container.report_formatter.render_to_console(report, console, verbose=verbose)  # type: ignore[attr-defined]
+    container.report_formatter.render_to_console(report, console, verbose=options.verbose)  # type: ignore[attr-defined]
     if insights:
         _render_insights_to_console(container, target_path, report)
 
@@ -171,6 +171,28 @@ def catalog() -> None:
         table.add_row(p_type.value, p_def.category.value.upper(), desc, tags_str)
 
     console.print(table)
+
+
+@dataclass
+class AllDataFlowsCliOptions:
+    direction: str = "OUT"
+    file_filter: str | None = None
+    max_depth: int = 15
+    llm: bool = False
+    html_output: str | None = None
+    json_output: str | None = None
+
+
+@dataclass
+class SingleDataFlowCliOptions:
+    direction: str = "OUT"
+    variant: str = "simplified"
+    to_entity: str | None = None
+    max_depth: int = 15
+    llm: bool = False
+    mermaid: bool = False
+    html_output: str | None = None
+    json_output: str | None = None
 
 
 @app.command(name="dataflow")
@@ -273,24 +295,28 @@ def dataflow(
     container = create_container()
 
     if resolved_target is None or all_vars:
-        _handle_all_dataflows_cli(
-            container, target_path, direction, file_filter, max_depth, llm, html_output, json_output
+        all_opts = AllDataFlowsCliOptions(
+            direction=direction,
+            file_filter=file_filter,
+            max_depth=max_depth,
+            llm=llm,
+            html_output=html_output,
+            json_output=json_output,
         )
+        _handle_all_dataflows_cli(container, target_path, all_opts)
         return
 
-    _handle_single_dataflow_cli(
-        container,
-        target_path,
-        resolved_target,
-        direction,
-        variant,
-        to_entity,
-        max_depth,
-        llm,
-        mermaid,
-        html_output,
-        json_output,
+    single_opts = SingleDataFlowCliOptions(
+        direction=direction,
+        variant=variant,
+        to_entity=to_entity,
+        max_depth=max_depth,
+        llm=llm,
+        mermaid=mermaid,
+        html_output=html_output,
+        json_output=json_output,
     )
+    _handle_single_dataflow_cli(container, target_path, resolved_target, single_opts)
 
 
 def _resolve_dataflow_target(target: str | None, path: str) -> tuple[str, str | None]:
@@ -302,71 +328,59 @@ def _resolve_dataflow_target(target: str | None, path: str) -> tuple[str, str | 
 def _handle_all_dataflows_cli(
     container: Container,
     target_path: str,
-    direction: str,
-    file_filter: str | None,
-    max_depth: int,
-    llm: bool,
-    html_output: str | None,
-    json_output: str | None,
+    opts: AllDataFlowsCliOptions,
 ) -> None:
     summary_report = container.scanning_service.analyze_all_data_flows(
         target_path=target_path,
-        direction=direction,
-        file_filter=file_filter,
-        max_depth=max_depth,
+        direction=opts.direction,
+        file_filter=opts.file_filter,
+        max_depth=opts.max_depth,
     )
 
-    if llm:
+    if opts.llm:
         print(container.llm_formatter.format_data_flow_summary(summary_report))
         return
 
     console.print(summary_report.to_rich_table())
 
-    if html_output:
-        _save_dataflow_html(container.data_flow_html_formatter.format_summary_report(summary_report), html_output)
-    if json_output:
-        _save_dataflow_json(summary_report.to_json(), json_output)
+    if opts.html_output:
+        _save_dataflow_html(container.data_flow_html_formatter.format_summary_report(summary_report), opts.html_output)
+    if opts.json_output:
+        _save_dataflow_json(summary_report.to_json(), opts.json_output)
 
 
 def _handle_single_dataflow_cli(
     container: Container,
     target_path: str,
     target: str,
-    direction: str,
-    variant: str,
-    to_entity: str | None,
-    max_depth: int,
-    llm: bool,
-    mermaid: bool,
-    html_output: str | None,
-    json_output: str | None,
+    opts: SingleDataFlowCliOptions,
 ) -> None:
     graph = container.scanning_service.analyze_data_flow(
         target_path=target_path,
         target_entity=target,
-        direction=direction,
-        variant=variant,
-        to_entity=to_entity,
-        max_depth=max_depth,
+        direction=opts.direction,
+        variant=opts.variant,
+        to_entity=opts.to_entity,
+        max_depth=opts.max_depth,
     )
 
-    if llm:
+    if opts.llm:
         print(container.llm_formatter.format_data_flow_graph(graph))
         return
 
-    if mermaid:
+    if opts.mermaid:
         console.print(f"[bold green]Mermaid Diagram for Data Flow ({graph.direction.value}):[/bold green]\n")
         console.print(f"```mermaid\n{graph.to_mermaid()}\n```")
     else:
-        title = f"Data Flow {graph.direction.value}: '{target}'" + (f" ➔ '{to_entity}'" if to_entity else "")
+        title = f"Data Flow {graph.direction.value}: '{target}'" + (f" ➔ '{opts.to_entity}'" if opts.to_entity else "")
         console.print(
             Panel(graph.to_rich_tree(), title=f"📊 [bold cyan]{title}[/bold cyan]", border_style="bright_blue")
         )
 
-    if html_output:
-        _save_dataflow_html(container.data_flow_html_formatter.format_single_graph(graph), html_output)
-    if json_output:
-        _save_dataflow_json(graph.to_json(), json_output)
+    if opts.html_output:
+        _save_dataflow_html(container.data_flow_html_formatter.format_single_graph(graph), opts.html_output)
+    if opts.json_output:
+        _save_dataflow_json(graph.to_json(), opts.json_output)
 
 
 def _save_dataflow_html(content: str, html_output: str) -> None:

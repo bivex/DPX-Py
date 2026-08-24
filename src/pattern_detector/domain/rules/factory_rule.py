@@ -70,9 +70,11 @@ class FactoryPatternRule(BasePatternRule):
             for rec in all_record_names
             if f"->{rec}" in fn.calls or f"map->{rec}" in fn.calls or rec in fn.instantiates_types
         ]
-        self._add_instantiation_evidences(
-            fn, instantiated_records, all_record_constructors, evidences, related_locs, model
+        inst_evs, inst_locs = self._collect_instantiation_evidences(
+            fn, instantiated_records, all_record_constructors, model
         )
+        evidences.extend(inst_evs)
+        related_locs.extend(inst_locs)
 
         has_record_ctor = any(call in all_record_constructors or call.startswith(("->", "map->")) for call in fn.calls)
         if not (evidences and (len(evidences) >= 2 or (is_factory_name and (instantiated_records or has_record_ctor)))):
@@ -88,15 +90,15 @@ class FactoryPatternRule(BasePatternRule):
             base_score=0.15,
         )
 
-    def _add_instantiation_evidences(
+    def _collect_instantiation_evidences(
         self,
         fn: Any,
         instantiated: list[str],
         all_ctors: set[str],
-        evidences: list[Evidence],
-        related_locs: list[SourceLocation],
         model: CodeModel,
-    ) -> None:
+    ) -> tuple[list[Evidence], list[SourceLocation]]:
+        evidences: list[Evidence] = []
+        related_locs: list[SourceLocation] = []
         if instantiated:
             evidences.append(
                 self.evidence(
@@ -119,6 +121,7 @@ class FactoryPatternRule(BasePatternRule):
                     code_suffix="CTOR_INVOCATION",
                 )
             )
+        return evidences, related_locs
 
     def _detect_factory_method_protocols(self, model: CodeModel) -> list[Detection]:
         results: list[Detection] = []

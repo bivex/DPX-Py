@@ -97,10 +97,11 @@ class BasePatternRule(ABC):
         target_kind: str,
         evidences: list[Evidence],
         primary_location: SourceLocation,
-        related_locations: list[SourceLocation] | None = None,
-        summary: str = "",
-        base_score: float = 0.0,
+        **kwargs: Any,
     ) -> Detection:
+        summary = str(kwargs.get("summary", ""))
+        base_score = float(kwargs.get("base_score", 0.0))
+        related_locations = kwargs.get("related_locations")
         confidence = Confidence.from_evidences(evidences, base_score=base_score)
         return Detection(
             pattern_type=self.pattern_type,

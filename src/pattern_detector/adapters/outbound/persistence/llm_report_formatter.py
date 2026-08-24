@@ -2,12 +2,19 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 from pattern_detector.domain.data_flow import DataFlowGraph, DataFlowSummaryReport
 from pattern_detector.domain.detection import DetectionReport
 from pattern_detector.domain.insights import InsightsReport
 from pattern_detector.domain.value_objects import PatternCategory
+
+
+@dataclass
+class _TraversalContext:
+    adj: dict[str, list[tuple[str, str]]]
+    out_paths: list[list[str]]
 
 
 class LlmReportFormatter:
@@ -168,7 +175,8 @@ class LlmReportFormatter:
     def _extract_propagation_paths(self, graph: DataFlowGraph) -> list[str]:
         adj = self._build_adjacency_map(graph.edges)
         paths: list[list[str]] = []
-        self._dfs_traverse(adj, graph.root_id, [graph.root_id], {graph.root_id}, 0, paths)
+        ctx = _TraversalContext(adj=adj, out_paths=paths)
+        self._dfs_traverse(ctx, graph.root_id, [graph.root_id], {graph.root_id}, 0)
         return self._deduplicate_and_render_paths(paths)
 
     def _build_adjacency_map(self, edges: list[Any]) -> dict[str, list[tuple[str, str]]]:
@@ -179,30 +187,29 @@ class LlmReportFormatter:
 
     def _dfs_traverse(
         self,
-        adj: dict[str, list[tuple[str, str]]],
+        ctx: _TraversalContext,
         current: str,
         current_path: list[str],
         visited: set[str],
         depth: int,
-        out_paths: list[list[str]],
     ) -> None:
         if depth > 10:
-            out_paths.append(current_path)
+            ctx.out_paths.append(current_path)
             return
 
-        neighbors = adj.get(current, [])
+        neighbors = ctx.adj.get(current, [])
         if not neighbors:
             if len(current_path) > 1:
-                out_paths.append(current_path)
+                ctx.out_paths.append(current_path)
             return
 
         for nxt, kind in neighbors:
             clean_name = nxt.replace("fn_", "") + ("()" if "fn_" in nxt else "")
             step_str = f"-[{kind.lower()}]-> {clean_name}"
             if nxt not in visited:
-                self._dfs_traverse(adj, nxt, current_path + [step_str], visited | {nxt}, depth + 1, out_paths)
+                self._dfs_traverse(ctx, nxt, current_path + [step_str], visited | {nxt}, depth + 1)
             else:
-                out_paths.append(current_path + [step_str + " (cycle)"])
+                ctx.out_paths.append(current_path + [step_str + " (cycle)"])
 
     def _deduplicate_and_render_paths(self, paths: list[list[str]]) -> list[str]:
         seen_paths: set[str] = set()

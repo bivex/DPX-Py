@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from typing import Any
 
 from pattern_detector.domain.code_model import CodeModel
 from pattern_detector.domain.data_flow import (
@@ -15,7 +16,13 @@ from pattern_detector.domain.insights import InsightsReport
 from pattern_detector.domain.services.data_flow import DataFlowService
 from pattern_detector.domain.services.pattern_detector import PatternDetectorService
 from pattern_detector.domain.services.pattern_insights import PatternInsightsService
-from pattern_detector.ports.inbound import DataFlowPort, DetectorPort, ScannerPort, ScanOptions
+from pattern_detector.ports.inbound import (
+    DataFlowOptions,
+    DataFlowPort,
+    DetectorPort,
+    ScannerPort,
+    ScanOptions,
+)
 from pattern_detector.ports.outbound import (
     ParserPort,
     ResultRepositoryPort,
@@ -35,53 +42,56 @@ class ScanningService(ScannerPort, DetectorPort, DataFlowPort):
         source_provider: SourceProviderPort,
         parser: ParserPort,
         detector_service: PatternDetectorService,
-        data_flow_service: DataFlowService | None = None,
-        insights_service: PatternInsightsService | None = None,
-        json_repository: ResultRepositoryPort | None = None,
-        html_repository: ResultRepositoryPort | None = None,
-        markdown_repository: ResultRepositoryPort | None = None,
-        sarif_repository: ResultRepositoryPort | None = None,
+        **services_and_repos: Any,
     ) -> None:
         self._source_provider = source_provider
         self._parser = parser
         self._detector_service = detector_service
-        self._data_flow_service = data_flow_service or DataFlowService()
-        self._insights_service = insights_service or PatternInsightsService()
-        self._json_repository = json_repository
-        self._html_repository = html_repository
-        self._markdown_repository = markdown_repository
-        self._sarif_repository = sarif_repository
+        self._data_flow_service: DataFlowService = services_and_repos.get("data_flow_service") or DataFlowService()
+        self._insights_service: PatternInsightsService = (
+            services_and_repos.get("insights_service") or PatternInsightsService()
+        )
+        self._json_repository: ResultRepositoryPort | None = services_and_repos.get("json_repository")
+        self._html_repository: ResultRepositoryPort | None = services_and_repos.get("html_repository")
+        self._markdown_repository: ResultRepositoryPort | None = services_and_repos.get("markdown_repository")
+        self._sarif_repository: ResultRepositoryPort | None = services_and_repos.get("sarif_repository")
 
     def analyze_data_flow(
         self,
         target_path: str,
         target_entity: str,
-        direction: str = "OUT",
-        variant: str = "simplified",
-        to_entity: str | None = None,
-        max_depth: int = 15,
-        file_extensions: list[str] | None = None,
+        options: DataFlowOptions | None = None,
+        **kwargs: Any,
     ) -> DataFlowGraph:
         """Trace data flow graph for target entity."""
-        exts = file_extensions or [".py", ".pyi"]
+        opts = options or DataFlowOptions(
+            direction=kwargs.get("direction", "OUT"),
+            variant=kwargs.get("variant", "simplified"),
+            to_entity=kwargs.get("to_entity"),
+            max_depth=int(kwargs.get("max_depth", 15)),
+            file_extensions=kwargs.get("file_extensions", [".py", ".pyi"]),
+        )
+        exts = opts.file_extensions or [".py", ".pyi"]
         sources = self._source_provider.get_sources(target_path, extensions=exts)
         code_model = self._parser.parse_sources(sources)
 
         df_variant = (
-            DataFlowVariant(variant.lower())
-            if variant.lower() in [v.value for v in DataFlowVariant]
+            DataFlowVariant(opts.variant.lower())
+            if opts.variant.lower() in [v.value for v in DataFlowVariant]
             else DataFlowVariant.SIMPLIFIED
         )
 
-        if to_entity:
-            return self._data_flow_service.trace_relationship(code_model, target_entity, to_entity, max_depth=max_depth)
-        elif direction.upper() == "IN":
+        if opts.to_entity:
+            return self._data_flow_service.trace_relationship(
+                code_model, target_entity, opts.to_entity, max_depth=opts.max_depth
+            )
+        elif opts.direction.upper() == "IN":
             return self._data_flow_service.trace_data_flow_in(
-                code_model, target_entity, variant=df_variant, max_depth=max_depth
+                code_model, target_entity, variant=df_variant, max_depth=opts.max_depth
             )
         else:
             return self._data_flow_service.trace_data_flow_out(
-                code_model, target_entity, variant=df_variant, max_depth=max_depth
+                code_model, target_entity, variant=df_variant, max_depth=opts.max_depth
             )
 
     def analyze_all_data_flows(

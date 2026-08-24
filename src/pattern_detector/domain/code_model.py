@@ -53,6 +53,7 @@ class FunctionModel(NamedCodeEntity):
     location: SourceLocation = field(default_factory=lambda: SourceLocation(file_path="", line=1, column=1))
     docstring: str | None = None
     is_private: bool = False
+    is_abstract: bool = False
     is_macro: bool = False
     is_multimethod: bool = False
     dispatch_fn: str | None = None
@@ -67,6 +68,7 @@ class FunctionModel(NamedCodeEntity):
     reads_variables: list[str] = field(default_factory=list)
     writes_variables: list[str] = field(default_factory=list)
     modifies_variables: list[str] = field(default_factory=list)
+    decorators: list[str] = field(default_factory=list)
     metadata: dict[str, str] = field(default_factory=dict)
 
 

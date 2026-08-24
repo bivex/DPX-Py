@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from pattern_detector.adapters.outbound.filesystem import FileSourceProvider
 from pattern_detector.adapters.outbound.persistence import (
     ConsoleReportFormatter,
@@ -37,46 +39,33 @@ class Container:
     and application use cases adhering to Hexagonal Architecture.
     """
 
-    def __init__(
-        self,
-        source_provider: SourceProviderPort | None = None,
-        parser: ParserPort | None = None,
-        json_repository: ResultRepositoryPort | None = None,
-        html_repository: ResultRepositoryPort | None = None,
-        markdown_repository: ResultRepositoryPort | None = None,
-        sarif_repository: ResultRepositoryPort | None = None,
-        report_formatter: ReportFormatterPort | None = None,
-        html_formatter: ReportFormatterPort | None = None,
-        markdown_formatter: ReportFormatterPort | None = None,
-        sarif_formatter: SarifReportFormatter | None = None,
-        data_flow_html_formatter: DataFlowHtmlFormatter | None = None,
-        llm_formatter: LlmReportFormatter | None = None,
-        detector_service: PatternDetectorService | None = None,
-    ) -> None:
+    def __init__(self, **components: Any) -> None:
         # Outbound Driven Adapters
-        self.source_provider: SourceProviderPort = source_provider or FileSourceProvider()
-        self.parser: ParserPort = parser or PyParserAdapter()
+        self.source_provider: SourceProviderPort = components.get("source_provider") or FileSourceProvider()
+        self.parser: ParserPort = components.get("parser") or PyParserAdapter()
 
-        self.html_formatter: ReportFormatterPort = html_formatter or HtmlReportFormatter()
-        self.data_flow_html_formatter: DataFlowHtmlFormatter = data_flow_html_formatter or DataFlowHtmlFormatter()
-        self.llm_formatter: LlmReportFormatter = llm_formatter or LlmReportFormatter()
-        self.markdown_formatter: ReportFormatterPort = markdown_formatter or MarkdownReportFormatter()
-        self.sarif_formatter: SarifReportFormatter = sarif_formatter or SarifReportFormatter()
-        self.report_formatter: ReportFormatterPort = report_formatter or ConsoleReportFormatter()
+        self.html_formatter: ReportFormatterPort = components.get("html_formatter") or HtmlReportFormatter()
+        self.data_flow_html_formatter: DataFlowHtmlFormatter = (
+            components.get("data_flow_html_formatter") or DataFlowHtmlFormatter()
+        )
+        self.llm_formatter: LlmReportFormatter = components.get("llm_formatter") or LlmReportFormatter()
+        self.markdown_formatter: ReportFormatterPort = components.get("markdown_formatter") or MarkdownReportFormatter()
+        self.sarif_formatter: SarifReportFormatter = components.get("sarif_formatter") or SarifReportFormatter()
+        self.report_formatter: ReportFormatterPort = components.get("report_formatter") or ConsoleReportFormatter()
 
-        self.json_repository: ResultRepositoryPort = json_repository or JsonResultRepository()
-        self.html_repository: ResultRepositoryPort = html_repository or HtmlResultRepository(
+        self.json_repository: ResultRepositoryPort = components.get("json_repository") or JsonResultRepository()
+        self.html_repository: ResultRepositoryPort = components.get("html_repository") or HtmlResultRepository(
             formatter=self.html_formatter
         )  # type: ignore[arg-type]
-        self.markdown_repository: ResultRepositoryPort = markdown_repository or MarkdownResultRepository(
-            formatter=self.markdown_formatter
-        )  # type: ignore[arg-type]
-        self.sarif_repository: ResultRepositoryPort = sarif_repository or SarifResultRepository(
+        self.markdown_repository: ResultRepositoryPort = components.get(
+            "markdown_repository"
+        ) or MarkdownResultRepository(formatter=self.markdown_formatter)  # type: ignore[arg-type]
+        self.sarif_repository: ResultRepositoryPort = components.get("sarif_repository") or SarifResultRepository(
             formatter=self.sarif_formatter
         )
 
         # Domain Service & Rules
-        self.detector_service: PatternDetectorService = detector_service or PatternDetectorService(
+        self.detector_service: PatternDetectorService = components.get("detector_service") or PatternDetectorService(
             rules=get_default_rules()
         )
         self.data_flow_service: DataFlowService = DataFlowService()

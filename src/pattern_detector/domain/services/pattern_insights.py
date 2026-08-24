@@ -60,25 +60,23 @@ class PatternInsightsService:
 
         for det in mediator_detections:
             if self._is_observable_hub(det.target_name):
-                self._emit_mediator_hub_insights(det, df_summary, out_insights)
+                self._analyze_mediator_item(det, df_summary, out_insights)
 
     def _is_observable_hub(self, target_cls: str) -> bool:
         keywords = ("Observable", "Event", "Subject", "Dispatcher", "Emitter")
         return any(k in target_cls for k in keywords)
 
-    def _emit_mediator_hub_insights(
+    def _analyze_mediator_item(
         self,
         det: Any,
         df_summary: DataFlowSummaryReport | None,
         out_insights: list[PatternInsight],
     ) -> None:
-        target_cls = det.target_name
-        loc = det.primary_location or SourceLocation(file_path="", line=1)
-        readers_count, writers_count, affected = self._collect_mediator_df_stats(df_summary)
+        target_cls = det.target_name.split("::")[0]
+        loc = det.primary_location
 
-        out_insights.append(
-            self._create_blast_radius_insight(det, target_cls, loc, writers_count, readers_count, affected)
-        )
+        stats = self._collect_mediator_df_stats(df_summary)
+        out_insights.append(self._create_blast_radius_insight(det, target_cls, loc, stats))
         out_insights.append(self._create_mediator_thread_safety_insight(det, target_cls, loc))
 
     def _collect_mediator_df_stats(self, df_summary: DataFlowSummaryReport | None) -> tuple[int, int, list[str]]:
@@ -100,10 +98,9 @@ class PatternInsightsService:
         det: Any,
         target_cls: str,
         loc: SourceLocation,
-        writers_count: int,
-        readers_count: int,
-        affected: list[str],
+        stats: tuple[int, int, list[str]],
     ) -> PatternInsight:
+        readers_count, writers_count, affected = stats
         return PatternInsight(
             target_pattern=det.pattern_type,
             target_name=target_cls,

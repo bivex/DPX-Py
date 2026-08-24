@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Protocol
+from typing import Any, Protocol
 
 from pattern_detector.domain.code_model import CodeModel
 from pattern_detector.domain.data_flow import DataFlowGraph, DataFlowSummaryReport
@@ -22,6 +22,17 @@ class ScanOptions:
     output_markdown_path: str | None = None
     output_sarif_path: str | None = None
     verbose: bool = False
+
+
+@dataclass
+class DataFlowOptions:
+    """Configuration options for data flow tracing."""
+
+    direction: str = "OUT"
+    variant: str = "simplified"
+    to_entity: str | None = None
+    max_depth: int = 15
+    file_extensions: list[str] = field(default_factory=lambda: [".py", ".pyi"])
 
 
 class ScannerPort(Protocol):
@@ -47,10 +58,8 @@ class DataFlowPort(Protocol):
         self,
         target_path: str,
         target_entity: str,
-        direction: str = "OUT",
-        variant: str = "simplified",
-        to_entity: str | None = None,
-        max_depth: int = 15,
+        options: DataFlowOptions | None = None,
+        **kwargs: Any,
     ) -> DataFlowGraph:
         """Trace data flow graph for target entity."""
         ...

@@ -31,6 +31,8 @@ class KissRule(BasePatternRule):
             simple_name = fn.name.split(".")[-1]
             if simple_name in ("equals", "hashCode", "toString", "compareTo"):
                 continue
+            if any("command" in d.lower() or "cli" in d.lower() or "route" in d.lower() for d in fn.decorators):
+                continue
 
             # 1. Parameter count check
             max_params = max((len(pl) for pl in fn.parameter_lists), default=0)

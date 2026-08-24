@@ -75,9 +75,10 @@ class DataFlowGraph:
         name: str,
         kind: NodeKind,
         cluster: str = "default",
-        location: SourceLocation | None = None,
-        is_root: bool = False,
+        **kwargs: Any,
     ) -> DataFlowNode:
+        location: SourceLocation | None = kwargs.get("location")
+        is_root: bool = bool(kwargs.get("is_root", False))
         if node_id not in self.nodes:
             self.nodes[node_id] = DataFlowNode(
                 id=node_id,

@@ -144,6 +144,8 @@ class _PythonAstExtractor(ast.NodeVisitor):
         elif isinstance(node, ast.Attribute):
             val_name = self._extract_name(node.value)
             return f"{val_name}.{node.attr}" if val_name else node.attr
+        elif isinstance(node, ast.Call):
+            return self._extract_name(node.func)
         elif isinstance(node, ast.Constant):
             return str(node.value)
         return ""
@@ -203,7 +205,7 @@ class _PythonAstExtractor(ast.NodeVisitor):
         )
         self.records[class_name] = record
 
-        self._register_protocol_if_needed(class_name, is_abstract, methods, pure_methods, loc, node)
+        self._register_protocol_if_needed(class_name, is_abstract, methods, loc, node)
         self._register_singleton_state_if_needed(class_name, is_singleton_decorated, fields, methods, loc)
 
         self._current_class = prev_class
@@ -215,6 +217,16 @@ class _PythonAstExtractor(ast.NodeVisitor):
             if b_name:
                 bases.append(b_name)
         return bases
+
+    def _extract_pure_methods(self, methods: list[Any]) -> list[MethodSignature]:
+        return [MethodSignature(name=m.name.split(".")[-1], location=m.location) for m in methods if m.is_abstract]
+
+    def _extract_class_body_items(self, class_name: str, node: ast.ClassDef) -> None:
+        for item in node.body:
+            if isinstance(item, (ast.Assign, ast.AnnAssign)):
+                self._extract_class_attribute(class_name, item)
+            elif isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                self._extract_method(class_name, item)
 
     def _visit_class_body(self, class_name: str, node: ast.ClassDef) -> None:
         for item in node.body:
@@ -241,11 +253,11 @@ class _PythonAstExtractor(ast.NodeVisitor):
         class_name: str,
         is_abstract: bool,
         methods: list[Any],
-        pure_methods: list[Any],
         loc: SourceLocation,
         node: ast.ClassDef,
     ) -> None:
         if is_abstract or (self._is_interface_name(class_name) and len(methods) > 0):
+            pure_methods = self._extract_pure_methods(methods)
             signatures = (
                 pure_methods
                 if pure_methods
@@ -302,6 +314,8 @@ class _PythonAstExtractor(ast.NodeVisitor):
 
         doc = ast.get_docstring(node) or ""
         body_stmts = "\n".join(ast.unparse(s) for s in node.body) if hasattr(ast, "unparse") else ""
+        decorators = [self._extract_name(d) for d in node.decorator_list]
+        is_abstract = self._is_method_abstract(node)
         fn_model = FunctionModel(
             name=qualified_name,
             namespace=self.module_name,
@@ -312,8 +326,10 @@ class _PythonAstExtractor(ast.NodeVisitor):
             reads_variables=sorted(set(r_vars)),
             writes_variables=sorted(set(w_vars)),
             modifies_variables=sorted(set(m_vars)),
+            decorators=decorators,
             docstring=doc,
             is_private=fn_name.startswith("_") and not fn_name.startswith("__"),
+            is_abstract=is_abstract,
         )
 
         self._class_methods[class_name].append(fn_model)
@@ -329,12 +345,7 @@ class _PythonAstExtractor(ast.NodeVisitor):
 
     def _is_method_abstract(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
         decorators = [self._extract_name(d) for d in node.decorator_list]
-        if any("abstract" in d.lower() for d in decorators):
-            return True
-        for stmt in node.body:
-            if isinstance(stmt, ast.Raise) and stmt.exc and "NotImplemented" in self._extract_name(stmt.exc):
-                return True
-        return False
+        return any("abstract" in d.lower() for d in decorators)
 
     def _update_class_init_fields(self, class_name: str, fn_name: str, w_vars: list[str]) -> None:
         if fn_name in ("__init__", "__post_init__"):
@@ -366,6 +377,7 @@ class _PythonAstExtractor(ast.NodeVisitor):
         calls, r_vars, w_vars, m_vars = self._analyze_body(node)
         doc = ast.get_docstring(node) or ""
         body_stmts = "\n".join(ast.unparse(s) for s in node.body) if hasattr(ast, "unparse") else ""
+        decorators = [self._extract_name(d) for d in node.decorator_list]
 
         fn_model = FunctionModel(
             name=fn_name,
@@ -377,6 +389,7 @@ class _PythonAstExtractor(ast.NodeVisitor):
             reads_variables=sorted(set(r_vars)),
             writes_variables=sorted(set(w_vars)),
             modifies_variables=sorted(set(m_vars)),
+            decorators=decorators,
             docstring=doc,
             is_private=fn_name.startswith("_") and not fn_name.startswith("__"),
         )

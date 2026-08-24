@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict, deque
+from dataclasses import dataclass
 from typing import Any
 
 from pattern_detector.domain.code_model import CodeModel
@@ -14,6 +15,15 @@ from pattern_detector.domain.data_flow import (
     NodeKind,
     VariableFlowSummary,
 )
+
+
+@dataclass
+class _ExpansionContext:
+    graph: DataFlowGraph
+    depth: int
+    max_nodes: int
+    visited_vars: set[str]
+    queue: deque[tuple[str, int]]
 
 
 class DataFlowService:
@@ -41,10 +51,13 @@ class DataFlowService:
             graph.max_depth = max(graph.max_depth, depth)
             visited_vars.add(var_name)
 
+            ctx = _ExpansionContext(
+                graph=graph, depth=depth, max_nodes=max_nodes, visited_vars=visited_vars, queue=queue
+            )
             for fn in readers_by_var.get(var_name, []):
                 if len(graph.nodes) >= max_nodes:
                     break
-                self._expand_forward_function(graph, var_name, fn, depth, max_nodes, visited_vars, queue)
+                self._expand_forward_function(ctx, var_name, fn)
 
         return graph
 
@@ -70,10 +83,13 @@ class DataFlowService:
             graph.max_depth = max(graph.max_depth, depth)
             visited_vars.add(var_name)
 
+            ctx = _ExpansionContext(
+                graph=graph, depth=depth, max_nodes=max_nodes, visited_vars=visited_vars, queue=queue
+            )
             for fn in writers_by_var.get(var_name, []):
                 if len(graph.nodes) >= max_nodes:
                     break
-                self._expand_backward_function(graph, var_name, fn, depth, max_nodes, visited_vars, queue)
+                self._expand_backward_function(ctx, var_name, fn)
 
         return graph
 
@@ -182,54 +198,50 @@ class DataFlowService:
 
     def _expand_forward_function(
         self,
-        graph: DataFlowGraph,
+        ctx: _ExpansionContext,
         var_name: str,
         fn: Any,
-        depth: int,
-        max_nodes: int,
-        visited_vars: set[str],
-        queue: deque[tuple[str, int]],
     ) -> None:
         fn_id = f"fn_{fn.name}"
         cluster_name = fn.namespace or (fn.location.file_path.split("/")[-1] if fn.location else "global")
-        graph.add_node(node_id=fn_id, name=fn.name, kind=NodeKind.FUNCTION, cluster=cluster_name, location=fn.location)
-        graph.add_edge(from_id=var_name, to_id=fn_id, kind="READS", location=fn.location)
+        ctx.graph.add_node(
+            node_id=fn_id, name=fn.name, kind=NodeKind.FUNCTION, cluster=cluster_name, location=fn.location
+        )
+        ctx.graph.add_edge(from_id=var_name, to_id=fn_id, kind="READS", location=fn.location)
 
         written_vars = list(dict.fromkeys(fn.writes_variables + fn.modifies_variables))
         for w_var in written_vars:
-            if len(graph.nodes) >= max_nodes:
+            if len(ctx.graph.nodes) >= ctx.max_nodes:
                 break
             w_kind = "MODIFIES" if w_var in fn.modifies_variables or (w_var == var_name) else "WRITES"
-            graph.add_node(node_id=w_var, name=w_var, kind=NodeKind.VARIABLE, cluster=cluster_name)
-            graph.add_edge(from_id=fn_id, to_id=w_var, kind=w_kind, location=fn.location)
+            ctx.graph.add_node(node_id=w_var, name=w_var, kind=NodeKind.VARIABLE, cluster=cluster_name)
+            ctx.graph.add_edge(from_id=fn_id, to_id=w_var, kind=w_kind, location=fn.location)
 
-            if w_var != var_name and w_var not in visited_vars:
-                queue.append((w_var, depth + 1))
+            if w_var != var_name and w_var not in ctx.visited_vars:
+                ctx.queue.append((w_var, ctx.depth + 1))
 
     def _expand_backward_function(
         self,
-        graph: DataFlowGraph,
+        ctx: _ExpansionContext,
         var_name: str,
         fn: Any,
-        depth: int,
-        max_nodes: int,
-        visited_vars: set[str],
-        queue: deque[tuple[str, int]],
     ) -> None:
         fn_id = f"fn_{fn.name}"
         cluster_name = fn.namespace or (fn.location.file_path.split("/")[-1] if fn.location else "global")
-        graph.add_node(node_id=fn_id, name=fn.name, kind=NodeKind.FUNCTION, cluster=cluster_name, location=fn.location)
+        ctx.graph.add_node(
+            node_id=fn_id, name=fn.name, kind=NodeKind.FUNCTION, cluster=cluster_name, location=fn.location
+        )
         w_kind = "MODIFIED_BY" if var_name in fn.modifies_variables else "WRITTEN_BY"
-        graph.add_edge(from_id=var_name, to_id=fn_id, kind=w_kind, location=fn.location)
+        ctx.graph.add_edge(from_id=var_name, to_id=fn_id, kind=w_kind, location=fn.location)
 
         for r_var in fn.reads_variables:
-            if len(graph.nodes) >= max_nodes:
+            if len(ctx.graph.nodes) >= ctx.max_nodes:
                 break
-            graph.add_node(node_id=r_var, name=r_var, kind=NodeKind.VARIABLE, cluster=cluster_name)
-            graph.add_edge(from_id=fn_id, to_id=r_var, kind="READS_FROM", location=fn.location)
+            ctx.graph.add_node(node_id=r_var, name=r_var, kind=NodeKind.VARIABLE, cluster=cluster_name)
+            ctx.graph.add_edge(from_id=fn_id, to_id=r_var, kind="READS_FROM", location=fn.location)
 
-            if r_var != var_name and r_var not in visited_vars:
-                queue.append((r_var, depth + 1))
+            if r_var != var_name and r_var not in ctx.visited_vars:
+                ctx.queue.append((r_var, ctx.depth + 1))
 
     def _find_ancestors(self, graph: DataFlowGraph, target: str) -> set[str]:
         reverse_adj: dict[str, list[str]] = defaultdict(list)
