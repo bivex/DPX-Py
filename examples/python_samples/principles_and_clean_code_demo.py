@@ -1,60 +1,83 @@
-"""Showcase of Clean Code, SOLID Principles and Anti-Pattern Detection in Python."""
+"""Showcase of Clean Code, SOLID Principles and Design Patterns in Python."""
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import Any
 
 
-# 1. SRP: God Class Anti-Pattern
-class GodApplicationManager:
-    """God Object combining unrelated responsibilities."""
+# 1. SRP: Cohesive Single Responsibility Services
+class UserPersistenceService:
+    """Manages user persistence operations."""
 
-    def save_user_to_database(self) -> None:
+    def save_user(self, user_id: str) -> None:
         pass
 
-    def delete_user_from_database(self) -> None:
+    def delete_user(self, user_id: str) -> None:
         pass
 
-    def query_user_records(self) -> None:
+    def query_users(self) -> list[str]:
+        return []
+
+
+class NotificationService:
+    """Manages external user notifications."""
+
+    def send_webhook(self, url: str, payload: dict[str, Any]) -> None:
         pass
 
-    def send_http_webhook(self) -> None:
-        pass
-
-    def parse_http_payload(self) -> None:
-        pass
-
-    def render_html_template(self) -> None:
-        pass
-
-    def generate_pdf_report(self) -> None:
-        pass
-
-    def calculate_corporate_tax(self) -> None:
-        pass
-
-    def validate_credit_card(self) -> None:
-        pass
-
-    def send_smtp_email(self) -> None:
-        pass
-
-    def resize_user_avatar(self) -> None:
-        pass
-
-    def encrypt_master_keys(self) -> None:
+    def send_email(self, recipient: str, subject: str) -> None:
         pass
 
 
-# 2. OCP: Type-Inspection Cascade Violation
+class ReportGenerationService:
+    """Generates document reports."""
+
+    def render_html(self, template_name: str) -> str:
+        return ""
+
+    def generate_pdf(self, report_id: str) -> bytes:
+        return b""
+
+
+# 2. OCP: Polymorphic Open Extension
+class IPaymentMethodHandler(ABC):
+    """Abstract Strategy enabling open extension without modifying processor."""
+
+    @abstractmethod
+    def execute_payment(self, amount: float) -> None:
+        pass
+
+
+class CardPaymentMethodHandler(IPaymentMethodHandler):
+    def execute_payment(self, amount: float) -> None:
+        print(f"Processing Card payment: ${amount:.2f}")
+
+
+class PayPalPaymentMethodHandler(IPaymentMethodHandler):
+    def execute_payment(self, amount: float) -> None:
+        print(f"Processing PayPal payment: ${amount:.2f}")
+
+
+class CryptoPaymentMethodHandler(IPaymentMethodHandler):
+    def execute_payment(self, amount: float) -> None:
+        print(f"Processing Crypto payment: ${amount:.2f}")
+
+
 class PaymentProcessor:
-    def process_payment(self, payment_method: object) -> None:
-        if isinstance(payment_method, str) and payment_method == "CARD":
-            print("Processing Card")
-        elif isinstance(payment_method, str) and payment_method == "PAYPAL":
-            print("Processing PayPal")
-        elif isinstance(payment_method, str) and payment_method == "CRYPTO":
-            print("Processing Crypto")
+    """Adheres to OCP by delegating execution to polymorphic IPaymentMethodHandler strategies."""
+
+    def __init__(self, handlers: dict[str, IPaymentMethodHandler] | None = None) -> None:
+        self._handlers: dict[str, IPaymentMethodHandler] = handlers or {
+            "CARD": CardPaymentMethodHandler(),
+            "PAYPAL": PayPalPaymentMethodHandler(),
+            "CRYPTO": CryptoPaymentMethodHandler(),
+        }
+
+    def process_payment(self, payment_type: str, amount: float) -> None:
+        handler = self._handlers.get(payment_type)
+        if handler:
+            handler.execute_payment(amount)
 
 
 # 3. LSP: Subclass Contract Adherence
@@ -98,8 +121,9 @@ class IDevOps(ABC):
         pass
 
 
-# 5. Law of Demeter: Train Wreck Violation
+# 5. Law of Demeter: Encapsulated Tell-Don't-Ask Navigation
 class OrderReportService:
-    def get_order_postcode(self, order: object) -> str:
-        # Train wreck method chaining violating Law of Demeter
-        return order.get_customer().get_profile().get_address().get_postal_code()
+    """Respects Law of Demeter by interacting only with immediate dependencies."""
+
+    def get_order_postcode(self, order: Any) -> str:
+        return order.get_delivery_postal_code()
