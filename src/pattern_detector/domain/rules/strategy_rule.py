@@ -38,34 +38,14 @@ class StrategyPatternRule(BasePatternRule):
         return results
 
     def _analyze_multimethod(self, mm_name: str, methods: list[Any], ns: Any) -> Detection:
+        primary_loc, decl_evidence = self._find_defmulti_declaration(mm_name, methods, ns)
+        branches, branch_evidence, related_locs = self._find_defmethod_branches(methods)
+
         evidences: list[Evidence] = []
-        related_locs: list[SourceLocation] = []
-
-        defmulti_fn = next((m for m in methods if not m.dispatch_val), None)
-        if defmulti_fn:
-            evidences.append(
-                self.evidence(
-                    description=f"Multimethod dispatch definition '(defmulti {mm_name} {defmulti_fn.dispatch_fn or '...'})'",
-                    weight=0.50,
-                    location=defmulti_fn.location,
-                    code_suffix="MULTIMETHOD_DECLARATION",
-                )
-            )
-            primary_loc = defmulti_fn.location
-        else:
-            primary_loc = methods[0].location if methods else SourceLocation(file_path=ns.file_path, line=1)
-
-        branches = [m for m in methods if m.dispatch_val is not None]
-        if branches:
-            evidences.append(
-                self.evidence(
-                    description=f"Found {len(branches)} distinct interchangeable strategy branches (defmethod): {', '.join(b.dispatch_val or '' for b in branches[:5])}",
-                    weight=min(0.45, 0.20 + 0.05 * len(branches)),
-                    location=branches[0].location,
-                    code_suffix="DISPATCH_BRANCHES",
-                )
-            )
-            related_locs.extend(b.location for b in branches)
+        if decl_evidence:
+            evidences.append(decl_evidence)
+        if branch_evidence:
+            evidences.append(branch_evidence)
 
         return self.create_detection(
             target_name=mm_name,
@@ -76,6 +56,37 @@ class StrategyPatternRule(BasePatternRule):
             summary=f"Strategy pattern: multimethod '{mm_name}' with {len(branches)} polymorphic dispatch strategies",
             base_score=0.15,
         )
+
+    def _find_defmulti_declaration(
+        self, mm_name: str, methods: list[Any], ns: Any
+    ) -> tuple[SourceLocation, Evidence | None]:
+        for m in methods:
+            if not m.dispatch_val:
+                ev = self.evidence(
+                    description=f"Multimethod dispatch definition '(defmulti {mm_name} {m.dispatch_fn or '...'})'",
+                    weight=0.50,
+                    location=m.location,
+                    code_suffix="MULTIMETHOD_DECLARATION",
+                )
+                return m.location, ev
+
+        fallback_loc = methods[0].location if methods else SourceLocation(file_path=ns.file_path, line=1)
+        return fallback_loc, None
+
+    def _find_defmethod_branches(self, methods: list[Any]) -> tuple[list[Any], Evidence | None, list[SourceLocation]]:
+        branches = [m for m in methods if m.dispatch_val is not None]
+        if not branches:
+            return [], None, []
+
+        branch_names = [b.dispatch_val or "" for b in branches[:5]]
+        ev = self.evidence(
+            description=f"Found {len(branches)} distinct interchangeable strategy branches (defmethod): {', '.join(branch_names)}",
+            weight=min(0.45, 0.20 + 0.05 * len(branches)),
+            location=branches[0].location,
+            code_suffix="DISPATCH_BRANCHES",
+        )
+        related_locs = [b.location for b in branches]
+        return branches, ev, related_locs
 
     def _detect_protocol_strategies(self, model: CodeModel) -> list[Detection]:
         results: list[Detection] = []

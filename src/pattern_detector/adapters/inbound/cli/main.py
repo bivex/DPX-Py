@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import typer
 from rich.console import Console
@@ -109,10 +110,7 @@ def scan(
 ) -> None:
     """Scan a Python source code file or directory for software design patterns."""
     target_path = str(Path(path).resolve())
-
     container = create_container()
-    scanner = container.get_scanner()
-
     options = ScanOptions(
         min_confidence=min_confidence,
         enabled_patterns=pattern or [],
@@ -124,47 +122,47 @@ def scan(
     )
 
     if llm:
-        report = scanner.scan_path(target_path, options=options)
-        insights_report = container.scanning_service.generate_insights(target_path, report=report) if insights else None
-        print(container.llm_formatter.format_scan_report(report, insights_report=insights_report))
-        return
+        _handle_llm_scan(container, target_path, options, insights)
+    else:
+        _handle_terminal_scan(container, path, target_path, options, insights, verbose)
 
+
+def _handle_llm_scan(container: Container, target_path: str, options: ScanOptions, insights: bool) -> None:
+    scanner = container.get_scanner()
+    report = scanner.scan_path(target_path, options=options)
+    insights_report = container.scanning_service.generate_insights(target_path, report=report) if insights else None
+    print(container.llm_formatter.format_scan_report(report, insights_report=insights_report))
+
+
+def _handle_terminal_scan(
+    container: Container,
+    path: str,
+    target_path: str,
+    options: ScanOptions,
+    insights: bool,
+    verbose: bool,
+) -> None:
+    scanner = container.get_scanner()
     with console.status(f"[cyan]Scanning [bold]{path}[/bold] using ANTLR parser & Domain Rules...[/cyan]"):
         report = scanner.scan_path(target_path, options=options)
 
-    # Render formatted report to terminal
     container.report_formatter.render_to_console(report, console, verbose=verbose)  # type: ignore[attr-defined]
-
     if insights:
         _render_insights_to_console(container, target_path, report)
 
-    if json_output:
-        console.print(
-            f"[bold green]✔[/bold green] Full JSON detection report exported to: [underline]{json_output}[/underline]"
-        )
-    if html_output:
-        console.print(
-            f"[bold green]✔[/bold green] Interactive HTML dashboard exported to: [underline]{html_output}[/underline]"
-        )
-    if markdown_output:
-        console.print(
-            f"[bold green]✔[/bold green] Markdown report exported to: [underline]{markdown_output}[/underline]"
-        )
-    if sarif_output:
-        console.print(
-            f"[bold green]✔[/bold green] OASIS SARIF report exported to: [underline]{sarif_output}[/underline]"
-        )
-    if json_output or html_output or markdown_output or sarif_output:
-        console.print()
-
 
 @app.command(name="rules")
-def list_rules() -> None:
-    """Display catalog of all registered pattern detection rules and heuristics."""
-    table = Table(title="📐 Registered Design Pattern Rules & Heuristics", border_style="bright_blue", show_header=True)
+@app.command(name="catalog")
+def catalog() -> None:
+    """List all available software design patterns supported by DPX-Py."""
+    table = Table(
+        title="📐 Registered Design Pattern Rules & Heuristics",
+        border_style="cyan",
+        show_header=True,
+    )
     table.add_column("Pattern Type", style="bold cyan")
-    table.add_column("Category", style="yellow")
-    table.add_column("Intent & Detection Strategy", style="white")
+    table.add_column("Category", style="magenta")
+    table.add_column("Description & Intent", style="white")
     table.add_column("Tags", style="dim")
 
     for p_type, p_def in PATTERN_CATALOG.items():
@@ -271,51 +269,78 @@ def dataflow(
     ] = 15,
 ) -> None:
     """Trace forward (Data Flow Out) or backward (Data Flow In) propagation graph for one or ALL variables."""
-    # If target is actually an existing directory or file path, treat it as the analysis path
-    if target and (os.path.isdir(target) or os.path.isfile(target)):
-        target_path = str(Path(target).resolve())
-        target = None
-    else:
-        target_path = str(Path(path).resolve())
-
+    target_path, resolved_target = _resolve_dataflow_target(target, path)
     container = create_container()
 
-    # If no target specified or --all requested: Analyze ALL variables
-    if target is None or all_vars:
-        summary_report = container.scanning_service.analyze_all_data_flows(
-            target_path=target_path,
-            direction=direction,
-            file_filter=file_filter,
-            max_depth=max_depth,
+    if resolved_target is None or all_vars:
+        _handle_all_dataflows_cli(
+            container, target_path, direction, file_filter, max_depth, llm, html_output, json_output
         )
-
-        if llm:
-            print(container.llm_formatter.format_data_flow_summary(summary_report))
-            return
-
-        console.print(summary_report.to_rich_table())
-
-        if html_output:
-            html_content = container.data_flow_html_formatter.format_summary_report(summary_report)
-            Path(html_output).parent.mkdir(parents=True, exist_ok=True)
-            with open(html_output, "w", encoding="utf-8") as f:
-                f.write(html_content)
-            console.print(
-                f"\n[bold green]✔[/bold green] Interactive HTML report exported to: [underline]{html_output}[/underline]"
-            )
-
-        if json_output:
-            import json
-
-            Path(json_output).parent.mkdir(parents=True, exist_ok=True)
-            with open(json_output, "w", encoding="utf-8") as f:
-                json.dump(summary_report.to_json(), f, indent=2)
-            console.print(
-                f"\n[bold green]✔[/bold green] Data flow summary JSON exported to: [underline]{json_output}[/underline]"
-            )
         return
 
-    # Single variable flow analysis
+    _handle_single_dataflow_cli(
+        container,
+        target_path,
+        resolved_target,
+        direction,
+        variant,
+        to_entity,
+        max_depth,
+        llm,
+        mermaid,
+        html_output,
+        json_output,
+    )
+
+
+def _resolve_dataflow_target(target: str | None, path: str) -> tuple[str, str | None]:
+    if target and (os.path.isdir(target) or os.path.isfile(target)):
+        return str(Path(target).resolve()), None
+    return str(Path(path).resolve()), target
+
+
+def _handle_all_dataflows_cli(
+    container: Container,
+    target_path: str,
+    direction: str,
+    file_filter: str | None,
+    max_depth: int,
+    llm: bool,
+    html_output: str | None,
+    json_output: str | None,
+) -> None:
+    summary_report = container.scanning_service.analyze_all_data_flows(
+        target_path=target_path,
+        direction=direction,
+        file_filter=file_filter,
+        max_depth=max_depth,
+    )
+
+    if llm:
+        print(container.llm_formatter.format_data_flow_summary(summary_report))
+        return
+
+    console.print(summary_report.to_rich_table())
+
+    if html_output:
+        _save_dataflow_html(container.data_flow_html_formatter.format_summary_report(summary_report), html_output)
+    if json_output:
+        _save_dataflow_json(summary_report.to_json(), json_output)
+
+
+def _handle_single_dataflow_cli(
+    container: Container,
+    target_path: str,
+    target: str,
+    direction: str,
+    variant: str,
+    to_entity: str | None,
+    max_depth: int,
+    llm: bool,
+    mermaid: bool,
+    html_output: str | None,
+    json_output: str | None,
+) -> None:
     graph = container.scanning_service.analyze_data_flow(
         target_path=target_path,
         target_entity=target,
@@ -333,31 +358,31 @@ def dataflow(
         console.print(f"[bold green]Mermaid Diagram for Data Flow ({graph.direction.value}):[/bold green]\n")
         console.print(f"```mermaid\n{graph.to_mermaid()}\n```")
     else:
-        title = f"Data Flow {graph.direction.value}: '{target}'"
-        if to_entity:
-            title += f" ➔ '{to_entity}'"
+        title = f"Data Flow {graph.direction.value}: '{target}'" + (f" ➔ '{to_entity}'" if to_entity else "")
         console.print(
             Panel(graph.to_rich_tree(), title=f"📊 [bold cyan]{title}[/bold cyan]", border_style="bright_blue")
         )
 
     if html_output:
-        html_content = container.data_flow_html_formatter.format_single_graph(graph)
-        Path(html_output).parent.mkdir(parents=True, exist_ok=True)
-        with open(html_output, "w", encoding="utf-8") as f:
-            f.write(html_content)
-        console.print(
-            f"\n[bold green]✔[/bold green] Interactive HTML report exported to: [underline]{html_output}[/underline]"
-        )
-
+        _save_dataflow_html(container.data_flow_html_formatter.format_single_graph(graph), html_output)
     if json_output:
-        import json
+        _save_dataflow_json(graph.to_json(), json_output)
 
-        Path(json_output).parent.mkdir(parents=True, exist_ok=True)
-        with open(json_output, "w", encoding="utf-8") as f:
-            json.dump(graph.to_json(), f, indent=2)
-        console.print(
-            f"\n[bold green]✔[/bold green] Data flow graph JSON exported to: [underline]{json_output}[/underline]"
-        )
+
+def _save_dataflow_html(content: str, html_output: str) -> None:
+    Path(html_output).parent.mkdir(parents=True, exist_ok=True)
+    with open(html_output, "w", encoding="utf-8") as f:
+        f.write(content)
+    console.print(
+        f"\n[bold green]✔[/bold green] Interactive HTML report exported to: [underline]{html_output}[/underline]"
+    )
+
+
+def _save_dataflow_json(data: Any, json_output: str) -> None:
+    Path(json_output).parent.mkdir(parents=True, exist_ok=True)
+    with open(json_output, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+    console.print(f"\n[bold green]✔[/bold green] Data flow JSON exported to: [underline]{json_output}[/underline]")
 
 
 def _render_insights_to_console(

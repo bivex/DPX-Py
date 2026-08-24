@@ -115,16 +115,24 @@ class DependencyInversionRule(BasePatternRule):
 
     def _find_concrete_instantiations(self, rec: Any) -> list[str]:
         concrete: list[str] = []
-        suffixes = ("Repository", "Client", "Database", "Dao", "Gateway")
         for m in rec.methods:
-            if m.name.split(".")[-1] in ("__init__", "__post_init__"):
-                continue
-            body = m.body_text or ""
-            for raw_match in _NEW_EXPR_RE.findall(body):
-                cl = next((item for item in raw_match if item), "")
-                if any(cl.endswith(sfx) for sfx in suffixes):
-                    concrete.append(cl)
-            for cl in _PYTHON_CONSTRUCTOR_RE.findall(body) + m.calls:
-                if any(cl.endswith(sfx) for sfx in suffixes) and cl != rec.name:
-                    concrete.append(cl)
+            if m.name.split(".")[-1] not in ("__init__", "__post_init__"):
+                found = self._extract_method_concrete_deps(m, rec.name)
+                concrete.extend(found)
         return concrete
+
+    def _extract_method_concrete_deps(self, m: Any, rec_name: str) -> list[str]:
+        body = m.body_text or ""
+        results: list[str] = []
+        suffixes = ("Repository", "Client", "Database", "Dao", "Gateway")
+
+        for raw_match in _NEW_EXPR_RE.findall(body):
+            cl = next((item for item in raw_match if item), "")
+            if any(cl.endswith(sfx) for sfx in suffixes):
+                results.append(cl)
+
+        for cl in _PYTHON_CONSTRUCTOR_RE.findall(body) + m.calls:
+            if any(cl.endswith(sfx) for sfx in suffixes) and cl != rec_name:
+                results.append(cl)
+
+        return results

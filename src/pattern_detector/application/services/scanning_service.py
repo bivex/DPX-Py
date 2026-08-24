@@ -133,21 +133,30 @@ class ScanningService(ScannerPort, DetectorPort, DataFlowPort):
 
         # 3. Execute domain detection rules
         report = self._detector_service.detect_all(code_model, project_path=target_path)
-        total_elapsed = time.perf_counter() - start_time
-        report.elapsed_seconds = total_elapsed
+        report.elapsed_seconds = time.perf_counter() - start_time
 
         # 4. Filter by confidence or pattern type if requested
-        if opts.min_confidence > 0.0 or opts.enabled_patterns:
-            filtered: list[Detection] = []
-            for d in report.detections:
-                if d.confidence.score < opts.min_confidence:
-                    continue
-                if opts.enabled_patterns and d.pattern_type.value not in opts.enabled_patterns:
-                    continue
-                filtered.append(d)
-            report.detections = filtered
+        report.detections = self._filter_detections(report.detections, opts)
 
         # 5. Persist to outputs if requested
+        self._persist_report(report, opts)
+
+        return report
+
+    def _filter_detections(self, detections: list[Detection], opts: ScanOptions) -> list[Detection]:
+        if opts.min_confidence <= 0.0 and not opts.enabled_patterns:
+            return detections
+
+        filtered: list[Detection] = []
+        for d in detections:
+            if d.confidence.score < opts.min_confidence:
+                continue
+            if opts.enabled_patterns and d.pattern_type.value not in opts.enabled_patterns:
+                continue
+            filtered.append(d)
+        return filtered
+
+    def _persist_report(self, report: DetectionReport, opts: ScanOptions) -> None:
         if opts.output_json_path and self._json_repository:
             self._json_repository.save(report, opts.output_json_path)
 
@@ -159,8 +168,6 @@ class ScanningService(ScannerPort, DetectorPort, DataFlowPort):
 
         if opts.output_sarif_path and self._sarif_repository:
             self._sarif_repository.save(report, opts.output_sarif_path)
-
-        return report
 
     def generate_insights(
         self,

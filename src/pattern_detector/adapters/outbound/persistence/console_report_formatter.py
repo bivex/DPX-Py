@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+from typing import Any
 
 from rich.console import Console
 from rich.panel import Panel
@@ -29,6 +30,21 @@ class ConsoleReportFormatter(ReportFormatterPort):
 
     def render_to_console(self, report: DetectionReport, console: Console, verbose: bool = False) -> None:
         """Render report directly to rich console."""
+        self._render_header(report, console)
+
+        if not report.detections:
+            console.print("\n[yellow]No design pattern instances detected in the provided source files.[/yellow]\n")
+            return
+
+        self._render_summary_table(report, console)
+        console.print("[bold underline]📋 Identified Design Patterns:[/bold underline]\n")
+
+        for idx, det in enumerate(report.detections, 1):
+            tree = self._render_detection_tree(idx, det)
+            console.print(tree)
+            console.print()
+
+    def _render_header(self, report: DetectionReport, console: Console) -> None:
         header = Text()
         header.append("🔍 Pattern Scanner & Detector ", style="bold magenta")
         header.append("• Hexagonal DDD Architecture\n", style="italic cyan")
@@ -38,11 +54,7 @@ class ConsoleReportFormatter(ReportFormatterPort):
         )
         console.print(Panel(header, border_style="bright_blue"))
 
-        if not report.detections:
-            console.print("\n[yellow]No design pattern instances detected in the provided source files.[/yellow]\n")
-            return
-
-        # 1. Summary Statistics Table
+    def _render_summary_table(self, report: DetectionReport, console: Console) -> None:
         summary_table = Table(title="📊 Detection Summary by Category", border_style="cyan", show_header=True)
         summary_table.add_column("Pattern Category", style="bold")
         summary_table.add_column("Detections", justify="right", style="cyan")
@@ -61,44 +73,39 @@ class ConsoleReportFormatter(ReportFormatterPort):
         console.print(summary_table)
         console.print()
 
-        # 2. Detailed Detections Listing
-        console.print("[bold underline]📋 Identified Design Patterns:[/bold underline]\n")
+    def _render_detection_tree(self, idx: int, det: Any) -> Tree:
+        badge_color = {
+            ConfidenceLevel.VERY_HIGH: "bold green",
+            ConfidenceLevel.HIGH: "bold cyan",
+            ConfidenceLevel.MEDIUM: "bold yellow",
+            ConfidenceLevel.LOW: "bold red",
+        }.get(det.level, "white")
 
-        for idx, det in enumerate(report.detections, 1):
-            # Badge style based on level
-            badge_color = {
-                ConfidenceLevel.VERY_HIGH: "bold green",
-                ConfidenceLevel.HIGH: "bold cyan",
-                ConfidenceLevel.MEDIUM: "bold yellow",
-                ConfidenceLevel.LOW: "bold red",
-            }.get(det.level, "white")
+        conf_str = f"[{badge_color}]{det.confidence.percentage_str} [{det.level.value}][/{badge_color}]"
 
-            conf_str = f"[{badge_color}]{det.confidence.percentage_str} [{det.level.value}][/{badge_color}]"
+        title_text = Text()
+        title_text.append(f"#{idx} ", style="bold dim")
+        title_text.append(f"{det.pattern_type.value.upper()} ", style="bold bright_cyan")
+        title_text.append(f"on {det.target_kind} ", style="italic")
+        title_text.append(f"'{det.target_name}'", style="bold white")
 
-            title_text = Text()
-            title_text.append(f"#{idx} ", style="bold dim")
-            title_text.append(f"{det.pattern_type.value.upper()} ", style="bold bright_cyan")
-            title_text.append(f"on {det.target_kind} ", style="italic")
-            title_text.append(f"'{det.target_name}'", style="bold white")
+        tree = Tree(title_text)
+        tree.add(f"📍 [bold]Location:[/bold] [underline cyan]{det.primary_location}[/underline cyan]")
+        tree.add(f"🎯 [bold]Confidence:[/bold] {conf_str}")
+        tree.add(f"📝 [bold]Summary:[/bold] {det.summary}")
 
-            tree = Tree(title_text)
-            tree.add(f"📍 [bold]Location:[/bold] [underline cyan]{det.primary_location}[/underline cyan]")
-            tree.add(f"🎯 [bold]Confidence:[/bold] {conf_str}")
-            tree.add(f"📝 [bold]Summary:[/bold] {det.summary}")
+        if det.evidences:
+            ev_branch = tree.add(f"🔎 [bold]Evidence Trail ({len(det.evidences)} heuristics):[/bold]")
+            for ev in det.evidences:
+                weight_pct = int(ev.weight * 100)
+                ev_text = f"[bold green]+{weight_pct}%[/bold green] [dim]({ev.rule_code})[/dim] {ev.description}"
+                if ev.location:
+                    ev_text += f" → [cyan]{ev.location}[/cyan]"
+                ev_branch.add(ev_text)
 
-            if det.evidences:
-                ev_branch = tree.add(f"🔎 [bold]Evidence Trail ({len(det.evidences)} heuristics):[/bold]")
-                for ev in det.evidences:
-                    weight_pct = int(ev.weight * 100)
-                    ev_text = f"[bold green]+{weight_pct}%[/bold green] [dim]({ev.rule_code})[/dim] {ev.description}"
-                    if ev.location:
-                        ev_text += f" → [cyan]{ev.location}[/cyan]"
-                    ev_branch.add(ev_text)
+        if det.related_locations:
+            rel_branch = tree.add("🔗 [bold]Related Locations:[/bold]")
+            for r_loc in det.related_locations:
+                rel_branch.add(f"[underline]{r_loc}[/underline]")
 
-            if det.related_locations:
-                rel_branch = tree.add("🔗 [bold]Related Locations:[/bold]")
-                for r_loc in det.related_locations:
-                    rel_branch.add(f"[underline]{r_loc}[/underline]")
-
-            console.print(tree)
-            console.print()
+        return tree

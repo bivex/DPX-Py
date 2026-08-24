@@ -18,84 +18,11 @@ class SarifReportFormatter:
         results: list[dict[str, Any]] = []
 
         for d in report.detections:
-            rule_id = f"DPX-{d.pattern_type.value.upper()}"
+            rule_id, rule_obj = self._build_sarif_rule(d)
             if rule_id not in rule_map:
-                rule_map[rule_id] = {
-                    "id": rule_id,
-                    "name": d.pattern_type.value.replace("_", " ").title().replace(" ", ""),
-                    "shortDescription": {
-                        "text": f"{d.pattern_category.value.title()} pattern / rule: {d.pattern_type.value.replace('_', ' ').title()}"
-                    },
-                    "fullDescription": {
-                        "text": f"Detects instances and adherence/violations of {d.pattern_type.value.upper()}."
-                    },
-                    "defaultConfiguration": {"level": self._map_level(d.pattern_category, d.confidence.level)},
-                    "properties": {
-                        "category": d.pattern_category.value,
-                        "tags": [d.pattern_category.value, "architecture", "solid", "gof-pattern"],
-                    },
-                }
+                rule_map[rule_id] = rule_obj
 
-            loc = d.primary_location
-            file_uri = loc.file_path if loc and loc.file_path else "unknown"
-            start_line = max(1, loc.line) if loc else 1
-
-            # Build result object
-            result: dict[str, Any] = {
-                "ruleId": rule_id,
-                "level": self._map_level(d.pattern_category, d.confidence.level),
-                "message": {"text": f"[{d.confidence.percentage_str}] {d.summary}"},
-                "locations": [
-                    {
-                        "physicalLocation": {
-                            "artifactLocation": {
-                                "uri": file_uri,
-                                "uriBaseId": "%SRCROOT%",
-                            },
-                            "region": {
-                                "startLine": start_line,
-                                "startColumn": 1,
-                            },
-                        }
-                    }
-                ],
-                "properties": {
-                    "confidence": d.confidence.score,
-                    "confidenceLevel": d.confidence.level.value,
-                    "targetName": d.target_name,
-                    "targetKind": d.target_kind,
-                },
-            }
-
-            if d.evidences:
-                result["codeFlows"] = [
-                    {
-                        "threadFlows": [
-                            {
-                                "locations": [
-                                    {
-                                        "location": {
-                                            "message": {"text": ev.description},
-                                            "physicalLocation": {
-                                                "artifactLocation": {
-                                                    "uri": ev.location.file_path
-                                                    if ev.location and ev.location.file_path
-                                                    else file_uri
-                                                },
-                                                "region": {
-                                                    "startLine": max(1, ev.location.line) if ev.location else start_line
-                                                },
-                                            },
-                                        }
-                                    }
-                                    for ev in d.evidences
-                                ]
-                            }
-                        ]
-                    }
-                ]
-
-            results.append(result)
+            results.append(self._build_sarif_result(d, rule_id))
 
         sarif_obj = {
             "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
@@ -116,6 +43,89 @@ class SarifReportFormatter:
         }
 
         return json.dumps(sarif_obj, indent=2)
+
+    def _build_sarif_rule(self, d: Any) -> tuple[str, dict[str, Any]]:
+        rule_id = f"DPX-{d.pattern_type.value.upper()}"
+        rule_obj = {
+            "id": rule_id,
+            "name": d.pattern_type.value.replace("_", " ").title().replace(" ", ""),
+            "shortDescription": {
+                "text": f"{d.pattern_category.value.title()} pattern / rule: {d.pattern_type.value.replace('_', ' ').title()}"
+            },
+            "fullDescription": {
+                "text": f"Detects instances and adherence/violations of {d.pattern_type.value.upper()}."
+            },
+            "defaultConfiguration": {"level": self._map_level(d.pattern_category, d.confidence.level)},
+            "properties": {
+                "category": d.pattern_category.value,
+                "tags": [d.pattern_category.value, "architecture", "solid", "gof-pattern"],
+            },
+        }
+        return rule_id, rule_obj
+
+    def _build_sarif_result(self, d: Any, rule_id: str) -> dict[str, Any]:
+        loc = d.primary_location
+        file_uri = loc.file_path if loc and loc.file_path else "unknown"
+        start_line = max(1, loc.line) if loc else 1
+
+        result: dict[str, Any] = {
+            "ruleId": rule_id,
+            "level": self._map_level(d.pattern_category, d.confidence.level),
+            "message": {"text": f"[{d.confidence.percentage_str}] {d.summary}"},
+            "locations": [
+                {
+                    "physicalLocation": {
+                        "artifactLocation": {
+                            "uri": file_uri,
+                            "uriBaseId": "%SRCROOT%",
+                        },
+                        "region": {
+                            "startLine": start_line,
+                            "startColumn": 1,
+                        },
+                    }
+                }
+            ],
+            "properties": {
+                "confidence": d.confidence.score,
+                "confidenceLevel": d.confidence.level.value,
+                "targetName": d.target_name,
+                "targetKind": d.target_kind,
+            },
+        }
+
+        if d.evidences:
+            result["codeFlows"] = self._build_sarif_code_flows(d, file_uri, start_line)
+
+        return result
+
+    def _build_sarif_code_flows(self, d: Any, file_uri: str, start_line: int) -> list[dict[str, Any]]:
+        return [
+            {
+                "threadFlows": [
+                    {
+                        "locations": [
+                            {
+                                "location": {
+                                    "message": {"text": ev.description},
+                                    "physicalLocation": {
+                                        "artifactLocation": {
+                                            "uri": ev.location.file_path
+                                            if ev.location and ev.location.file_path
+                                            else file_uri
+                                        },
+                                        "region": {
+                                            "startLine": max(1, ev.location.line) if ev.location else start_line
+                                        },
+                                    },
+                                }
+                            }
+                            for ev in d.evidences
+                        ]
+                    }
+                ]
+            }
+        ]
 
     @staticmethod
     def _map_level(category: PatternCategory, confidence: ConfidenceLevel) -> str:

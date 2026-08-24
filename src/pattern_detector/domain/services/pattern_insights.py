@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from pattern_detector.domain.code_model import CodeModel
 from pattern_detector.domain.data_flow import DataFlowSummaryReport
 from pattern_detector.domain.detection import DetectionReport
@@ -57,81 +59,111 @@ class PatternInsightsService:
         ]
 
         for det in mediator_detections:
-            target_cls = det.target_name
-            loc = det.primary_location or SourceLocation(file_path="", line=1)
+            if self._is_observable_hub(det.target_name):
+                self._emit_mediator_hub_insights(det, df_summary, out_insights)
 
-            # Check if this is an Observable/Event hub
-            if any(k in target_cls for k in ("Observable", "Event", "Subject", "Dispatcher", "Emitter")):
-                readers_count = 0
-                writers_count = 0
-                affected: list[str] = []
+    def _is_observable_hub(self, target_cls: str) -> bool:
+        keywords = ("Observable", "Event", "Subject", "Dispatcher", "Emitter")
+        return any(k in target_cls for k in keywords)
 
-                if df_summary:
-                    for s in df_summary.summaries:
-                        if any(k in s.name for k in ("value", "state", "listeners", "subscribers", "handlers")):
-                            readers_count += len(s.readers)
-                            writers_count += len(s.writers)
-                            affected.extend(s.readers)
+    def _emit_mediator_hub_insights(
+        self,
+        det: Any,
+        df_summary: DataFlowSummaryReport | None,
+        out_insights: list[PatternInsight],
+    ) -> None:
+        target_cls = det.target_name
+        loc = det.primary_location or SourceLocation(file_path="", line=1)
+        readers_count, writers_count, affected = self._collect_mediator_df_stats(df_summary)
 
-                # 1. Blast Radius Insight
-                out_insights.append(
-                    PatternInsight(
-                        target_pattern=det.pattern_type,
-                        target_name=target_cls,
-                        data_entity="state / payload (Reactive State)",
-                        severity=InsightSeverity.INFO,
-                        category=InsightCategory.DATA_FLOW_IMPACT,
-                        title=f"Reactive State Blast Radius in '{target_cls}'",
-                        description=(
-                            f"The payload inside '{target_cls}' is mutated across {max(1, writers_count)} methods "
-                            f"and directly propagates to {max(2, readers_count)} downstream listeners/subscribers."
-                        ),
-                        suggestion=(
-                            "Ensure that state updates are cohesive. When updating multiple dependent fields, "
-                            "consider batching notifications into an immutable dataclass or namedtuple to avoid cascading UI/event triggers."
-                        ),
-                        code_snippet=(
-                            "# Tip: Batch updates into an immutable dataclass\n"
-                            "from dataclasses import dataclass\n\n"
-                            "@dataclass(frozen=True)\n"
-                            "class FormState:\n"
-                            "    username: str\n"
-                            "    is_active: bool\n\n"
-                            "observable.set(FormState(username='Alice', is_active=True))"
-                        ),
-                        location=loc,
-                        affected_components=sorted(set(affected))[:5],
-                    )
-                )
+        out_insights.append(
+            self._create_blast_radius_insight(det, target_cls, loc, writers_count, readers_count, affected)
+        )
+        out_insights.append(self._create_mediator_thread_safety_insight(det, target_cls, loc))
 
-                # 2. Thread Safety / Async Insight
-                out_insights.append(
-                    PatternInsight(
-                        target_pattern=det.pattern_type,
-                        target_name=target_cls,
-                        data_entity="listeners (Callback Invocation)",
-                        severity=InsightSeverity.SUGGESTION,
-                        category=InsightCategory.THREAD_SAFETY,
-                        title=f"Thread & Async Safety for '{target_cls}' Callbacks",
-                        description=(
-                            f"Callbacks in '{target_cls}' notify subscribers synchronously. If events originate from "
-                            "background threads or asyncio tasks, concurrent iteration over listeners list can raise RuntimeError."
-                        ),
-                        suggestion=(
-                            "Use threading.Lock() or iterate over a shallow copy of listeners `list(self._listeners)` "
-                            "to prevent mutation during iteration."
-                        ),
-                        code_snippet=(
-                            "# Safe observer notification with defensive copy:\n"
-                            "def notify(self, event: Event) -> None:\n"
-                            "    with self._lock:\n"
-                            "        listeners_snapshot = list(self._listeners)\n"
-                            "    for listener in listeners_snapshot:\n"
-                            "        listener(event)"
-                        ),
-                        location=loc,
-                    )
-                )
+    def _collect_mediator_df_stats(self, df_summary: DataFlowSummaryReport | None) -> tuple[int, int, list[str]]:
+        if not df_summary:
+            return 0, 0, []
+
+        readers_count = 0
+        writers_count = 0
+        affected: list[str] = []
+        for s in df_summary.summaries:
+            if any(k in s.name for k in ("value", "state", "listeners", "subscribers", "handlers")):
+                readers_count += len(s.readers)
+                writers_count += len(s.writers)
+                affected.extend(s.readers)
+        return readers_count, writers_count, affected
+
+    def _create_blast_radius_insight(
+        self,
+        det: Any,
+        target_cls: str,
+        loc: SourceLocation,
+        writers_count: int,
+        readers_count: int,
+        affected: list[str],
+    ) -> PatternInsight:
+        return PatternInsight(
+            target_pattern=det.pattern_type,
+            target_name=target_cls,
+            data_entity="state / payload (Reactive State)",
+            severity=InsightSeverity.INFO,
+            category=InsightCategory.DATA_FLOW_IMPACT,
+            title=f"Reactive State Blast Radius in '{target_cls}'",
+            description=(
+                f"The payload inside '{target_cls}' is mutated across {max(1, writers_count)} methods "
+                f"and directly propagates to {max(2, readers_count)} downstream listeners/subscribers."
+            ),
+            suggestion=(
+                "Ensure that state updates are cohesive. When updating multiple dependent fields, "
+                "consider batching notifications into an immutable dataclass or namedtuple to avoid cascading UI/event triggers."
+            ),
+            code_snippet=(
+                "# Tip: Batch updates into an immutable dataclass\n"
+                "from dataclasses import dataclass\n\n"
+                "@dataclass(frozen=True)\n"
+                "class FormState:\n"
+                "    username: str\n"
+                "    is_active: bool\n\n"
+                "observable.set(FormState(username='Alice', is_active=True))"
+            ),
+            location=loc,
+            affected_components=sorted(set(affected))[:5],
+        )
+
+    def _create_mediator_thread_safety_insight(
+        self,
+        det: Any,
+        target_cls: str,
+        loc: SourceLocation,
+    ) -> PatternInsight:
+        return PatternInsight(
+            target_pattern=det.pattern_type,
+            target_name=target_cls,
+            data_entity="listeners (Callback Invocation)",
+            severity=InsightSeverity.SUGGESTION,
+            category=InsightCategory.THREAD_SAFETY,
+            title=f"Thread & Async Safety for '{target_cls}' Callbacks",
+            description=(
+                f"Callbacks in '{target_cls}' notify subscribers synchronously. If events originate from "
+                "background threads or asyncio tasks, concurrent iteration over listeners list can raise RuntimeError."
+            ),
+            suggestion=(
+                "Use threading.Lock() or iterate over a shallow copy of listeners `list(self._listeners)` "
+                "to prevent mutation during iteration."
+            ),
+            code_snippet=(
+                "# Safe observer notification with defensive copy:\n"
+                "def notify(self, event: Event) -> None:\n"
+                "    with self._lock:\n"
+                "        listeners_snapshot = list(self._listeners)\n"
+                "    for listener in listeners_snapshot:\n"
+                "        listener(event)"
+            ),
+            location=loc,
+            affected_components=[],
+        )
 
     def _analyze_builder_insights(
         self,

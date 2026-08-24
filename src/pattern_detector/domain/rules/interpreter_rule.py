@@ -7,7 +7,7 @@ from typing import Any
 from pattern_detector.domain.code_model import CodeModel, ProtocolModel, RecordModel
 from pattern_detector.domain.detection import Detection
 from pattern_detector.domain.rules.base import BasePatternRule
-from pattern_detector.domain.value_objects import PatternType, SourceLocation
+from pattern_detector.domain.value_objects import Evidence, PatternType, SourceLocation
 
 
 class InterpreterPatternRule(BasePatternRule):
@@ -40,8 +40,7 @@ class InterpreterPatternRule(BasePatternRule):
         return results
 
     def _analyze_multimethod_interp(self, mm_name: str, methods: list[Any], ns: Any) -> Detection | None:
-        name_lower = mm_name.lower()
-        if not any(k in name_lower for k in ("eval", "interpret", "evaluate", "exec-expr", "eval-ast")):
+        if not self._is_interpreter_name(mm_name):
             return None
 
         primary_fn = methods[0] if methods else None
@@ -55,19 +54,9 @@ class InterpreterPatternRule(BasePatternRule):
                 code_suffix="INTERPRETER_MULTIMETHOD",
             )
         ]
-        related_locs: list[SourceLocation] = []
-        branches = [m.dispatch_val for m in methods if m.dispatch_val]
-        if len(branches) >= 2:
-            evidences.append(
-                self.evidence(
-                    description=f"Defines evaluation rules for {len(branches)} grammar expression terms: {', '.join(branches[:5])}",
-                    weight=min(0.50, 0.25 + 0.08 * len(branches)),
-                    location=loc,
-                    code_suffix="GRAMMAR_TERMS",
-                )
-            )
-            for m in methods:
-                related_locs.append(m.location)
+        branches, branch_ev, related_locs = self._extract_interp_branches(methods, loc)
+        if branch_ev:
+            evidences.append(branch_ev)
 
         return self.create_detection(
             target_name=mm_name,
@@ -78,6 +67,26 @@ class InterpreterPatternRule(BasePatternRule):
             summary=f"Interpreter pattern: multimethod '{mm_name}' evaluates domain grammar sentences with {len(branches)} expression rules",
             base_score=0.30,
         )
+
+    def _is_interpreter_name(self, mm_name: str) -> bool:
+        name_lower = mm_name.lower()
+        return any(k in name_lower for k in ("eval", "interpret", "evaluate", "exec-expr", "eval-ast"))
+
+    def _extract_interp_branches(
+        self, methods: list[Any], loc: SourceLocation
+    ) -> tuple[list[Any], Evidence | None, list[SourceLocation]]:
+        branches = [m.dispatch_val for m in methods if m.dispatch_val]
+        if len(branches) < 2:
+            return branches, None, []
+
+        ev = self.evidence(
+            description=f"Defines evaluation rules for {len(branches)} grammar expression terms: {', '.join(branches[:5])}",
+            weight=min(0.50, 0.25 + 0.08 * len(branches)),
+            location=loc,
+            code_suffix="GRAMMAR_TERMS",
+        )
+        related_locs = [m.location for m in methods]
+        return branches, ev, related_locs
 
     def _detect_recursive_evaluators(self, model: CodeModel) -> list[Detection]:
         results: list[Detection] = []

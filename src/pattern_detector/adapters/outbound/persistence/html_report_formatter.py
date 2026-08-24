@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import html
+from typing import Any
 
 from pattern_detector.domain.detection import DetectionReport
 from pattern_detector.domain.value_objects import ConfidenceLevel, PatternCategory, PatternType
@@ -123,105 +124,8 @@ class HtmlReportFormatter(ReportFormatterPort):
         m_count = sum(1 for d in report.detections if d.level == ConfidenceLevel.MEDIUM)
         l_count = sum(1 for d in report.detections if d.level == ConfidenceLevel.LOW)
 
-        cards_html: list[str] = []
-        for idx, det in enumerate(report.detections, 1):
-            cat_style = CATEGORY_STYLES.get(
-                det.pattern_category,
-                {
-                    "text": "#94a3b8",
-                    "bg": "#1e293b44",
-                    "border": "#475569",
-                    "accent": "#64748b",
-                    "label_color": "grey",
-                    "icon": "tag",
-                    "name": "Other",
-                },
-            )
-            pat_style = PATTERN_TYPE_COLORS.get(
-                det.pattern_type,
-                {"text": "#38bdf8", "bg": "#0c4a6e44", "border": "#0284c7", "label": "blue"},
-            )
-
-            badge_color = {
-                ConfidenceLevel.VERY_HIGH: "green",
-                ConfidenceLevel.HIGH: "teal",
-                ConfidenceLevel.MEDIUM: "orange",
-                ConfidenceLevel.LOW: "red",
-            }.get(det.level, "blue")
-
-            evidences_html: list[str] = []
-            for ev in det.evidences:
-                pct = int(ev.weight * 100)
-                loc_str = (
-                    f'<span class="location-tag"><i class="map marker alternate icon"></i> {html.escape(str(ev.location))}</span>'
-                    if ev.location
-                    else ""
-                )
-                evidences_html.append(
-                    f'<div class="item" style="padding: 4px 0; border-left: 3px solid {cat_style["accent"]}; padding-left: 10px; margin-bottom: 4px;">'
-                    f'<span class="weight-tag" style="color: {cat_style["text"]}; font-weight: 700; font-family: monospace;">+{pct}%</span> '
-                    f'<span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[{html.escape(ev.rule_code)}]</span> '
-                    f'<span style="color: #e2e8f0;">{html.escape(ev.description)}</span> {loc_str}'
-                    f"</div>"
-                )
-
-            related_html = ""
-            if det.related_locations:
-                rel_items = " ".join(
-                    f'<span class="code-pill"><i class="file code outline icon"></i> {html.escape(str(loc))}</span>'
-                    for loc in det.related_locations
-                )
-                related_html = f'<div style="margin-top: 10px; font-size: 12px; color: #94a3b8;"><strong>Related Locations:</strong><div style="margin-top: 4px;">{rel_items}</div></div>'
-
-            cards_html.append(
-                f"""
-                <div class="ui fluid inverted card pattern-card" data-pattern="{html.escape(det.pattern_type.value)}" data-category="{html.escape(det.pattern_category.value)}" data-target="{html.escape(det.target_name)}" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid {cat_style["accent"]} !important; margin-bottom: 14px;">
-                    <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                        <div class="right floated">
-                            <span class="ui mini {badge_color} label" style="font-weight: 700;">{det.confidence.percentage_str} [{det.level.value}]</span>
-                        </div>
-                        <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#{idx}</span>
-                            <span class="ui mini {cat_style["label_color"]} label"><i class="{cat_style["icon"]} icon"></i> {html.escape(cat_style["name"].upper())}</span>
-                            <span class="ui mini {pat_style["label"]} label">{html.escape(det.pattern_type.value.upper())}</span>
-                            <span style="color: #cbd5e1; font-weight: 600;">{html.escape(det.target_kind)}:</span>
-                            <span style="color: #38bdf8; font-family: monospace; font-weight: 700;">{html.escape(det.target_name)}</span>
-                        </div>
-                    </div>
-                    <div class="content" style="padding: 14px 16px; font-size: 13px;">
-                        <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
-                            <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> {html.escape(det.summary)}
-                        </div>
-                        <div style="margin-bottom: 10px; color: #94a3b8;">
-                            <i class="map marker alternate icon" style="color: #f43f5e;"></i> <strong>Primary Location:</strong> <span class="code-pill">{html.escape(str(det.primary_location))}</span>
-                        </div>
-                        <div class="evidence-section" style="margin-top: 12px;">
-                            <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
-                                <i class="search icon"></i> Evidence Trail ({len(det.evidences)} heuristics):
-                            </div>
-                            <div class="ui inverted list">
-                                {"".join(evidences_html)}
-                            </div>
-                        </div>
-                        {related_html}
-                    </div>
-                </div>
-                """
-            )
-
-        category_filters = []
-        for cat_enum, style in CATEGORY_STYLES.items():
-            count = report.summary_by_category.get(cat_enum.value, 0)
-            if count > 0:
-                category_filters.append(
-                    f"""
-                    <a class="item cat-filter-btn" data-filter="{cat_enum.value}">
-                        <i class="{style["icon"]} icon" style="color: {style["accent"]};"></i>
-                        {style["name"]}
-                        <div class="ui mini {style["label_color"]} label">{count}</div>
-                    </a>
-                    """
-                )
+        cards_html = [self._render_detection_card(idx, det) for idx, det in enumerate(report.detections, 1)]
+        category_filters = self._render_category_filters(report)
 
         return f"""<!DOCTYPE html>
 <html lang="en">
@@ -400,3 +304,107 @@ class HtmlReportFormatter(ReportFormatterPort):
 </body>
 </html>
 """
+
+    def _render_detection_card(self, idx: int, det: Any) -> str:
+        cat_style = CATEGORY_STYLES.get(
+            det.pattern_category,
+            {
+                "text": "#94a3b8",
+                "bg": "#1e293b44",
+                "border": "#475569",
+                "accent": "#64748b",
+                "label_color": "grey",
+                "icon": "tag",
+                "name": "Other",
+            },
+        )
+        pat_style = PATTERN_TYPE_COLORS.get(
+            det.pattern_type,
+            {"text": "#38bdf8", "bg": "#0c4a6e44", "border": "#0284c7", "label": "blue"},
+        )
+        badge_color = {
+            ConfidenceLevel.VERY_HIGH: "green",
+            ConfidenceLevel.HIGH: "teal",
+            ConfidenceLevel.MEDIUM: "orange",
+            ConfidenceLevel.LOW: "red",
+        }.get(det.level, "blue")
+
+        evidences_html = self._render_evidences_html(det, cat_style)
+        related_html = self._render_related_locations_html(det)
+
+        return f"""
+        <div class="ui fluid inverted card pattern-card" data-pattern="{html.escape(det.pattern_type.value)}" data-category="{html.escape(det.pattern_category.value)}" data-target="{html.escape(det.target_name)}" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid {cat_style["accent"]} !important; margin-bottom: 14px;">
+            <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
+                <div class="right floated">
+                    <span class="ui mini {badge_color} label" style="font-weight: 700;">{det.confidence.percentage_str} [{det.level.value}]</span>
+                </div>
+                <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span style="color: #64748b; font-weight: 700; font-size: 13px;">#{idx}</span>
+                    <span class="ui mini {cat_style["label_color"]} label"><i class="{cat_style["icon"]} icon"></i> {html.escape(cat_style["name"].upper())}</span>
+                    <span class="ui mini {pat_style["label"]} label">{html.escape(det.pattern_type.value.upper())}</span>
+                    <span style="color: #cbd5e1; font-weight: 600;">{html.escape(det.target_kind)}:</span>
+                    <span style="color: #38bdf8; font-family: monospace; font-weight: 700;">{html.escape(det.target_name)}</span>
+                </div>
+            </div>
+            <div class="content" style="padding: 14px 16px; font-size: 13px;">
+                <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
+                    <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> {html.escape(det.summary)}
+                </div>
+                <div style="margin-bottom: 10px; color: #94a3b8;">
+                    <i class="map marker alternate icon" style="color: #f43f5e;"></i> <strong>Primary Location:</strong> <span class="code-pill">{html.escape(str(det.primary_location))}</span>
+                </div>
+                <div class="evidence-section" style="margin-top: 12px;">
+                    <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
+                        <i class="search icon"></i> Evidence Trail ({len(det.evidences)} heuristics):
+                    </div>
+                    <div class="ui inverted list">
+                        {evidences_html}
+                    </div>
+                </div>
+                {related_html}
+            </div>
+        </div>
+        """
+
+    def _render_evidences_html(self, det: Any, cat_style: dict[str, str]) -> str:
+        evidences_html = []
+        for ev in det.evidences:
+            pct = int(ev.weight * 100)
+            loc_str = (
+                f'<span class="location-tag"><i class="map marker alternate icon"></i> {html.escape(str(ev.location))}</span>'
+                if ev.location
+                else ""
+            )
+            evidences_html.append(
+                f'<div class="item" style="padding: 4px 0; border-left: 3px solid {cat_style["accent"]}; padding-left: 10px; margin-bottom: 4px;">'
+                f'<span class="weight-tag" style="color: {cat_style["text"]}; font-weight: 700; font-family: monospace;">+{pct}%</span> '
+                f'<span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[{html.escape(ev.rule_code)}]</span> '
+                f'<span style="color: #e2e8f0;">{html.escape(ev.description)}</span> {loc_str}'
+                f"</div>"
+            )
+        return "".join(evidences_html)
+
+    def _render_related_locations_html(self, det: Any) -> str:
+        if not det.related_locations:
+            return ""
+        rel_items = " ".join(
+            f'<span class="code-pill"><i class="file code outline icon"></i> {html.escape(str(loc))}</span>'
+            for loc in det.related_locations
+        )
+        return f'<div style="margin-top: 10px; font-size: 12px; color: #94a3b8;"><strong>Related Locations:</strong><div style="margin-top: 4px;">{rel_items}</div></div>'
+
+    def _render_category_filters(self, report: DetectionReport) -> list[str]:
+        category_filters = []
+        for cat_enum, style in CATEGORY_STYLES.items():
+            count = report.summary_by_category.get(cat_enum.value, 0)
+            if count > 0:
+                category_filters.append(
+                    f"""
+                    <a class="item cat-filter-btn" data-filter="{cat_enum.value}">
+                        <i class="{style["icon"]} icon" style="color: {style["accent"]};"></i>
+                        {style["name"]}
+                        <div class="ui mini {style["label_color"]} label">{count}</div>
+                    </a>
+                    """
+                )
+        return category_filters

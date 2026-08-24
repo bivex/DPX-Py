@@ -19,32 +19,9 @@ class DataFlowHtmlFormatter:
     def format_single_graph(self, graph: DataFlowGraph, title: str = "") -> str:
         """Generate interactive HTML page for a single Data Flow Graph."""
         page_title = title or f"Data Flow {graph.direction.value}: {graph.root_id}"
-
-        # Prepare graph data for Cytoscape.js
         cy_elements = self._prepare_cytoscape_elements(graph)
         all_graphs_json = json.dumps({graph.root_id: cy_elements})
-        variables_summary_json = json.dumps(
-            [
-                {
-                    "name": graph.root_id,
-                    "file_path": graph.nodes[graph.root_id].file_path if graph.root_id in graph.nodes else "",
-                    "line": graph.nodes[graph.root_id].line if graph.root_id in graph.nodes else 1,
-                    "readers": [
-                        e.to_id.replace("fn_", "")
-                        for e in graph.edges
-                        if e.from_id == graph.root_id and e.kind == "READS"
-                    ],
-                    "writers": [
-                        e.from_id.replace("fn_", "")
-                        for e in graph.edges
-                        if e.to_id == graph.root_id and e.kind in ("WRITES", "MODIFIES")
-                    ],
-                    "downstream_reach": len(graph.nodes) - 1,
-                    "max_depth": 3,
-                    "impact_level": "HIGH" if len(graph.nodes) > 4 else "MEDIUM",
-                }
-            ]
-        )
+        variables_summary_json = json.dumps(self._build_single_variable_summary(graph))
 
         return self._render_template(
             page_title=page_title,
@@ -57,36 +34,43 @@ class DataFlowHtmlFormatter:
             total_edges=len(graph.edges),
         )
 
+    def _build_single_variable_summary(self, graph: DataFlowGraph) -> list[dict[str, Any]]:
+        root_node = graph.nodes.get(graph.root_id)
+        file_path = root_node.file_path if root_node else ""
+        line = root_node.line if root_node else 1
+
+        reads: list[str] = []
+        writers: list[str] = []
+        for e in graph.edges:
+            if e.from_id == graph.root_id and e.kind == "READS":
+                reads.append(e.to_id.replace("fn_", ""))
+            elif e.to_id == graph.root_id and e.kind in ("WRITES", "MODIFIES"):
+                writers.append(e.from_id.replace("fn_", ""))
+
+        impact = "HIGH" if len(graph.nodes) > 4 else "MEDIUM"
+        return [
+            {
+                "name": graph.root_id,
+                "file_path": file_path,
+                "line": line,
+                "readers": reads,
+                "writers": writers,
+                "downstream_reach": len(graph.nodes) - 1,
+                "max_depth": 3,
+                "impact_level": impact,
+            }
+        ]
+
     def format_summary_report(self, report: DataFlowSummaryReport) -> str:
         """Generate interactive HTML dashboard for all variables in a codebase."""
         page_title = f"🌲 Data Flow Analysis Dashboard ({report.direction.value})"
-
-        graphs_dict: dict[str, Any] = {}
         sorted_summaries = sorted(report.summaries, key=lambda x: (x.downstream_reach, len(x.readers)), reverse=True)
-        for s in sorted_summaries[:40]:
-            if s.graph:
-                graphs_dict[s.name] = self._prepare_cytoscape_elements(s.graph)
-
+        graphs_dict = self._build_multi_graphs_dict(sorted_summaries)
         initial_root = sorted_summaries[0].name if sorted_summaries else ""
-        all_graphs_json = json.dumps(graphs_dict)
-        variables_summary_json = json.dumps(
-            [
-                {
-                    "name": s.name,
-                    "file_path": s.file_path,
-                    "line": s.line,
-                    "readers": s.readers,
-                    "writers": s.writers,
-                    "downstream_reach": s.downstream_reach,
-                    "max_depth": s.max_depth,
-                    "impact_level": s.impact_level,
-                }
-                for s in report.summaries
-            ]
-        )
 
-        total_nodes = sum(len(s.graph.nodes) for s in report.summaries if s.graph)
-        total_edges = sum(len(s.graph.edges) for s in report.summaries if s.graph)
+        all_graphs_json = json.dumps(graphs_dict)
+        variables_summary_json = json.dumps(self._build_multi_variables_summary(report.summaries))
+        total_nodes, total_edges = self._calculate_total_graph_metrics(report.summaries)
 
         return self._render_template(
             page_title=page_title,
@@ -99,77 +83,118 @@ class DataFlowHtmlFormatter:
             total_edges=total_edges,
         )
 
+    def _build_multi_graphs_dict(self, sorted_summaries: list[Any]) -> dict[str, Any]:
+        graphs_dict: dict[str, Any] = {}
+        for s in sorted_summaries[:40]:
+            if s.graph:
+                graphs_dict[s.name] = self._prepare_cytoscape_elements(s.graph)
+        return graphs_dict
+
+    def _build_multi_variables_summary(self, summaries: list[Any]) -> list[dict[str, Any]]:
+        results = []
+        for s in summaries:
+            results.append(
+                {
+                    "name": s.name,
+                    "file_path": s.file_path,
+                    "line": s.line,
+                    "readers": s.readers,
+                    "writers": s.writers,
+                    "downstream_reach": s.downstream_reach,
+                    "max_depth": s.max_depth,
+                    "impact_level": s.impact_level,
+                }
+            )
+        return results
+
+    def _calculate_total_graph_metrics(self, summaries: list[Any]) -> tuple[int, int]:
+        total_nodes = 0
+        total_edges = 0
+        for s in summaries:
+            if s.graph:
+                total_nodes += len(s.graph.nodes)
+                total_edges += len(s.graph.edges)
+        return total_nodes, total_edges
+
     def _prepare_cytoscape_elements(self, graph: DataFlowGraph) -> list[dict[str, Any]]:
         """Convert DataFlowGraph into high-performance Cytoscape.js elements."""
         elements: list[dict[str, Any]] = []
 
         for node in graph.nodes.values():
             is_root = node.is_root or node.id == graph.root_id
-            if node.kind == NodeKind.FUNCTION:
-                shape = "round-rectangle"
-                bg_color = "#581c87"
-                border_color = "#c084fc"
-                text_color = "#f3e8ff"
-                label = f"⚙️ {node.name}()"
-                node_type = "function"
-            else:
-                node_type = "variable"
-                if is_root:
-                    shape = "round-rectangle"
-                    bg_color = "#0284c7"
-                    border_color = "#38bdf8"
-                    text_color = "#ffffff"
-                    label = f"⭐ {node.name}"
-                else:
-                    shape = "ellipse"
-                    bg_color = "#0f172a"
-                    border_color = "#0284c7"
-                    text_color = "#e0f2fe"
-                    label = f"🔷 {node.name}"
-
-            elements.append(
-                {
-                    "group": "nodes",
-                    "data": {
-                        "id": node.id,
-                        "label": label,
-                        "name": node.name,
-                        "kind": node.kind.value,
-                        "node_type": node_type,
-                        "is_root": is_root,
-                        "file_path": node.file_path,
-                        "line": node.line,
-                        "cluster": node.cluster,
-                        "shape": shape,
-                        "bgColor": bg_color,
-                        "borderColor": border_color,
-                        "textColor": text_color,
-                        "borderWidth": 3 if is_root else 2,
-                    },
-                }
-            )
+            elements.append(self._format_node_element(node, is_root))
 
         for i, edge in enumerate(graph.edges):
-            kind_lower = edge.kind.lower()
-            edge_color = "#38bdf8" if kind_lower == "reads" else ("#f43f5e" if "write" in kind_lower else "#fbbf24")
-            line_style = "dashed" if "modifi" in kind_lower else "solid"
-
-            elements.append(
-                {
-                    "group": "edges",
-                    "data": {
-                        "id": f"e_{i}_{edge.from_id}_{edge.to_id}",
-                        "source": edge.from_id,
-                        "target": edge.to_id,
-                        "label": f" {kind_lower} ",
-                        "kind": edge.kind,
-                        "color": edge_color,
-                        "lineStyle": line_style,
-                    },
-                }
-            )
+            elements.append(self._format_edge_element(i, edge))
 
         return elements
+
+    def _format_node_element(self, node: Any, is_root: bool) -> dict[str, Any]:
+        if node.kind == NodeKind.FUNCTION:
+            shape = "round-rectangle"
+            bg_color = "#581c87"
+            border_color = "#c084fc"
+            text_color = "#f3e8ff"
+            label = f"⚙️ {node.name}()"
+            node_type = "function"
+        elif is_root:
+            shape = "round-rectangle"
+            bg_color = "#0284c7"
+            border_color = "#38bdf8"
+            text_color = "#ffffff"
+            label = f"⭐ {node.name}"
+            node_type = "variable"
+        else:
+            shape = "ellipse"
+            bg_color = "#0f172a"
+            border_color = "#0284c7"
+            text_color = "#e0f2fe"
+            label = f"🔷 {node.name}"
+            node_type = "variable"
+
+        return {
+            "group": "nodes",
+            "data": {
+                "id": node.id,
+                "label": label,
+                "name": node.name,
+                "kind": node.kind.value,
+                "node_type": node_type,
+                "is_root": is_root,
+                "file_path": node.file_path,
+                "line": node.line,
+                "cluster": node.cluster,
+                "shape": shape,
+                "bgColor": bg_color,
+                "borderColor": border_color,
+                "textColor": text_color,
+                "borderWidth": 3 if is_root else 2,
+            },
+        }
+
+    def _format_edge_element(self, i: int, edge: Any) -> dict[str, Any]:
+        kind_lower = edge.kind.lower()
+        if kind_lower == "reads":
+            edge_color = "#38bdf8"
+        elif "write" in kind_lower:
+            edge_color = "#f43f5e"
+        else:
+            edge_color = "#fbbf24"
+
+        line_style = "dashed" if "modifi" in kind_lower else "solid"
+
+        return {
+            "group": "edges",
+            "data": {
+                "id": f"e_{i}_{edge.from_id}_{edge.to_id}",
+                "source": edge.from_id,
+                "target": edge.to_id,
+                "label": f" {kind_lower} ",
+                "kind": edge.kind,
+                "color": edge_color,
+                "lineStyle": line_style,
+            },
+        }
 
     def _render_template(
         self,

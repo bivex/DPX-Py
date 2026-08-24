@@ -39,19 +39,39 @@ class TemplateMethodRule(BasePatternRule):
         return results
 
     def _analyze_functional_bracket(self, fn: Any) -> Detection | None:
-        evidences: list[Evidence] = []
-        name_lower = fn.name.lower()
-        is_with_naming = name_lower.startswith(("with-", "with_"))
+        is_with_naming = fn.name.lower().startswith(("with-", "with_"))
         has_try_finally = "try" in fn.body_text and ("finally" in fn.body_text or "catch" in fn.body_text)
-        params = [p.lower() for plist in fn.parameter_lists for p in plist]
-        has_hook_param = any(p in ("f", "callback", "handler", "body", "action", "task") for p in params)
+        has_hook_param = self._has_bracket_hook_param(fn)
 
-        if not (
-            (is_with_naming and (fn.is_macro or has_try_finally or has_hook_param))
-            or (has_try_finally and has_hook_param)
-        ):
+        if not self._is_bracket_candidate(is_with_naming, fn.is_macro, has_try_finally, has_hook_param):
             return None
 
+        evidences = self._build_functional_bracket_evidences(fn, is_with_naming, has_try_finally, has_hook_param)
+        return self.create_detection(
+            target_name=fn.name,
+            target_kind="template_bracket",
+            evidences=evidences,
+            primary_location=fn.location,
+            related_locations=[],
+            summary=f"Template Method: '{fn.name}' encapsulates invariant algorithm/resource skeleton with customizable execution body",
+            base_score=0.20,
+        )
+
+    def _is_bracket_candidate(self, is_with: bool, is_macro: bool, has_try: bool, has_hook: bool) -> bool:
+        return (is_with and (is_macro or has_try or has_hook)) or (has_try and has_hook)
+
+    def _has_bracket_hook_param(self, fn: Any) -> bool:
+        hook_names = ("f", "callback", "handler", "body", "action", "task")
+        for plist in fn.parameter_lists:
+            for p in plist:
+                if p.lower() in hook_names:
+                    return True
+        return False
+
+    def _build_functional_bracket_evidences(
+        self, fn: Any, is_with_naming: bool, has_try_finally: bool, has_hook_param: bool
+    ) -> list[Evidence]:
+        evidences: list[Evidence] = []
         if is_with_naming:
             evidences.append(
                 self.evidence(
@@ -88,16 +108,7 @@ class TemplateMethodRule(BasePatternRule):
                     code_suffix="CALLBACK_PARAMETER",
                 )
             )
-
-        return self.create_detection(
-            target_name=fn.name,
-            target_kind="template_bracket",
-            evidences=evidences,
-            primary_location=fn.location,
-            related_locations=[],
-            summary=f"Template Method: '{fn.name}' encapsulates invariant algorithm/resource skeleton with customizable execution body",
-            base_score=0.20,
-        )
+        return evidences
 
     def _detect_oop_template_methods(self, model: CodeModel) -> list[Detection]:
         results: list[Detection] = []
@@ -108,23 +119,48 @@ class TemplateMethodRule(BasePatternRule):
         return results
 
     def _analyze_template_protocol(self, proto: Any, model: CodeModel) -> Detection | None:
-        primitive_methods = [
-            m
-            for m in proto.methods
-            if any(k in m.name.lower() for k in ("primitive", "step", "template", "hook", "do_"))
-        ]
-        has_template_method = any(
-            "template" in m.name.lower() or "execute" in m.name.lower() or "run" in m.name.lower()
-            for m in proto.methods
-        )
+        primitive_methods = self._get_primitive_methods(proto)
+        has_template_method = self._has_template_method(proto)
 
-        if not (primitive_methods or (has_template_method and len(proto.methods) >= 2)):
+        if not primitive_methods and not (has_template_method and len(proto.methods) >= 2):
             return None
 
         rec_impls = model.find_records_implementing(proto.name)
+        evidences = self._build_template_proto_evidences(proto, primitive_methods, rec_impls)
+
+        return self.create_detection(
+            target_name=proto.name,
+            target_kind="template_method_protocol",
+            evidences=evidences,
+            primary_location=proto.location,
+            related_locations=[r.location for r in rec_impls],
+            summary=f"Template Method pattern: '{proto.name}' defines skeleton of algorithm in base class",
+            base_score=0.30,
+        )
+
+    def _get_primitive_methods(self, proto: Any) -> list[Any]:
+        keywords = ("primitive", "step", "template", "hook", "do_")
+        results = []
+        for m in proto.methods:
+            m_lower = m.name.lower()
+            if any(k in m_lower for k in keywords):
+                results.append(m)
+        return results
+
+    def _has_template_method(self, proto: Any) -> bool:
+        for m in proto.methods:
+            m_lower = m.name.lower()
+            if "template" in m_lower or "execute" in m_lower or "run" in m_lower:
+                return True
+        return False
+
+    def _build_template_proto_evidences(
+        self, proto: Any, primitive_methods: list[Any], rec_impls: list[Any]
+    ) -> list[Evidence]:
+        active_methods = primitive_methods if primitive_methods else proto.methods
         evidences = [
             self.evidence(
-                description=f"Class '{proto.name}' defines template algorithm skeleton with primitive operations: {', '.join(m.name for m in primitive_methods or proto.methods)}",
+                description=f"Class '{proto.name}' defines template algorithm skeleton with primitive operations: {', '.join(m.name for m in active_methods)}",
                 weight=0.55,
                 location=proto.location,
                 code_suffix="TEMPLATE_METHOD_SKELETON",
@@ -139,13 +175,4 @@ class TemplateMethodRule(BasePatternRule):
                     code_suffix="CONCRETE_TEMPLATE_IMPL",
                 )
             )
-
-        return self.create_detection(
-            target_name=proto.name,
-            target_kind="template_method_protocol",
-            evidences=evidences,
-            primary_location=proto.location,
-            related_locations=[r.location for r in rec_impls],
-            summary=f"Template Method pattern: '{proto.name}' defines skeleton of algorithm in base class",
-            base_score=0.30,
-        )
+        return evidences

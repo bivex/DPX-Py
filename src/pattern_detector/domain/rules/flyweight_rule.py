@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from pattern_detector.domain.code_model import CodeModel
 from pattern_detector.domain.detection import Detection
 from pattern_detector.domain.rules.base import BasePatternRule
@@ -22,8 +24,13 @@ class FlyweightPatternRule(BasePatternRule):
 
     def detect(self, model: CodeModel) -> list[Detection]:
         detections: list[Detection] = []
+        detections.extend(self._detect_state_memoize(model))
+        detections.extend(self._detect_fn_memoize(model))
+        detections.extend(self._detect_oop_flyweights(model))
+        return detections
 
-        # 1. State / Var definitions using memoize
+    def _detect_state_memoize(self, model: CodeModel) -> list[Detection]:
+        results: list[Detection] = []
         for state in model.all_states():
             if state.initial_expr and "memoize" in state.initial_expr:
                 evidences = [
@@ -34,7 +41,7 @@ class FlyweightPatternRule(BasePatternRule):
                         code_suffix="MEMOIZE_CACHE",
                     ),
                 ]
-                detections.append(
+                results.append(
                     self.create_detection(
                         target_name=state.name,
                         target_kind="memoized_flyweight_cache",
@@ -45,8 +52,10 @@ class FlyweightPatternRule(BasePatternRule):
                         base_score=0.25,
                     )
                 )
+        return results
 
-        # 2. Functions calling memoize
+    def _detect_fn_memoize(self, model: CodeModel) -> list[Detection]:
+        results: list[Detection] = []
         for fn in model.all_functions():
             if "memoize" in fn.calls or "clojure.core/memoize" in fn.calls:
                 evidences = [
@@ -57,7 +66,7 @@ class FlyweightPatternRule(BasePatternRule):
                         code_suffix="FN_MEMOIZE_USAGE",
                     ),
                 ]
-                detections.append(
+                results.append(
                     self.create_detection(
                         target_name=fn.name,
                         target_kind="memoized_function",
@@ -68,41 +77,54 @@ class FlyweightPatternRule(BasePatternRule):
                         base_score=0.25,
                     )
                 )
+        return results
 
-        # 3. Python OOP Flyweight Pattern (Flyweight Factory & Flyweight protocols)
+    def _detect_oop_flyweights(self, model: CodeModel) -> list[Detection]:
+        results: list[Detection] = []
         for rec in model.all_records():
-            if rec.name.endswith("Rule") or rec.name.endswith("Test"):
-                continue
-            name_lower = rec.name.lower()
-            if "flyweight" in name_lower:
-                has_pool = any(
-                    any(k in f.lower() for k in ("flyweight", "pool", "cache", "map", "table")) for f in rec.fields
-                )
-                if has_pool:
-                    evidences = [
-                        self.evidence(
-                            description=f"Class '{rec.name}' participates in Flyweight pattern to share fine-grained state",
-                            weight=0.55,
-                            location=rec.location,
-                            code_suffix="FLYWEIGHT_CLASS_NAMING",
-                        ),
-                        self.evidence(
-                            description=f"Maintains flyweight instance pool/cache: {', '.join([f for f in rec.fields if any(k in f.lower() for k in ('flyweight', 'pool', 'cache', 'map', 'table'))])}",
-                            weight=0.45,
-                            location=rec.location,
-                            code_suffix="FLYWEIGHT_POOL_FIELD",
-                        ),
-                    ]
-                    detections.append(
-                        self.create_detection(
-                            target_name=rec.name,
-                            target_kind="flyweight_class",
-                            evidences=evidences,
-                            primary_location=rec.location,
-                            related_locations=[],
-                            summary=f"Flyweight pattern: class '{rec.name}' shares fine-grained intrinsic state",
-                            base_score=0.35,
-                        )
-                    )
+            if not rec.name.endswith(("Rule", "Test")):
+                det = self._analyze_flyweight_record(rec)
+                if det:
+                    results.append(det)
+        return results
 
-        return detections
+    def _analyze_flyweight_record(self, rec: Any) -> Detection | None:
+        if "flyweight" not in rec.name.lower():
+            return None
+
+        pool_fields = self._find_pool_fields(rec.fields)
+        if not pool_fields:
+            return None
+
+        evidences = [
+            self.evidence(
+                description=f"Class '{rec.name}' participates in Flyweight pattern to share fine-grained state",
+                weight=0.55,
+                location=rec.location,
+                code_suffix="FLYWEIGHT_CLASS_NAMING",
+            ),
+            self.evidence(
+                description=f"Maintains flyweight instance pool/cache: {', '.join(pool_fields)}",
+                weight=0.45,
+                location=rec.location,
+                code_suffix="FLYWEIGHT_POOL_FIELD",
+            ),
+        ]
+        return self.create_detection(
+            target_name=rec.name,
+            target_kind="flyweight_class",
+            evidences=evidences,
+            primary_location=rec.location,
+            related_locations=[],
+            summary=f"Flyweight pattern: class '{rec.name}' shares fine-grained intrinsic state",
+            base_score=0.35,
+        )
+
+    def _find_pool_fields(self, fields: list[str]) -> list[str]:
+        keywords = ("flyweight", "pool", "cache", "map", "table")
+        results = []
+        for f in fields:
+            f_lower = f.lower()
+            if any(k in f_lower for k in keywords):
+                results.append(f)
+        return results

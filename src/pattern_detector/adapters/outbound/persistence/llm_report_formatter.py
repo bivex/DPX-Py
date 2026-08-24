@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from pattern_detector.domain.data_flow import DataFlowGraph, DataFlowSummaryReport
 from pattern_detector.domain.detection import DetectionReport
 from pattern_detector.domain.insights import InsightsReport
@@ -20,15 +22,9 @@ class LlmReportFormatter:
         lines: list[str] = [
             "<codebase_architecture_analysis>",
             f'  <project path="{report.project_path or "."}" files="{report.scanned_files_count}" detections="{report.total_detections_count}">',
-            "    <category_summary>",
         ]
+        lines.extend(self._render_category_summary(report.summary_by_category))
 
-        for cat, count in report.summary_by_category.items():
-            if count > 0:
-                lines.append(f'      <category name="{cat.upper()}" count="{count}" />')
-        lines.append("    </category_summary>")
-
-        # Separate Design Patterns, SOLID Adherences, and Architectural Violations
         patterns = [d for d in report.detections if d.pattern_category != PatternCategory.PRINCIPLE]
         adherences = [
             d
@@ -44,67 +40,13 @@ class LlmReportFormatter:
         ]
 
         if patterns:
-            lines.append("    <design_patterns>")
-            for d in patterns:
-                loc = f"{d.primary_location.file_path}:{d.primary_location.line}" if d.primary_location else ""
-                lines.append(
-                    f'      <pattern type="{d.pattern_type.value}" target="{d.target_name}" confidence="{d.confidence.percentage_str}" location="{loc}">'
-                )
-                lines.append(f"        <summary>{d.summary}</summary>")
-                lines.append("        <evidence>")
-                for ev in d.evidences:
-                    lines.append(
-                        f'          <item rule="{ev.rule_code}" weight="+{int(ev.weight * 100)}%">{ev.description}</item>'
-                    )
-                lines.append("        </evidence>")
-                lines.append("      </pattern>")
-            lines.append("    </design_patterns>")
-
+            lines.extend(self._render_design_patterns(patterns))
         if adherences:
-            lines.append("    <solid_and_architectural_adherences>")
-            for a in adherences:
-                loc = f"{a.primary_location.file_path}:{a.primary_location.line}" if a.primary_location else ""
-                lines.append(
-                    f'      <adherence rule="{a.pattern_type.value}" target="{a.target_name}" confidence="{a.confidence.percentage_str}" location="{loc}">'
-                )
-                lines.append(f"        <summary>{a.summary}</summary>")
-                lines.append("        <evidence>")
-                for ev in a.evidences:
-                    lines.append(f'          <item rule="{ev.rule_code}">{ev.description}</item>')
-                lines.append("        </evidence>")
-                lines.append("      </adherence>")
-            lines.append("    </solid_and_architectural_adherences>")
-
+            lines.extend(self._render_solid_adherences(adherences))
         if violations:
-            lines.append("    <architectural_violations_and_risks>")
-            for v in violations:
-                loc = f"{v.primary_location.file_path}:{v.primary_location.line}" if v.primary_location else ""
-                lines.append(
-                    f'      <violation rule="{v.pattern_type.value}" target="{v.target_name}" confidence="{v.confidence.percentage_str}" location="{loc}">'
-                )
-                lines.append(f"        <risk>{v.summary}</risk>")
-                lines.append("        <evidence>")
-                for ev in v.evidences:
-                    lines.append(f'          <item rule="{ev.rule_code}">{ev.description}</item>')
-                lines.append("        </evidence>")
-                lines.append("      </violation>")
-            lines.append("    </architectural_violations_and_risks>")
-
+            lines.extend(self._render_architectural_violations(violations))
         if insights_report and insights_report.insights:
-            lines.append("    <pattern_data_insights>")
-            for ins in insights_report.insights:
-                loc = f"{ins.location.file_path}:{ins.location.line}" if ins.location else ""
-                lines.append(
-                    f'      <insight pattern="{ins.target_pattern.value}" target="{ins.target_name}" severity="{ins.severity.value}" category="{ins.category.value}" location="{loc}">'
-                )
-                lines.append(f"        <title>{ins.title}</title>")
-                lines.append(f"        <data_entity>{ins.data_entity}</data_entity>")
-                lines.append(f"        <description>{ins.description}</description>")
-                lines.append(f"        <suggestion>{ins.suggestion}</suggestion>")
-                if ins.code_snippet:
-                    lines.append(f"        <recommended_code><![CDATA[\n{ins.code_snippet}\n]]></recommended_code>")
-                lines.append("      </insight>")
-            lines.append("    </pattern_data_insights>")
+            lines.extend(self._render_pattern_data_insights(insights_report))
 
         lines.extend(
             [
@@ -114,30 +56,110 @@ class LlmReportFormatter:
         )
         return "\n".join(lines)
 
+    def _render_category_summary(self, summary_by_category: dict[str, int]) -> list[str]:
+        lines = ["    <category_summary>"]
+        for cat, count in summary_by_category.items():
+            if count > 0:
+                lines.append(f'      <category name="{cat.upper()}" count="{count}" />')
+        lines.append("    </category_summary>")
+        return lines
+
+    def _render_design_patterns(self, patterns: list[Any]) -> list[str]:
+        lines = ["    <design_patterns>"]
+        for d in patterns:
+            loc = f"{d.primary_location.file_path}:{d.primary_location.line}" if d.primary_location else ""
+            lines.append(
+                f'      <pattern type="{d.pattern_type.value}" target="{d.target_name}" confidence="{d.confidence.percentage_str}" location="{loc}">'
+            )
+            lines.append(f"        <summary>{d.summary}</summary>")
+            lines.append("        <evidence>")
+            for ev in d.evidences:
+                lines.append(
+                    f'          <item rule="{ev.rule_code}" weight="+{int(ev.weight * 100)}%">{ev.description}</item>'
+                )
+            lines.append("        </evidence>")
+            lines.append("      </pattern>")
+        lines.append("    </design_patterns>")
+        return lines
+
+    def _render_solid_adherences(self, adherences: list[Any]) -> list[str]:
+        lines = ["    <solid_and_architectural_adherences>"]
+        for a in adherences:
+            loc = f"{a.primary_location.file_path}:{a.primary_location.line}" if a.primary_location else ""
+            lines.append(
+                f'      <adherence rule="{a.pattern_type.value}" target="{a.target_name}" confidence="{a.confidence.percentage_str}" location="{loc}">'
+            )
+            lines.append(f"        <summary>{a.summary}</summary>")
+            lines.append("        <evidence>")
+            for ev in a.evidences:
+                lines.append(f'          <item rule="{ev.rule_code}">{ev.description}</item>')
+            lines.append("        </evidence>")
+            lines.append("      </adherence>")
+        lines.append("    </solid_and_architectural_adherences>")
+        return lines
+
+    def _render_architectural_violations(self, violations: list[Any]) -> list[str]:
+        lines = ["    <architectural_violations_and_risks>"]
+        for v in violations:
+            loc = f"{v.primary_location.file_path}:{v.primary_location.line}" if v.primary_location else ""
+            lines.append(
+                f'      <violation rule="{v.pattern_type.value}" target="{v.target_name}" confidence="{v.confidence.percentage_str}" location="{loc}">'
+            )
+            lines.append(f"        <risk>{v.summary}</risk>")
+            lines.append("        <evidence>")
+            for ev in v.evidences:
+                lines.append(f'          <item rule="{ev.rule_code}">{ev.description}</item>')
+            lines.append("        </evidence>")
+            lines.append("      </violation>")
+        lines.append("    </architectural_violations_and_risks>")
+        return lines
+
+    def _render_pattern_data_insights(self, insights_report: InsightsReport) -> list[str]:
+        lines = ["    <pattern_data_insights>"]
+        for ins in insights_report.insights:
+            loc = f"{ins.location.file_path}:{ins.location.line}" if ins.location else ""
+            lines.append(
+                f'      <insight pattern="{ins.target_pattern.value}" target="{ins.target_name}" severity="{ins.severity.value}" category="{ins.category.value}" location="{loc}">'
+            )
+            lines.append(f"        <title>{ins.title}</title>")
+            lines.append(f"        <data_entity>{ins.data_entity}</data_entity>")
+            lines.append(f"        <description>{ins.description}</description>")
+            lines.append(f"        <suggestion>{ins.suggestion}</suggestion>")
+            if ins.code_snippet:
+                lines.append(f"        <recommended_code><![CDATA[\n{ins.code_snippet}\n]]></recommended_code>")
+            lines.append("      </insight>")
+        lines.append("    </pattern_data_insights>")
+        return lines
+
     def format_data_flow_graph(self, graph: DataFlowGraph) -> str:
         """Render single DataFlowGraph as token-dense propagation paths for LLMs."""
+        reads_by, writes_by = self._collect_direct_root_interactions(graph)
         lines: list[str] = [
             f'<data_flow_analysis direction="{graph.direction.value}" root_variable="{graph.root_id}">',
             f'  <summary nodes="{len(graph.nodes)}" edges="{len(graph.edges)}">',
+            f'    <direct_readers count="{len(reads_by)}">{", ".join(reads_by) if reads_by else "none"}</direct_readers>',
+            f'    <direct_writers count="{len(writes_by)}">{", ".join(writes_by) if writes_by else "none"}</direct_writers>',
+            "  </summary>",
         ]
 
-        # 1. Functions interacting with root
+        rendered_paths = self._extract_propagation_paths(graph)
+        lines.append("  <propagation_paths>")
+        for p_str in rendered_paths:
+            lines.append(f"    <path>{p_str}</path>")
+        lines.append("  </propagation_paths>")
+        lines.append("</data_flow_analysis>")
+        return "\n".join(lines)
+
+    def _collect_direct_root_interactions(self, graph: DataFlowGraph) -> tuple[list[str], list[str]]:
         reads_by = [e.to_id.replace("fn_", "") for e in graph.edges if e.from_id == graph.root_id and e.kind == "READS"]
         writes_by = [
             e.from_id.replace("fn_", "")
             for e in graph.edges
             if e.to_id == graph.root_id and e.kind in ("WRITES", "MODIFIES")
         ]
+        return reads_by, writes_by
 
-        lines.append(
-            f'    <direct_readers count="{len(reads_by)}">{", ".join(reads_by) if reads_by else "none"}</direct_readers>'
-        )
-        lines.append(
-            f'    <direct_writers count="{len(writes_by)}">{", ".join(writes_by) if writes_by else "none"}</direct_writers>'
-        )
-        lines.append("  </summary>")
-
-        # 2. Extract linear propagation paths through DFS
+    def _extract_propagation_paths(self, graph: DataFlowGraph) -> list[str]:
         adj: dict[str, list[tuple[str, str]]] = {}
         for edge in graph.edges:
             adj.setdefault(edge.from_id, []).append((edge.to_id, edge.kind))
@@ -163,17 +185,14 @@ class LlmReportFormatter:
 
         find_paths(graph.root_id, [graph.root_id], {graph.root_id}, 0)
 
-        lines.append("  <propagation_paths>")
-        # Deduplicate paths
         seen_paths: set[str] = set()
-        for p in paths[:25]:  # limit to top 25 distinct paths to conserve tokens
+        rendered: list[str] = []
+        for p in paths[:25]:
             p_str = " ".join(p)
             if p_str not in seen_paths:
                 seen_paths.add(p_str)
-                lines.append(f"    <path>{p_str}</path>")
-        lines.append("  </propagation_paths>")
-        lines.append("</data_flow_analysis>")
-        return "\n".join(lines)
+                rendered.append(p_str)
+        return rendered
 
     def format_data_flow_summary(self, report: DataFlowSummaryReport) -> str:
         """Render multi-variable DataFlowSummaryReport for LLM context."""

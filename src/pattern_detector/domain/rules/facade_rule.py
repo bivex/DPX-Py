@@ -7,7 +7,7 @@ from typing import Any
 from pattern_detector.domain.code_model import CodeModel
 from pattern_detector.domain.detection import Detection
 from pattern_detector.domain.rules.base import BasePatternRule
-from pattern_detector.domain.value_objects import PatternType, SourceLocation
+from pattern_detector.domain.value_objects import Evidence, PatternType, SourceLocation
 
 
 class FacadePatternRule(BasePatternRule):
@@ -95,31 +95,38 @@ class FacadePatternRule(BasePatternRule):
         return results
 
     def _analyze_facade_record(self, rec: Any) -> Detection | None:
-        name_lower = rec.name.lower()
-        is_facade_named = "facade" in name_lower
-        subsystem_fields = [
-            f
-            for f in rec.fields
-            if any(
-                k in f.lower()
-                for k in (
-                    "subsystem",
-                    "service",
-                    "module",
-                    "engine",
-                    "system",
-                    "parser",
-                    "lexer",
-                    "db",
-                    "client",
-                    "worker",
-                )
-            )
-        ]
+        is_facade_named = "facade" in rec.name.lower()
+        subsystem_fields = self._find_subsystem_fields(rec.fields)
 
-        if not ((is_facade_named and subsystem_fields) or len(subsystem_fields) >= 2):
+        if not self._is_facade_record_candidate(is_facade_named, len(subsystem_fields)):
             return None
 
+        evidences = self._build_facade_record_evidences(rec, is_facade_named, subsystem_fields)
+        return self.create_detection(
+            target_name=rec.name,
+            target_kind="facade_class",
+            evidences=evidences,
+            primary_location=rec.location,
+            related_locations=[],
+            summary=f"Facade pattern: class '{rec.name}' exposes unified high-level interface over subsystems",
+            base_score=0.30,
+        )
+
+    def _is_facade_record_candidate(self, is_named: bool, field_count: int) -> bool:
+        return (is_named and field_count >= 1) or field_count >= 2
+
+    def _find_subsystem_fields(self, fields: list[str]) -> list[str]:
+        keywords = ("subsystem", "service", "module", "engine", "system", "parser", "lexer", "db", "client", "worker")
+        results = []
+        for f in fields:
+            f_lower = f.lower()
+            if any(k in f_lower for k in keywords):
+                results.append(f)
+        return results
+
+    def _build_facade_record_evidences(
+        self, rec: Any, is_facade_named: bool, subsystem_fields: list[str]
+    ) -> list[Evidence]:
         evidences = []
         if is_facade_named:
             evidences.append(
@@ -148,13 +155,4 @@ class FacadePatternRule(BasePatternRule):
                     code_suffix="FACADE_UNIFIED_METHODS",
                 )
             )
-
-        return self.create_detection(
-            target_name=rec.name,
-            target_kind="facade_class",
-            evidences=evidences,
-            primary_location=rec.location,
-            related_locations=[],
-            summary=f"Facade pattern: class '{rec.name}' exposes unified high-level interface over subsystems",
-            base_score=0.30,
-        )
+        return evidences

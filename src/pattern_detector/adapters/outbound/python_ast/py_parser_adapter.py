@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 import os
 from concurrent.futures import ThreadPoolExecutor
+from typing import Any
 
 from pattern_detector.domain.code_model import (
     CodeModel,
@@ -176,33 +177,19 @@ class _PythonAstExtractor(ast.NodeVisitor):
         self._class_methods[class_name] = []
         self._class_pure_methods[class_name] = []
 
-        bases: list[str] = []
-        for base_expr in node.bases:
-            b_name = self._extract_name(base_expr)
-            if b_name:
-                bases.append(b_name)
+        bases = self._extract_class_bases(node)
         self._class_bases[class_name] = bases
 
-        # Inspect class decorators for @singleton, @dataclass
         decorator_names = [self._extract_name(d) for d in node.decorator_list]
         is_singleton_decorated = any("singleton" in d.lower() for d in decorator_names)
 
-        # Visit class body members
-        for item in node.body:
-            if isinstance(item, (ast.Assign, ast.AnnAssign)):
-                self._extract_class_attribute(class_name, item)
-            elif isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                self._extract_method(class_name, item)
+        self._visit_class_body(class_name, node)
 
         methods = self._class_methods.get(class_name, [])
         pure_methods = self._class_pure_methods.get(class_name, [])
         fields = self._class_fields.get(class_name, [])
 
-        is_abstract = (
-            any(b in ("ABC", "abc.ABC", "Protocol", "typing.Protocol", "typing_extensions.Protocol") for b in bases)
-            or len(pure_methods) > 0
-            or any(kw.arg == "metaclass" and "ABCMeta" in self._extract_name(kw.value) for kw in node.keywords)
-        )
+        is_abstract = self._is_abstract_class(bases, pure_methods, node)
 
         record = RecordModel(
             name=class_name,
@@ -216,19 +203,67 @@ class _PythonAstExtractor(ast.NodeVisitor):
         )
         self.records[class_name] = record
 
-        # If abstract / protocol / interface, register as ProtocolModel
+        self._register_protocol_if_needed(class_name, is_abstract, methods, pure_methods, loc, node)
+        self._register_singleton_state_if_needed(class_name, is_singleton_decorated, fields, methods, loc)
+
+        self._current_class = prev_class
+
+    def _extract_class_bases(self, node: ast.ClassDef) -> list[str]:
+        bases: list[str] = []
+        for base_expr in node.bases:
+            b_name = self._extract_name(base_expr)
+            if b_name:
+                bases.append(b_name)
+        return bases
+
+    def _visit_class_body(self, class_name: str, node: ast.ClassDef) -> None:
+        for item in node.body:
+            if isinstance(item, (ast.Assign, ast.AnnAssign)):
+                self._extract_class_attribute(class_name, item)
+            elif isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                self._extract_method(class_name, item)
+
+    def _is_abstract_class(self, bases: list[str], pure_methods: list[Any], node: ast.ClassDef) -> bool:
+        if any(b in ("ABC", "abc.ABC", "Protocol", "typing.Protocol", "typing_extensions.Protocol") for b in bases):
+            return True
+        if len(pure_methods) > 0:
+            return True
+        for kw in node.keywords:
+            if kw.arg == "metaclass" and "ABCMeta" in self._extract_name(kw.value):
+                return True
+        return False
+
+    def _register_protocol_if_needed(
+        self,
+        class_name: str,
+        is_abstract: bool,
+        methods: list[Any],
+        pure_methods: list[Any],
+        loc: SourceLocation,
+        node: ast.ClassDef,
+    ) -> None:
         if is_abstract or (class_name.startswith("I") and len(methods) > 0):
+            signatures = (
+                pure_methods
+                if pure_methods
+                else [MethodSignature(name=m.name.split(".")[-1], location=m.location) for m in methods]
+            )
             self.protocols[class_name] = ProtocolModel(
                 name=class_name,
                 namespace=self.module_name,
                 location=loc,
-                methods=pure_methods
-                if pure_methods
-                else [MethodSignature(name=m.name.split(".")[-1], location=m.location) for m in methods],
+                methods=signatures,
                 docstring=ast.get_docstring(node) or "",
             )
 
-        # Check Python Singleton patterns:
+    def _register_singleton_state_if_needed(
+        self,
+        class_name: str,
+        is_singleton_decorated: bool,
+        fields: list[str],
+        methods: list[Any],
+        loc: SourceLocation,
+    ) -> None:
         has_instance_field = any(f in ("_instance", "_instances", "instance", "__instance") for f in fields)
         has_new_override = any(m.name.endswith(".__new__") or m.name == "__new__" for m in methods)
         has_get_instance = any("get_instance" in m.name.lower() or "getinstance" in m.name.lower() for m in methods)
@@ -243,8 +278,6 @@ class _PythonAstExtractor(ast.NodeVisitor):
                 is_dynamic=True,
             )
 
-        self._current_class = prev_class
-
     def _extract_class_attribute(self, class_name: str, node: ast.Assign | ast.AnnAssign) -> None:
         targets: list[ast.AST] = list(node.targets) if isinstance(node, ast.Assign) else [node.target]
         for t in targets:
@@ -256,33 +289,13 @@ class _PythonAstExtractor(ast.NodeVisitor):
         fn_name = node.name
         qualified_name = f"{class_name}.{fn_name}"
         loc = self._get_loc(node)
+        params = self._extract_method_params(node)
 
-        params = [arg.arg for arg in node.args.args if arg.arg not in ("self", "cls")]
-        if node.args.vararg:
-            params.append(f"*{node.args.vararg.arg}")
-        if node.args.kwarg:
-            params.append(f"**{node.args.kwarg.arg}")
-
-        decorators = [self._extract_name(d) for d in node.decorator_list]
-        is_abstract = any("abstract" in d.lower() for d in decorators)
-
-        has_not_implemented = False
-        for stmt in node.body:
-            if isinstance(stmt, ast.Raise) and stmt.exc and "NotImplemented" in self._extract_name(stmt.exc):
-                has_not_implemented = True
-                break
-
-        if is_abstract or has_not_implemented:
+        if self._is_method_abstract(node):
             self._class_pure_methods[class_name].append(MethodSignature(name=fn_name, location=loc))
 
         calls, r_vars, w_vars, m_vars = self._analyze_body(node)
-
-        if fn_name in ("__init__", "__post_init__"):
-            for w in w_vars:
-                if w.startswith("self."):
-                    field_name = w.split(".", 1)[1]
-                    if field_name not in self._class_fields[class_name]:
-                        self._class_fields[class_name].append(field_name)
+        self._update_class_init_fields(class_name, fn_name, w_vars)
 
         doc = ast.get_docstring(node) or ""
         body_stmts = "\n".join(ast.unparse(s) for s in node.body) if hasattr(ast, "unparse") else ""
@@ -302,6 +315,31 @@ class _PythonAstExtractor(ast.NodeVisitor):
 
         self._class_methods[class_name].append(fn_model)
         self.functions[qualified_name] = fn_model
+
+    def _extract_method_params(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> list[str]:
+        params = [arg.arg for arg in node.args.args if arg.arg not in ("self", "cls")]
+        if node.args.vararg:
+            params.append(f"*{node.args.vararg.arg}")
+        if node.args.kwarg:
+            params.append(f"**{node.args.kwarg.arg}")
+        return params
+
+    def _is_method_abstract(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+        decorators = [self._extract_name(d) for d in node.decorator_list]
+        if any("abstract" in d.lower() for d in decorators):
+            return True
+        for stmt in node.body:
+            if isinstance(stmt, ast.Raise) and stmt.exc and "NotImplemented" in self._extract_name(stmt.exc):
+                return True
+        return False
+
+    def _update_class_init_fields(self, class_name: str, fn_name: str, w_vars: list[str]) -> None:
+        if fn_name in ("__init__", "__post_init__"):
+            for w in w_vars:
+                if w.startswith("self."):
+                    field_name = w.split(".", 1)[1]
+                    if field_name not in self._class_fields[class_name]:
+                        self._class_fields[class_name].append(field_name)
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         if self._current_class is None:
@@ -365,40 +403,45 @@ class _PythonAstExtractor(ast.NodeVisitor):
 
         for node in ast.walk(func_node):
             if isinstance(node, ast.Call):
-                c_name = self._extract_name(node.func)
-                if c_name and c_name not in _PYTHON_BUILTINS_AND_KEYWORDS:
-                    calls.append(c_name)
-                    if "." in c_name:
-                        obj, method = c_name.rsplit(".", 1)
-                        if (
-                            method
-                            in ("append", "extend", "insert", "pop", "remove", "update", "clear", "add", "discard")
-                            and obj
-                            and obj not in _PYTHON_BUILTINS_AND_KEYWORDS
-                        ):
-                            modifies.append(obj)
-
+                self._process_call_node(node, calls, modifies)
             elif isinstance(node, ast.Assign):
-                for target in node.targets:
-                    t_name = self._extract_name(target)
-                    if t_name and len(t_name) > 1 and t_name not in _PYTHON_BUILTINS_AND_KEYWORDS:
-                        writes.append(t_name)
-
+                self._process_assign_node(node, writes)
             elif isinstance(node, ast.AugAssign):
-                t_name = self._extract_name(node.target)
-                if t_name and len(t_name) > 1 and t_name not in _PYTHON_BUILTINS_AND_KEYWORDS:
-                    modifies.append(t_name)
-
-            elif isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
-                if node.id and len(node.id) > 1 and node.id not in _PYTHON_BUILTINS_AND_KEYWORDS:
-                    reads.append(node.id)
-
-            elif isinstance(node, ast.Attribute) and isinstance(node.ctx, ast.Load):
-                attr_full = self._extract_name(node)
-                if attr_full and attr_full not in _PYTHON_BUILTINS_AND_KEYWORDS:
-                    reads.append(attr_full)
+                self._process_aug_assign_node(node, modifies)
+            elif isinstance(node, (ast.Name, ast.Attribute)) and isinstance(node.ctx, ast.Load):
+                self._process_load_node(node, reads)
 
         return calls, reads, writes, modifies
+
+    def _process_call_node(self, node: ast.Call, calls: list[str], modifies: list[str]) -> None:
+        c_name = self._extract_name(node.func)
+        if c_name and c_name not in _PYTHON_BUILTINS_AND_KEYWORDS:
+            calls.append(c_name)
+            if "." in c_name:
+                obj, method = c_name.rsplit(".", 1)
+                mutating = ("append", "extend", "insert", "pop", "remove", "update", "clear", "add", "discard")
+                if method in mutating and obj and obj not in _PYTHON_BUILTINS_AND_KEYWORDS:
+                    modifies.append(obj)
+
+    def _process_assign_node(self, node: ast.Assign, writes: list[str]) -> None:
+        for target in node.targets:
+            t_name = self._extract_name(target)
+            if t_name and len(t_name) > 1 and t_name not in _PYTHON_BUILTINS_AND_KEYWORDS:
+                writes.append(t_name)
+
+    def _process_aug_assign_node(self, node: ast.AugAssign, modifies: list[str]) -> None:
+        t_name = self._extract_name(node.target)
+        if t_name and len(t_name) > 1 and t_name not in _PYTHON_BUILTINS_AND_KEYWORDS:
+            modifies.append(t_name)
+
+    def _process_load_node(self, node: ast.Name | ast.Attribute, reads: list[str]) -> None:
+        if isinstance(node, ast.Name):
+            if node.id and len(node.id) > 1 and node.id not in _PYTHON_BUILTINS_AND_KEYWORDS:
+                reads.append(node.id)
+        elif isinstance(node, ast.Attribute):
+            attr_full = self._extract_name(node)
+            if attr_full and attr_full not in _PYTHON_BUILTINS_AND_KEYWORDS:
+                reads.append(attr_full)
 
 
 class PyParserAdapter(ParserPort):
