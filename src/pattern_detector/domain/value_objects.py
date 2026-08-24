@@ -72,9 +72,9 @@ class ConfidenceLevel(str, Enum):
     """Confidence grade based on score."""
 
     VERY_HIGH = "VERY_HIGH"  # >= 0.85
-    HIGH = "HIGH"            # >= 0.70
-    MEDIUM = "MEDIUM"        # >= 0.50
-    LOW = "LOW"              # < 0.50
+    HIGH = "HIGH"  # >= 0.70
+    MEDIUM = "MEDIUM"  # >= 0.50
+    LOW = "LOW"  # < 0.50
 
 
 @dataclass(frozen=True)

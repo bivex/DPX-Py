@@ -9,8 +9,13 @@ from pattern_detector.domain.detection import Detection
 from pattern_detector.domain.rules.base import BasePatternRule
 from pattern_detector.domain.value_objects import PatternCategory, PatternType
 
-_NEW_EXPR_RE = re.compile(r"\b(?:new\s+([A-Za-z0-9_]+)|std::make_unique<([A-Za-z0-9_]+)>|std::make_shared<([A-Za-z0-9_]+)>)")
+_NEW_EXPR_RE = re.compile(
+    r"\b(?:new\s+([A-Za-z0-9_]+)|std::make_unique<([A-Za-z0-9_]+)>|std::make_shared<([A-Za-z0-9_]+)>)"
+)
 _PYTHON_CONSTRUCTOR_RE = re.compile(r"\b([A-Z][A-Za-z0-9_]+)\s*\(")
+
+
+from typing import Any
 
 
 class DependencyInversionRule(BasePatternRule):
@@ -31,90 +36,95 @@ class DependencyInversionRule(BasePatternRule):
         protocols_names = {p.name for p in model.all_protocols()}
 
         for rec in model.all_records():
-            if rec.name.endswith("Rule") or rec.name.endswith("Test") or len(rec.methods) == 0:
-                continue
-
-            # Check fields and constructor injection
-            interface_deps: list[str] = []
-            for f in rec.fields:
-                f_norm = f.lower().lstrip("_")
-                for proto_name in protocols_names:
-                    p_norm = proto_name.lower().lstrip("i")
-                    if f_norm == p_norm or f_norm == proto_name.lower() or f_norm == f"{p_norm}_service" or f_norm == f"{p_norm}_port":
-                        interface_deps.append(proto_name)
-
-            # Check direct instantiation of low-level dependencies inside methods
-            concrete_instantiations: list[str] = []
-            for m in rec.methods:
-                if m.name.split(".")[-1] in ("__init__", "__post_init__"):
-                    continue
-                body = m.body_text or ""
-                matches = _NEW_EXPR_RE.findall(body)
-                py_matches = _PYTHON_CONSTRUCTOR_RE.findall(body)
-                for raw_match in matches:
-                    cl = next((item for item in raw_match if item), "")
-                    if any(cl.endswith(sfx) for sfx in ("Repository", "Client", "Database", "Dao", "Gateway")):
-                        concrete_instantiations.append(cl)
-                for cl in py_matches + m.calls:
-                    if any(cl.endswith(sfx) for sfx in ("Repository", "Client", "Database", "Dao", "Gateway")) and cl != rec.name:
-                        concrete_instantiations.append(cl)
-
-            # 1. DIP Violation: Hardcoded concrete infrastructure dependencies
-            if concrete_instantiations and any(sfx in rec.name for sfx in ("Service", "Controller", "UseCase", "Manager")):
-                unique_news = sorted(set(concrete_instantiations))
-                evidences = [
-                    self.evidence(
-                        description=f"Class '{rec.name}' directly instantiates concrete dependencies ({', '.join(unique_news)}), violating DIP",
-                        weight=0.60,
-                        location=rec.location,
-                        code_suffix="DIP_HARDCODED_CONCRETE_INSTANTIATION",
-                    ),
-                    self.evidence(
-                        description="High-level modules should depend on abstract Protocols/ABCs, not direct concrete class instantiations",
-                        weight=0.35,
-                        location=rec.location,
-                        code_suffix="DIP_INVERSION_REQUIRED",
-                    ),
-                ]
-
-                detection = self.create_detection(
-                    target_name=rec.name,
-                    target_kind="dip_concrete_coupling",
-                    evidences=evidences,
-                    primary_location=rec.location,
-                    summary=f"DIP Violation: High-level '{rec.name}' directly creates concrete classes: {', '.join(unique_news)}",
-                    base_score=0.35,
-                )
-                detection.pattern_category = PatternCategory.PRINCIPLE
-                detections.append(detection)
-
-            # 2. DIP Adherence: Clean abstraction injection
-            elif interface_deps:
-                unique_deps = sorted(set(interface_deps))
-                evidences = [
-                    self.evidence(
-                        description=f"Class '{rec.name}' depends on abstracted interface(s): {', '.join(unique_deps)} adhering to DIP",
-                        weight=0.60,
-                        location=rec.location,
-                        code_suffix="DIP_INJECTED_ABSTRACTION",
-                    ),
-                    self.evidence(
-                        description="Core domain logic is decoupled from infrastructure details via Dependency Injection",
-                        weight=0.35,
-                        location=rec.location,
-                        code_suffix="DIP_DECOUPLED_ARCHITECTURE",
-                    ),
-                ]
-
-                detection = self.create_detection(
-                    target_name=rec.name,
-                    target_kind="dip_interface_dependency",
-                    evidences=evidences,
-                    primary_location=rec.location,
-                    summary=f"DIP Adherence: '{rec.name}' depends on interface abstraction(s) ({', '.join(unique_deps)})",
-                    base_score=0.35,
-                )
-                detection.pattern_category = PatternCategory.PRINCIPLE
-                detections.append(detection)
+            if not rec.name.endswith(("Rule", "Test")) and len(rec.methods) > 0:
+                det = self._analyze_record_dip(rec, protocols_names)
+                if det:
+                    detections.append(det)
 
         return detections
+
+    def _analyze_record_dip(self, rec: Any, protocols_names: set[str]) -> Detection | None:
+        interface_deps = self._find_interface_deps(rec, protocols_names)
+        concrete_instantiations = self._find_concrete_instantiations(rec)
+
+        if concrete_instantiations and any(sfx in rec.name for sfx in ("Service", "Controller", "UseCase", "Manager")):
+            unique_news = sorted(set(concrete_instantiations))
+            evidences = [
+                self.evidence(
+                    description=f"Class '{rec.name}' directly instantiates concrete dependencies ({', '.join(unique_news)}), violating DIP",
+                    weight=0.60,
+                    location=rec.location,
+                    code_suffix="DIP_HARDCODED_CONCRETE_INSTANTIATION",
+                ),
+                self.evidence(
+                    description="High-level modules should depend on abstract Protocols/ABCs, not direct concrete class instantiations",
+                    weight=0.35,
+                    location=rec.location,
+                    code_suffix="DIP_INVERSION_REQUIRED",
+                ),
+            ]
+            detection = self.create_detection(
+                target_name=rec.name,
+                target_kind="dip_concrete_coupling",
+                evidences=evidences,
+                primary_location=rec.location,
+                summary=f"DIP Violation: High-level '{rec.name}' directly creates concrete classes: {', '.join(unique_news)}",
+                base_score=0.35,
+            )
+            detection.pattern_category = PatternCategory.PRINCIPLE
+            return detection
+
+        if interface_deps:
+            unique_deps = sorted(set(interface_deps))
+            evidences = [
+                self.evidence(
+                    description=f"Class '{rec.name}' depends on abstracted interface(s): {', '.join(unique_deps)} adhering to DIP",
+                    weight=0.60,
+                    location=rec.location,
+                    code_suffix="DIP_INJECTED_ABSTRACTION",
+                ),
+                self.evidence(
+                    description="Core domain logic is decoupled from infrastructure details via Dependency Injection",
+                    weight=0.35,
+                    location=rec.location,
+                    code_suffix="DIP_DECOUPLED_ARCHITECTURE",
+                ),
+            ]
+            detection = self.create_detection(
+                target_name=rec.name,
+                target_kind="dip_interface_dependency",
+                evidences=evidences,
+                primary_location=rec.location,
+                summary=f"DIP Adherence: '{rec.name}' depends on interface abstraction(s) ({', '.join(unique_deps)})",
+                base_score=0.35,
+            )
+            detection.pattern_category = PatternCategory.PRINCIPLE
+            return detection
+
+        return None
+
+    def _find_interface_deps(self, rec: Any, protocols_names: set[str]) -> list[str]:
+        interface_deps: list[str] = []
+        for f in rec.fields:
+            f_norm = f.lower().lstrip("_")
+            for proto_name in protocols_names:
+                p_norm = proto_name.lower().lstrip("i")
+                if f_norm in (p_norm, proto_name.lower(), f"{p_norm}_service", f"{p_norm}_port"):
+                    interface_deps.append(proto_name)
+        return interface_deps
+
+    def _find_concrete_instantiations(self, rec: Any) -> list[str]:
+        concrete: list[str] = []
+        suffixes = ("Repository", "Client", "Database", "Dao", "Gateway")
+        for m in rec.methods:
+            if m.name.split(".")[-1] in ("__init__", "__post_init__"):
+                continue
+            body = m.body_text or ""
+            for raw_match in _NEW_EXPR_RE.findall(body):
+                cl = next((item for item in raw_match if item), "")
+                if any(cl.endswith(sfx) for sfx in suffixes):
+                    concrete.append(cl)
+            for cl in _PYTHON_CONSTRUCTOR_RE.findall(body) + m.calls:
+                if any(cl.endswith(sfx) for sfx in suffixes) and cl != rec.name:
+                    concrete.append(cl)
+        return concrete

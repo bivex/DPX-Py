@@ -321,8 +321,15 @@ class CodeModel:
             for other_name, other_ns in self.namespaces.items():
                 if other_name == ns_name:
                     continue
-                other_base = os.path.splitext(os.path.basename(other_ns.file_path))[0] if other_ns.file_path else other_name
-                if sym_clean == other_name or sym_clean == other_base or sym_clean in other_ns.records or raw_sym in other_ns.records:
+                other_base = (
+                    os.path.splitext(os.path.basename(other_ns.file_path))[0] if other_ns.file_path else other_name
+                )
+                if (
+                    sym_clean == other_name
+                    or sym_clean == other_base
+                    or sym_clean in other_ns.records
+                    or raw_sym in other_ns.records
+                ):
                     graph[ns_name].add(other_name)
 
     def _connect_call_dependencies(

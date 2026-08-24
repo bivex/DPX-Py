@@ -15,14 +15,14 @@ class DataFlowDirection(str, Enum):
     """Direction of the data flow analysis."""
 
     OUT = "OUT"  # Forward data flow: what reads and propagates this variable
-    IN = "IN"    # Backward data flow: what sources / functions affect this variable
+    IN = "IN"  # Backward data flow: what sources / functions affect this variable
 
 
 class DataFlowVariant(str, Enum):
     """Visualization and graph structuring variants."""
 
-    SIMPLIFIED = "simplified"      # Simple tree / DAG without cluster boxes
-    CLUSTER = "cluster"            # Group entities by file / class / namespace
+    SIMPLIFIED = "simplified"  # Simple tree / DAG without cluster boxes
+    CLUSTER = "cluster"  # Group entities by file / class / namespace
     RELATIONSHIP = "relationship"  # Only paths connecting two specific entities
 
 
@@ -126,7 +126,7 @@ class DataFlowGraph:
         lines: list[str] = []
         for c_name, c_nodes in clusters.items():
             sanitized_cname = "".join(c if c.isalnum() else "_" for c in c_name)
-            lines.append(f"    subgraph cluster_{sanitized_cname} [\"{c_name}\"]")
+            lines.append(f'    subgraph cluster_{sanitized_cname} ["{c_name}"]')
             for node in c_nodes:
                 lines.append(self._format_mermaid_node(node, indent="        "))
             lines.append("    end")
@@ -135,7 +135,7 @@ class DataFlowGraph:
     def _format_mermaid_node(self, node: DataFlowNode, indent: str) -> str:
         node_esc = node.name.replace('"', '\\"')
         icon = "🔷" if node.kind == NodeKind.VARIABLE else "⚙️"
-        return f"{indent}{node.id}[\"{icon} {node_esc}\"]"
+        return f'{indent}{node.id}["{icon} {node_esc}"]'
 
     def _render_mermaid_edges(self) -> list[str]:
         lines: list[str] = []
@@ -155,7 +155,11 @@ class DataFlowGraph:
     def to_rich_tree(self) -> Tree:
         """Render graph as an interactive Rich ASCII Tree for terminal output."""
         root_node = self.nodes.get(self.root_id)
-        root_label = f"[bold cyan]🔷 {self.root_id}[/bold cyan] [dim]({self.direction.value})[/dim]" if root_node else f"[bold]{self.root_id}[/bold]"
+        root_label = (
+            f"[bold cyan]🔷 {self.root_id}[/bold cyan] [dim]({self.direction.value})[/dim]"
+            if root_node
+            else f"[bold]{self.root_id}[/bold]"
+        )
         tree = Tree(root_label)
 
         # Adjacency map
@@ -304,4 +308,3 @@ class DataFlowSummaryReport:
                 for s in self.summaries
             ],
         }
-

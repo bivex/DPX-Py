@@ -101,5 +101,7 @@ class DetectionReport:
             "summary_by_category": self.summary_by_category,
             "summary_by_type": self.summary_by_type,
             "summary_by_confidence_level": self.summary_by_confidence_level,
-            "detections": [d.to_dict() for d in sorted(self.detections, key=lambda x: x.confidence.score, reverse=True)],
+            "detections": [
+                d.to_dict() for d in sorted(self.detections, key=lambda x: x.confidence.score, reverse=True)
+            ],
         }

@@ -23,7 +23,9 @@ from pattern_detector.ports.inbound import ScanOptions
 
 def _create_sample_report() -> DetectionReport:
     loc = SourceLocation(file_path="src/app/Core.hpp", line=15, column=1)
-    ev = Evidence(description="Watched atom with add-watch callback", weight=0.6, rule_code="WATCHED_STATE", location=loc)
+    ev = Evidence(
+        description="Watched atom with add-watch callback", weight=0.6, rule_code="WATCHED_STATE", location=loc
+    )
     det = Detection(
         pattern_type=PatternType.OBSERVER,
         pattern_category=PatternCategory.BEHAVIORAL,
@@ -147,5 +149,3 @@ def test_sarif_report_formatter() -> None:
         assert Path(sarif_file).exists()
         loaded = json.loads(Path(sarif_file).read_text(encoding="utf-8"))
         assert loaded["version"] == "2.1.0"
-
-

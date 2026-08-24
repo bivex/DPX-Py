@@ -45,7 +45,9 @@ class DecoratorPatternRule(BasePatternRule):
                 if has_handler_param:
                     break
 
-            is_wrap_naming = fn.name.startswith("wrap-") or fn.name.startswith("wrap_") or "middleware" in fn.name.lower()
+            is_wrap_naming = (
+                fn.name.startswith("wrap-") or fn.name.startswith("wrap_") or "middleware" in fn.name.lower()
+            )
 
             if has_handler_param:
                 evidences.append(
@@ -99,7 +101,11 @@ class DecoratorPatternRule(BasePatternRule):
                 )
 
             # If evidence is sufficient to consider it a decorator/middleware
-            if evidences and (len(evidences) >= 2 or (fn.returns_closure and has_handler_param) or (is_wrap_naming and fn.returns_closure)):
+            if evidences and (
+                len(evidences) >= 2
+                or (fn.returns_closure and has_handler_param)
+                or (is_wrap_naming and fn.returns_closure)
+            ):
                 detections.append(
                     self.create_detection(
                         target_name=fn.name,
@@ -119,13 +125,16 @@ class DecoratorPatternRule(BasePatternRule):
 
             # Check if implements a component protocol
             implemented_protocols = [
-                proto.name for proto in model.all_protocols()
-                if rec.implements_protocol(proto.name) or any(r.name == rec.name for r in model.find_records_implementing(proto.name))
+                proto.name
+                for proto in model.all_protocols()
+                if rec.implements_protocol(proto.name)
+                or any(r.name == rec.name for r in model.find_records_implementing(proto.name))
             ]
 
             # Check for wrapped component field matching the same interface or 'component'
             component_fields = [
-                f for f in rec.fields
+                f
+                for f in rec.fields
                 if any(k in f.lower() for k in ("component", "wrapped", "decoratee"))
                 or any(p.lower() in f.lower() for p in implemented_protocols)
             ]
@@ -135,7 +144,20 @@ class DecoratorPatternRule(BasePatternRule):
 
             # Exclude non-decorator GoF roles when class is not explicitly named Decorator
             if not is_decorator_named and any(
-                k in name_lower for k in ("flyweight", "observer", "subject", "mediator", "proxy", "bridge", "abstraction", "state", "command", "strategy", "visitor")
+                k in name_lower
+                for k in (
+                    "flyweight",
+                    "observer",
+                    "subject",
+                    "mediator",
+                    "proxy",
+                    "bridge",
+                    "abstraction",
+                    "state",
+                    "command",
+                    "strategy",
+                    "visitor",
+                )
             ):
                 continue
 

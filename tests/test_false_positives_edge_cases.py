@@ -107,8 +107,10 @@ class AccountProfile:
 """
     report = _scan_snippet({"account_profile.py": code})
     builder_detections = [
-        d for d in report.detections
-        if d.pattern_type == PatternType.BUILDER and d.confidence.level in (ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH)
+        d
+        for d in report.detections
+        if d.pattern_type == PatternType.BUILDER
+        and d.confidence.level in (ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH)
     ]
     assert len(builder_detections) == 0
 
@@ -127,8 +129,10 @@ class EmailNotificationClient:
 """
     report = _scan_snippet({"email_client.py": code})
     observer_detections = [
-        d for d in report.detections
-        if d.pattern_type == PatternType.OBSERVER and d.confidence.level in (ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH)
+        d
+        for d in report.detections
+        if d.pattern_type == PatternType.OBSERVER
+        and d.confidence.level in (ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH)
     ]
     assert len(observer_detections) == 0
 
@@ -223,8 +227,10 @@ def measure_latency(func):
 """
     report = _scan_snippet({"timing_decorator.py": code})
     decorator_detections = [
-        d for d in report.detections
-        if d.pattern_type == PatternType.DECORATOR and d.confidence.level in (ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH)
+        d
+        for d in report.detections
+        if d.pattern_type == PatternType.DECORATOR
+        and d.confidence.level in (ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH)
     ]
     assert len(decorator_detections) == 0
 

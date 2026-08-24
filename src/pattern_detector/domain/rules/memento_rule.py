@@ -30,10 +30,16 @@ class MementoPatternRule(BasePatternRule):
                 if "Rule" in fn.name or "Test" in fn.name:
                     continue
                 local_name = fn.name.split(".")[-1].lower()
-                if any(k in local_name for k in ("snapshot", "memento", "checkpoint", "undo", "redo", "save_state", "restore_state")):
+                if any(
+                    k in local_name
+                    for k in ("snapshot", "memento", "checkpoint", "undo", "redo", "save_state", "restore_state")
+                ):
                     memento_fns.append(fn)
 
-            if len(memento_fns) >= 2 or any("memento" in f.name.split(".")[-1].lower() or "snapshot" in f.name.split(".")[-1].lower() for f in memento_fns):
+            if len(memento_fns) >= 2 or any(
+                "memento" in f.name.split(".")[-1].lower() or "snapshot" in f.name.split(".")[-1].lower()
+                for f in memento_fns
+            ):
                 evidences: list[Evidence] = []
                 related_locs: list[SourceLocation] = []
 

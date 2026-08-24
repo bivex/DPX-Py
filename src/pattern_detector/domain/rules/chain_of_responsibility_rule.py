@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from pattern_detector.domain.code_model import CodeModel
 from pattern_detector.domain.detection import Detection
 from pattern_detector.domain.rules.base import BasePatternRule
-from pattern_detector.domain.value_objects import Evidence, PatternType, SourceLocation
+from pattern_detector.domain.value_objects import Evidence, PatternType
 
 
 class ChainOfResponsibilityRule(BasePatternRule):
@@ -23,122 +25,144 @@ class ChainOfResponsibilityRule(BasePatternRule):
 
     def detect(self, model: CodeModel) -> list[Detection]:
         detections: list[Detection] = []
-
-        for fn in model.all_functions():
-            if fn.is_multimethod or fn.parent_multimethod:
-                continue
-
-            evidences: list[Evidence] = []
-            related_locs: list[SourceLocation] = []
-
-            # 1. Check for middleware calls in body
-            middleware_calls = [
-                c for c in fn.calls
-                if c.startswith(("wrap-", "wrap_", "middleware-")) or "-middleware" in c
-            ]
-
-            # 2. Check for threading macros and composition
-            has_threading = any(t in fn.body_text for t in ("->", "->>", "comp", "reduce"))
-            has_comp = any(c in ("comp", "clojure.core/comp") for c in fn.calls)
-
-            if middleware_calls:
-                count = len(middleware_calls)
-                evidences.append(
-                    self.evidence(
-                        description=f"Assembles pipeline chain of {count} middleware handlers: {', '.join(middleware_calls[:4])}",
-                        weight=min(0.60, 0.30 + 0.10 * count),
-                        location=fn.location,
-                        code_suffix="MIDDLEWARE_CHAIN_CALLS",
-                    )
-                )
-
-            if has_comp:
-                evidences.append(
-                    self.evidence(
-                        description="Uses functional composition (comp) to chain multiple request processing handlers into a pipeline",
-                        weight=0.35,
-                        location=fn.location,
-                        code_suffix="COMP_CHAIN",
-                    )
-                )
-
-            if has_threading and middleware_calls:
-                evidences.append(
-                    self.evidence(
-                        description="Uses threading pipeline (-> / ->>) to sequentially pass request context through chain stages",
-                        weight=0.30,
-                        location=fn.location,
-                        code_suffix="THREADING_PIPELINE",
-                    )
-                )
-
-            if len(middleware_calls) >= 2 or (len(middleware_calls) >= 1 and (has_comp or has_threading)):
-                detections.append(
-                    self.create_detection(
-                        target_name=fn.name,
-                        target_kind="middleware_pipeline",
-                        evidences=evidences,
-                        primary_location=fn.location,
-                        related_locations=related_locs,
-                        summary=f"Chain of Responsibility: pipeline '{fn.name}' chains {len(middleware_calls)} middleware processing stages",
-                        base_score=0.20,
-                    )
-                )
-
-        # 2. Python OOP Chain of Responsibility Pattern (Handler chaining)
-        for rec in model.all_records():
-            name_lower = rec.name.lower()
-            is_handler_named = "handler" in name_lower or "filter" in name_lower or "processor" in name_lower
-
-            has_successor_field = any(
-                any(k in f.lower() for k in ("successor", "next", "handler", "parent", "chain"))
-                for f in rec.fields
-            )
-            has_chain_methods = any(
-                any(k in m.name.lower() for k in ("setsuccessor", "setnext", "handle", "handlerequest", "process"))
-                for m in rec.methods
-            )
-
-            if (is_handler_named and (has_successor_field or has_chain_methods)) or (has_successor_field and has_chain_methods):
-                evidences = []
-                if is_handler_named:
-                    evidences.append(
-                        self.evidence(
-                            description=f"Class '{rec.name}' follows Chain of Responsibility handler naming convention",
-                            weight=0.45,
-                            location=rec.location,
-                            code_suffix="HANDLER_CLASS_NAMING",
-                        )
-                    )
-                if has_successor_field:
-                    evidences.append(
-                        self.evidence(
-                            description=f"Maintains successor/next link to chain handler: {', '.join([f for f in rec.fields if any(k in f.lower() for k in ('successor', 'next', 'handler', 'parent', 'chain'))])}",
-                            weight=0.45,
-                            location=rec.location,
-                            code_suffix="HANDLER_SUCCESSOR_FIELD",
-                        )
-                    )
-                if has_chain_methods:
-                    evidences.append(
-                        self.evidence(
-                            description=f"Declares request processing / successor configuration methods: {', '.join([m.name for m in rec.methods if any(k in m.name.lower() for k in ('setsuccessor', 'setnext', 'handle', 'handlerequest', 'process'))])}",
-                            weight=0.40,
-                            location=rec.location,
-                            code_suffix="HANDLER_CHAIN_METHODS",
-                        )
-                    )
-
-                detections.append(
-                    self.create_detection(
-                        target_name=rec.name,
-                        target_kind="chain_handler_class",
-                        evidences=evidences,
-                        primary_location=rec.location,
-                        related_locations=[],
-                        summary=f"Chain of Responsibility: handler '{rec.name}' passes requests along dynamic chain of successor objects",
-                        base_score=0.30,
-                    )
-                )
-
+        detections.extend(self._detect_middleware_pipelines(model))
+        detections.extend(self._detect_oop_handlers(model))
         return detections
+
+    def _detect_middleware_pipelines(self, model: CodeModel) -> list[Detection]:
+        results: list[Detection] = []
+        for fn in model.all_functions():
+            if not fn.is_multimethod and not fn.parent_multimethod:
+                det = self._analyze_middleware_function(fn)
+                if det:
+                    results.append(det)
+        return results
+
+    def _analyze_middleware_function(self, fn: Any) -> Detection | None:
+        middleware_calls = [
+            c for c in fn.calls if c.startswith(("wrap-", "wrap_", "middleware-")) or "-middleware" in c
+        ]
+        has_threading = any(t in fn.body_text for t in ("->", "->>", "comp", "reduce"))
+        has_comp = any(c in ("comp", "clojure.core/comp") for c in fn.calls)
+
+        if not (len(middleware_calls) >= 2 or (len(middleware_calls) >= 1 and (has_comp or has_threading))):
+            return None
+
+        evidences = self._build_pipeline_evidences(fn, middleware_calls, has_comp, has_threading)
+        return self.create_detection(
+            target_name=fn.name,
+            target_kind="middleware_pipeline",
+            evidences=evidences,
+            primary_location=fn.location,
+            related_locations=[],
+            summary=f"Chain of Responsibility: pipeline '{fn.name}' chains {len(middleware_calls)} middleware processing stages",
+            base_score=0.20,
+        )
+
+    def _build_pipeline_evidences(
+        self, fn: Any, middleware_calls: list[str], has_comp: bool, has_threading: bool
+    ) -> list[Evidence]:
+        evidences = []
+        if middleware_calls:
+            count = len(middleware_calls)
+            evidences.append(
+                self.evidence(
+                    description=f"Assembles pipeline chain of {count} middleware handlers: {', '.join(middleware_calls[:4])}",
+                    weight=min(0.60, 0.30 + 0.10 * count),
+                    location=fn.location,
+                    code_suffix="MIDDLEWARE_CHAIN_CALLS",
+                )
+            )
+        if has_comp:
+            evidences.append(
+                self.evidence(
+                    description="Uses functional composition (comp) to chain multiple request processing handlers into a pipeline",
+                    weight=0.35,
+                    location=fn.location,
+                    code_suffix="COMP_CHAIN",
+                )
+            )
+        if has_threading and middleware_calls:
+            evidences.append(
+                self.evidence(
+                    description="Uses threading pipeline (-> / ->>) to sequentially pass request context through chain stages",
+                    weight=0.30,
+                    location=fn.location,
+                    code_suffix="THREADING_PIPELINE",
+                )
+            )
+        return evidences
+
+    def _detect_oop_handlers(self, model: CodeModel) -> list[Detection]:
+        results: list[Detection] = []
+        for rec in model.all_records():
+            det = self._analyze_handler_record(rec)
+            if det:
+                results.append(det)
+        return results
+
+    def _analyze_handler_record(self, rec: Any) -> Detection | None:
+        name_lower = rec.name.lower()
+        is_handler_named = "handler" in name_lower or "filter" in name_lower or "processor" in name_lower
+        has_successor_field = any(
+            any(k in f.lower() for k in ("successor", "next", "handler", "parent", "chain")) for f in rec.fields
+        )
+        has_chain_methods = any(
+            any(k in m.name.lower() for k in ("setsuccessor", "setnext", "handle", "handlerequest", "process"))
+            for m in rec.methods
+        )
+
+        if not (
+            (is_handler_named and (has_successor_field or has_chain_methods))
+            or (has_successor_field and has_chain_methods)
+        ):
+            return None
+
+        evidences = []
+        if is_handler_named:
+            evidences.append(
+                self.evidence(
+                    description=f"Class '{rec.name}' follows Chain of Responsibility handler naming convention",
+                    weight=0.45,
+                    location=rec.location,
+                    code_suffix="HANDLER_CLASS_NAMING",
+                )
+            )
+        if has_successor_field:
+            successor_fields = [
+                f
+                for f in rec.fields
+                if any(k in f.lower() for k in ("successor", "next", "handler", "parent", "chain"))
+            ]
+            evidences.append(
+                self.evidence(
+                    description=f"Maintains successor/next link to chain handler: {', '.join(successor_fields)}",
+                    weight=0.45,
+                    location=rec.location,
+                    code_suffix="HANDLER_SUCCESSOR_FIELD",
+                )
+            )
+        if has_chain_methods:
+            chain_methods = [
+                m.name
+                for m in rec.methods
+                if any(k in m.name.lower() for k in ("setsuccessor", "setnext", "handle", "handlerequest", "process"))
+            ]
+            evidences.append(
+                self.evidence(
+                    description=f"Declares request processing / successor configuration methods: {', '.join(chain_methods)}",
+                    weight=0.40,
+                    location=rec.location,
+                    code_suffix="HANDLER_CHAIN_METHODS",
+                )
+            )
+
+        return self.create_detection(
+            target_name=rec.name,
+            target_kind="chain_handler_class",
+            evidences=evidences,
+            primary_location=rec.location,
+            related_locations=[],
+            summary=f"Chain of Responsibility: handler '{rec.name}' passes requests along dynamic chain of successor objects",
+            base_score=0.30,
+        )

@@ -179,10 +179,12 @@ class BetaProcessor:
             return base * 0.85
         return base * 0.95
 """
-    model = PyParserAdapter().parse_sources({
-        "alpha_processor.py": code_a,
-        "beta_processor.py": code_b,
-    })
+    model = PyParserAdapter().parse_sources(
+        {
+            "alpha_processor.py": code_a,
+            "beta_processor.py": code_b,
+        }
+    )
     detections = DryRule().detect(model)
     assert len(detections) >= 1
     assert detections[0].pattern_type == PatternType.DRY
@@ -198,13 +200,15 @@ import mod4
 class GlobalOrchestrator:
     pass
 """
-    model = PyParserAdapter().parse_sources({
-        "hub.py": code_hub,
-        "mod1.py": "class Mod1: pass",
-        "mod2.py": "class Mod2: pass",
-        "mod3.py": "class Mod3: pass",
-        "mod4.py": "class Mod4: pass",
-    })
+    model = PyParserAdapter().parse_sources(
+        {
+            "hub.py": code_hub,
+            "mod1.py": "class Mod1: pass",
+            "mod2.py": "class Mod2: pass",
+            "mod3.py": "class Mod3: pass",
+            "mod4.py": "class Mod4: pass",
+        }
+    )
     detections = CohesionCouplingRule().detect(model)
     assert len(detections) >= 1
     assert detections[0].pattern_type == PatternType.HIGH_COHESION_LOW_COUPLING

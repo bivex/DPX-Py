@@ -27,10 +27,7 @@ class BridgePatternRule(BasePatternRule):
         driver_protos = [
             p
             for p in model.all_protocols()
-            if any(
-                k in p.name.lower()
-                for k in ("implementor", "driver", "backend", "renderingengine", "platformapi")
-            )
+            if any(k in p.name.lower() for k in ("implementor", "driver", "backend", "renderingengine", "platformapi"))
         ]
 
         for driver_p in driver_protos:
@@ -40,8 +37,19 @@ class BridgePatternRule(BasePatternRule):
                     continue
 
                 matching_fields = [
-                    f for f in rec.fields
-                    if f.lower() in ("driver", "_driver", "implementor", "_implementor", "backend", "_backend", driver_p.name.lower(), f"_{driver_p.name.lower()}")
+                    f
+                    for f in rec.fields
+                    if f.lower()
+                    in (
+                        "driver",
+                        "_driver",
+                        "implementor",
+                        "_implementor",
+                        "backend",
+                        "_backend",
+                        driver_p.name.lower(),
+                        f"_{driver_p.name.lower()}",
+                    )
                 ]
                 if matching_fields:
                     evidences = [

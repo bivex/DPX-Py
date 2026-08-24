@@ -76,8 +76,7 @@ class FlyweightPatternRule(BasePatternRule):
             name_lower = rec.name.lower()
             if "flyweight" in name_lower:
                 has_pool = any(
-                    any(k in f.lower() for k in ("flyweight", "pool", "cache", "map", "table"))
-                    for f in rec.fields
+                    any(k in f.lower() for k in ("flyweight", "pool", "cache", "map", "table")) for f in rec.fields
                 )
                 if has_pool:
                     evidences = [

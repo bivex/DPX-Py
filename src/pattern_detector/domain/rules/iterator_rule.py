@@ -30,7 +30,9 @@ class IteratorPatternRule(BasePatternRule):
                 continue
             methods_lower = [m.name.split(".")[-1].lower() for m in proto.methods]
             has_next = any(m in ("next", "has_next", "current_item", "is_done", "first") for m in methods_lower)
-            if has_next and ("iterator" in proto.name.lower() or "iterable" in proto.name.lower() or len(methods_lower) >= 2):
+            if has_next and (
+                "iterator" in proto.name.lower() or "iterable" in proto.name.lower() or len(methods_lower) >= 2
+            ):
                 evidences = [
                     self.evidence(
                         description=f"Protocol '{proto.name}' defines iterator traversal methods: {', '.join(m.name for m in proto.methods)}",

@@ -31,23 +31,31 @@ class LlmReportFormatter:
         # Separate Design Patterns, SOLID Adherences, and Architectural Violations
         patterns = [d for d in report.detections if d.pattern_category != PatternCategory.PRINCIPLE]
         adherences = [
-            d for d in report.detections
-            if d.pattern_category == PatternCategory.PRINCIPLE and ("Adherence" in d.summary or "adherence" in d.target_kind)
+            d
+            for d in report.detections
+            if d.pattern_category == PatternCategory.PRINCIPLE
+            and ("Adherence" in d.summary or "adherence" in d.target_kind)
         ]
         violations = [
-            d for d in report.detections
-            if d.pattern_category == PatternCategory.PRINCIPLE and not ("Adherence" in d.summary or "adherence" in d.target_kind)
+            d
+            for d in report.detections
+            if d.pattern_category == PatternCategory.PRINCIPLE
+            and not ("Adherence" in d.summary or "adherence" in d.target_kind)
         ]
 
         if patterns:
             lines.append("    <design_patterns>")
             for d in patterns:
                 loc = f"{d.primary_location.file_path}:{d.primary_location.line}" if d.primary_location else ""
-                lines.append(f'      <pattern type="{d.pattern_type.value}" target="{d.target_name}" confidence="{d.confidence.percentage_str}" location="{loc}">')
+                lines.append(
+                    f'      <pattern type="{d.pattern_type.value}" target="{d.target_name}" confidence="{d.confidence.percentage_str}" location="{loc}">'
+                )
                 lines.append(f"        <summary>{d.summary}</summary>")
                 lines.append("        <evidence>")
                 for ev in d.evidences:
-                    lines.append(f'          <item rule="{ev.rule_code}" weight="+{int(ev.weight * 100)}%">{ev.description}</item>')
+                    lines.append(
+                        f'          <item rule="{ev.rule_code}" weight="+{int(ev.weight * 100)}%">{ev.description}</item>'
+                    )
                 lines.append("        </evidence>")
                 lines.append("      </pattern>")
             lines.append("    </design_patterns>")
@@ -56,7 +64,9 @@ class LlmReportFormatter:
             lines.append("    <solid_and_architectural_adherences>")
             for a in adherences:
                 loc = f"{a.primary_location.file_path}:{a.primary_location.line}" if a.primary_location else ""
-                lines.append(f'      <adherence rule="{a.pattern_type.value}" target="{a.target_name}" confidence="{a.confidence.percentage_str}" location="{loc}">')
+                lines.append(
+                    f'      <adherence rule="{a.pattern_type.value}" target="{a.target_name}" confidence="{a.confidence.percentage_str}" location="{loc}">'
+                )
                 lines.append(f"        <summary>{a.summary}</summary>")
                 lines.append("        <evidence>")
                 for ev in a.evidences:
@@ -69,7 +79,9 @@ class LlmReportFormatter:
             lines.append("    <architectural_violations_and_risks>")
             for v in violations:
                 loc = f"{v.primary_location.file_path}:{v.primary_location.line}" if v.primary_location else ""
-                lines.append(f'      <violation rule="{v.pattern_type.value}" target="{v.target_name}" confidence="{v.confidence.percentage_str}" location="{loc}">')
+                lines.append(
+                    f'      <violation rule="{v.pattern_type.value}" target="{v.target_name}" confidence="{v.confidence.percentage_str}" location="{loc}">'
+                )
                 lines.append(f"        <risk>{v.summary}</risk>")
                 lines.append("        <evidence>")
                 for ev in v.evidences:
@@ -82,7 +94,9 @@ class LlmReportFormatter:
             lines.append("    <pattern_data_insights>")
             for ins in insights_report.insights:
                 loc = f"{ins.location.file_path}:{ins.location.line}" if ins.location else ""
-                lines.append(f'      <insight pattern="{ins.target_pattern.value}" target="{ins.target_name}" severity="{ins.severity.value}" category="{ins.category.value}" location="{loc}">')
+                lines.append(
+                    f'      <insight pattern="{ins.target_pattern.value}" target="{ins.target_name}" severity="{ins.severity.value}" category="{ins.category.value}" location="{loc}">'
+                )
                 lines.append(f"        <title>{ins.title}</title>")
                 lines.append(f"        <data_entity>{ins.data_entity}</data_entity>")
                 lines.append(f"        <description>{ins.description}</description>")
@@ -92,10 +106,12 @@ class LlmReportFormatter:
                 lines.append("      </insight>")
             lines.append("    </pattern_data_insights>")
 
-        lines.extend([
-            "  </project>",
-            "</codebase_architecture_analysis>",
-        ])
+        lines.extend(
+            [
+                "  </project>",
+                "</codebase_architecture_analysis>",
+            ]
+        )
         return "\n".join(lines)
 
     def format_data_flow_graph(self, graph: DataFlowGraph) -> str:
@@ -107,10 +123,18 @@ class LlmReportFormatter:
 
         # 1. Functions interacting with root
         reads_by = [e.to_id.replace("fn_", "") for e in graph.edges if e.from_id == graph.root_id and e.kind == "READS"]
-        writes_by = [e.from_id.replace("fn_", "") for e in graph.edges if e.to_id == graph.root_id and e.kind in ("WRITES", "MODIFIES")]
+        writes_by = [
+            e.from_id.replace("fn_", "")
+            for e in graph.edges
+            if e.to_id == graph.root_id and e.kind in ("WRITES", "MODIFIES")
+        ]
 
-        lines.append(f'    <direct_readers count="{len(reads_by)}">{", ".join(reads_by) if reads_by else "none"}</direct_readers>')
-        lines.append(f'    <direct_writers count="{len(writes_by)}">{", ".join(writes_by) if writes_by else "none"}</direct_writers>')
+        lines.append(
+            f'    <direct_readers count="{len(reads_by)}">{", ".join(reads_by) if reads_by else "none"}</direct_readers>'
+        )
+        lines.append(
+            f'    <direct_writers count="{len(writes_by)}">{", ".join(writes_by) if writes_by else "none"}</direct_writers>'
+        )
         lines.append("  </summary>")
 
         # 2. Extract linear propagation paths through DFS
@@ -159,7 +183,9 @@ class LlmReportFormatter:
 
         for s in sorted(report.summaries, key=lambda x: (x.downstream_reach, len(x.readers)), reverse=True):
             loc_str = f"{s.file_path}:{s.line}" if s.file_path else "global"
-            lines.append(f'  <variable name="{s.name}" impact="{s.impact_level}" reach_nodes="{s.downstream_reach}" max_depth="{s.max_depth}" location="{loc_str}">')
+            lines.append(
+                f'  <variable name="{s.name}" impact="{s.impact_level}" reach_nodes="{s.downstream_reach}" max_depth="{s.max_depth}" location="{loc_str}">'
+            )
             lines.append(f'    <readers count="{len(s.readers)}">{", ".join(s.readers)}</readers>')
             lines.append(f'    <writers count="{len(s.writers)}">{", ".join(s.writers)}</writers>')
             lines.append("  </variable>")

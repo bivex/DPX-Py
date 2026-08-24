@@ -96,9 +96,19 @@ PATTERN_TYPE_COLORS: dict[PatternType, dict[str, str]] = {
     PatternType.LISKOV_SUBSTITUTION: {"text": "#f472b6", "bg": "#83184344", "border": "#db2777", "label": "red"},
     PatternType.INTERFACE_SEGREGATION: {"text": "#38bdf8", "bg": "#0c4a6e44", "border": "#0284c7", "label": "blue"},
     PatternType.DEPENDENCY_INVERSION: {"text": "#34d399", "bg": "#064e3b44", "border": "#059669", "label": "green"},
-    PatternType.COMPOSITION_OVER_INHERITANCE: {"text": "#2dd4bf", "bg": "#134e4a44", "border": "#0d9488", "label": "teal"},
+    PatternType.COMPOSITION_OVER_INHERITANCE: {
+        "text": "#2dd4bf",
+        "bg": "#134e4a44",
+        "border": "#0d9488",
+        "label": "teal",
+    },
     PatternType.LAW_OF_DEMETER: {"text": "#fbbf24", "bg": "#78350f44", "border": "#d97706", "label": "yellow"},
-    PatternType.HIGH_COHESION_LOW_COUPLING: {"text": "#60a5fa", "bg": "#1e3a8a44", "border": "#2563eb", "label": "blue"},
+    PatternType.HIGH_COHESION_LOW_COUPLING: {
+        "text": "#60a5fa",
+        "bg": "#1e3a8a44",
+        "border": "#2563eb",
+        "label": "blue",
+    },
     PatternType.KISS: {"text": "#a3e635", "bg": "#36531444", "border": "#65a30d", "label": "olive"},
     PatternType.DRY: {"text": "#e879f9", "bg": "#701a7544", "border": "#c026d3", "label": "pink"},
 }
@@ -117,7 +127,15 @@ class HtmlReportFormatter(ReportFormatterPort):
         for idx, det in enumerate(report.detections, 1):
             cat_style = CATEGORY_STYLES.get(
                 det.pattern_category,
-                {"text": "#94a3b8", "bg": "#1e293b44", "border": "#475569", "accent": "#64748b", "label_color": "grey", "icon": "tag", "name": "Other"},
+                {
+                    "text": "#94a3b8",
+                    "bg": "#1e293b44",
+                    "border": "#475569",
+                    "accent": "#64748b",
+                    "label_color": "grey",
+                    "icon": "tag",
+                    "name": "Other",
+                },
             )
             pat_style = PATTERN_TYPE_COLORS.get(
                 det.pattern_type,
@@ -134,7 +152,11 @@ class HtmlReportFormatter(ReportFormatterPort):
             evidences_html: list[str] = []
             for ev in det.evidences:
                 pct = int(ev.weight * 100)
-                loc_str = f'<span class="location-tag"><i class="map marker alternate icon"></i> {html.escape(str(ev.location))}</span>' if ev.location else ""
+                loc_str = (
+                    f'<span class="location-tag"><i class="map marker alternate icon"></i> {html.escape(str(ev.location))}</span>'
+                    if ev.location
+                    else ""
+                )
                 evidences_html.append(
                     f'<div class="item" style="padding: 4px 0; border-left: 3px solid {cat_style["accent"]}; padding-left: 10px; margin-bottom: 4px;">'
                     f'<span class="weight-tag" style="color: {cat_style["text"]}; font-weight: 700; font-family: monospace;">+{pct}%</span> '
@@ -145,7 +167,10 @@ class HtmlReportFormatter(ReportFormatterPort):
 
             related_html = ""
             if det.related_locations:
-                rel_items = " ".join(f'<span class="code-pill"><i class="file code outline icon"></i> {html.escape(str(loc))}</span>' for loc in det.related_locations)
+                rel_items = " ".join(
+                    f'<span class="code-pill"><i class="file code outline icon"></i> {html.escape(str(loc))}</span>'
+                    for loc in det.related_locations
+                )
                 related_html = f'<div style="margin-top: 10px; font-size: 12px; color: #94a3b8;"><strong>Related Locations:</strong><div style="margin-top: 4px;">{rel_items}</div></div>'
 
             cards_html.append(
@@ -157,8 +182,8 @@ class HtmlReportFormatter(ReportFormatterPort):
                         </div>
                         <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                             <span style="color: #64748b; font-weight: 700; font-size: 13px;">#{idx}</span>
-                            <span class="ui mini {cat_style['label_color']} label"><i class="{cat_style['icon']} icon"></i> {html.escape(cat_style["name"].upper())}</span>
-                            <span class="ui mini {pat_style['label']} label">{html.escape(det.pattern_type.value.upper())}</span>
+                            <span class="ui mini {cat_style["label_color"]} label"><i class="{cat_style["icon"]} icon"></i> {html.escape(cat_style["name"].upper())}</span>
+                            <span class="ui mini {pat_style["label"]} label">{html.escape(det.pattern_type.value.upper())}</span>
                             <span style="color: #cbd5e1; font-weight: 600;">{html.escape(det.target_kind)}:</span>
                             <span style="color: #38bdf8; font-family: monospace; font-weight: 700;">{html.escape(det.target_name)}</span>
                         </div>
@@ -191,9 +216,9 @@ class HtmlReportFormatter(ReportFormatterPort):
                 category_filters.append(
                     f"""
                     <a class="item cat-filter-btn" data-filter="{cat_enum.value}">
-                        <i class="{style['icon']} icon" style="color: {style['accent']};"></i>
-                        {style['name']}
-                        <div class="ui mini {style['label_color']} label">{count}</div>
+                        <i class="{style["icon"]} icon" style="color: {style["accent"]};"></i>
+                        {style["name"]}
+                        <div class="ui mini {style["label_color"]} label">{count}</div>
                     </a>
                     """
                 )

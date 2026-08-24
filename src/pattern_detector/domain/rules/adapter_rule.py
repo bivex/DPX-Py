@@ -89,13 +89,16 @@ class AdapterPatternRule(BasePatternRule):
 
             # Check if implements a target protocol
             implemented_protocols = [
-                proto.name for proto in model.all_protocols()
-                if rec.implements_protocol(proto.name) or any(r.name == rec.name for r in model.find_records_implementing(proto.name))
+                proto.name
+                for proto in model.all_protocols()
+                if rec.implements_protocol(proto.name)
+                or any(r.name == rec.name for r in model.find_records_implementing(proto.name))
             ]
 
             # Check for wrapped adaptee field
             adaptee_fields = [
-                f for f in rec.fields
+                f
+                for f in rec.fields
                 if any(k in f.lower() for k in ("adaptee", "delegate", "target", "source", "wrapped", "impl", "client"))
             ]
 

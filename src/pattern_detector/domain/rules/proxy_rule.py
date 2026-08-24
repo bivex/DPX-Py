@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from pattern_detector.domain.code_model import CodeModel
 from pattern_detector.domain.detection import Detection
 from pattern_detector.domain.rules.base import BasePatternRule
@@ -23,8 +25,12 @@ class ProxyPatternRule(BasePatternRule):
 
     def detect(self, model: CodeModel) -> list[Detection]:
         detections: list[Detection] = []
+        detections.extend(self._detect_lazy_delay_proxies(model))
+        detections.extend(self._detect_oop_proxies(model))
+        return detections
 
-        # 1. Inspect State models for lazy delays / promises (Virtual Proxy)
+    def _detect_lazy_delay_proxies(self, model: CodeModel) -> list[Detection]:
+        results: list[Detection] = []
         for state in model.all_states():
             if state.kind == "delay":
                 evidences = [
@@ -44,7 +50,7 @@ class ProxyPatternRule(BasePatternRule):
                             code_suffix="DEFONCE_LAZY_PROXY",
                         )
                     )
-                detections.append(
+                results.append(
                     self.create_detection(
                         target_name=state.name,
                         target_kind="virtual_proxy_state",
@@ -55,46 +61,52 @@ class ProxyPatternRule(BasePatternRule):
                         base_score=0.25,
                     )
                 )
+        return results
 
-        # 2. OOP Proxy Pattern in Python
+    def _detect_oop_proxies(self, model: CodeModel) -> list[Detection]:
+        results: list[Detection] = []
         for rec in model.all_records():
-            if rec.name.endswith("Rule") or rec.name.endswith("Test"):
-                continue
-            name_lower = rec.name.lower()
-            if "proxy" in name_lower:
-                has_subject_field = any(
-                    k in f.lower() for f in rec.fields for k in ("subject", "_subject", "real", "_real", "target", "_target")
-                )
-                if has_subject_field and rec.implemented_protocols:
-                    evidences = [
-                        self.evidence(
-                            description=f"Class '{rec.name}' follows Proxy surrogate naming convention",
-                            weight=0.50,
-                            location=rec.location,
-                            code_suffix="PROXY_CLASS_NAMING",
-                        ),
-                        self.evidence(
-                            description=f"Class '{rec.name}' maintains reference to wrapped real subject: {', '.join([f for f in rec.fields if any(k in f.lower() for k in ('subject', 'real', 'target'))])}",
-                            weight=0.40,
-                            location=rec.location,
-                            code_suffix="PROXY_TARGET_FIELD",
-                        ),
-                        self.evidence(
-                            description=f"Implements subject interface '{', '.join(rec.implemented_protocols)}' to act as polymorphic surrogate",
-                            weight=0.35,
-                            location=rec.location,
-                            code_suffix="PROXY_IMPLEMENTS_SUBJECT",
-                        ),
-                    ]
-                    detections.append(
-                        self.create_detection(
-                            target_name=rec.name,
-                            target_kind="proxy_class",
-                            evidences=evidences,
-                            primary_location=rec.location,
-                            summary=f"Proxy pattern: class '{rec.name}' acts as surrogate controlling access to real subject",
-                            base_score=0.30,
-                        )
-                    )
+            if not rec.name.endswith(("Rule", "Test")):
+                det = self._analyze_proxy_record(rec)
+                if det:
+                    results.append(det)
+        return results
 
-        return detections
+    def _analyze_proxy_record(self, rec: Any) -> Detection | None:
+        if "proxy" not in rec.name.lower() or not rec.implemented_protocols:
+            return None
+
+        has_subject_field = any(
+            k in f.lower() for f in rec.fields for k in ("subject", "_subject", "real", "_real", "target", "_target")
+        )
+        if not has_subject_field:
+            return None
+
+        evidences = [
+            self.evidence(
+                description=f"Class '{rec.name}' follows Proxy surrogate naming convention",
+                weight=0.50,
+                location=rec.location,
+                code_suffix="PROXY_CLASS_NAMING",
+            ),
+            self.evidence(
+                description=f"Class '{rec.name}' maintains reference to wrapped real subject: {', '.join([f for f in rec.fields if any(k in f.lower() for k in ('subject', 'real', 'target'))])}",
+                weight=0.40,
+                location=rec.location,
+                code_suffix="PROXY_TARGET_FIELD",
+            ),
+            self.evidence(
+                description=f"Implements subject interface '{', '.join(rec.implemented_protocols)}' to act as polymorphic surrogate",
+                weight=0.35,
+                location=rec.location,
+                code_suffix="PROXY_IMPLEMENTS_SUBJECT",
+            ),
+        ]
+        return self.create_detection(
+            target_name=rec.name,
+            target_kind="proxy_class",
+            evidences=evidences,
+            primary_location=rec.location,
+            summary=f"Proxy pattern: class '{rec.name}' acts as surrogate controlling access to real subject",
+            base_score=0.30,
+        )

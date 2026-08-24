@@ -112,10 +112,12 @@ class ProductEntity:
     def get_id(self) -> str:
         return self.product_id
 """
-    report = _scan_snippet({
-        "user_entity.py": code_a,
-        "product_entity.py": code_b,
-    })
+    report = _scan_snippet(
+        {
+            "user_entity.py": code_a,
+            "product_entity.py": code_b,
+        }
+    )
     dry_detections = [d for d in report.detections if d.pattern_type == PatternType.DRY]
     assert len(dry_detections) == 0
 
@@ -133,8 +135,10 @@ class StringHelpers:
 """
     report = _scan_snippet({"string_helpers.py": code})
     factory_detections = [
-        d for d in report.detections
-        if d.pattern_type == PatternType.FACTORY_METHOD and d.confidence.level in (ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH)
+        d
+        for d in report.detections
+        if d.pattern_type == PatternType.FACTORY_METHOD
+        and d.confidence.level in (ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH)
     ]
     assert len(factory_detections) == 0
 
@@ -154,8 +158,10 @@ class Vector2D:
 """
     report = _scan_snippet({"vector.py": code})
     builder_detections = [
-        d for d in report.detections
-        if d.pattern_type == PatternType.BUILDER and d.confidence.level in (ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH)
+        d
+        for d in report.detections
+        if d.pattern_type == PatternType.BUILDER
+        and d.confidence.level in (ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH)
     ]
     assert len(builder_detections) == 0
 
@@ -177,8 +183,10 @@ class ImageCache:
 """
     report = _scan_snippet({"image_cache.py": code})
     singleton_detections = [
-        d for d in report.detections
-        if d.pattern_type == PatternType.SINGLETON and d.confidence.level in (ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH)
+        d
+        for d in report.detections
+        if d.pattern_type == PatternType.SINGLETON
+        and d.confidence.level in (ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH)
     ]
     assert len(singleton_detections) == 0
 
@@ -200,8 +208,10 @@ class ListNode:
 """
     report = _scan_snippet({"list_node.py": code})
     cor_detections = [
-        d for d in report.detections
-        if d.pattern_type == PatternType.CHAIN_OF_RESPONSIBILITY and d.confidence.level in (ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH)
+        d
+        for d in report.detections
+        if d.pattern_type == PatternType.CHAIN_OF_RESPONSIBILITY
+        and d.confidence.level in (ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH)
     ]
     assert len(cor_detections) == 0
 
@@ -228,8 +238,10 @@ class TreeNode:
 """
     report = _scan_snippet({"bst.py": code})
     composite_detections = [
-        d for d in report.detections
-        if d.pattern_type == PatternType.COMPOSITE and d.confidence.level in (ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH)
+        d
+        for d in report.detections
+        if d.pattern_type == PatternType.COMPOSITE
+        and d.confidence.level in (ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH)
     ]
     assert len(composite_detections) == 0
 
@@ -248,8 +260,10 @@ class EventLogger:
 """
     report = _scan_snippet({"logger.py": code})
     observer_detections = [
-        d for d in report.detections
-        if d.pattern_type == PatternType.OBSERVER and d.confidence.level in (ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH)
+        d
+        for d in report.detections
+        if d.pattern_type == PatternType.OBSERVER
+        and d.confidence.level in (ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH)
     ]
     assert len(observer_detections) == 0
 
@@ -266,8 +280,10 @@ class DatabaseMigrationScript:
 """
     report = _scan_snippet({"migration.py": code})
     command_detections = [
-        d for d in report.detections
-        if d.pattern_type == PatternType.COMMAND and d.confidence.level in (ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH)
+        d
+        for d in report.detections
+        if d.pattern_type == PatternType.COMMAND
+        and d.confidence.level in (ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH)
     ]
     assert len(command_detections) == 0
 
@@ -284,8 +300,10 @@ class WebCrawler:
 """
     report = _scan_snippet({"crawler.py": code})
     visitor_detections = [
-        d for d in report.detections
-        if d.pattern_type == PatternType.VISITOR and d.confidence.level in (ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH)
+        d
+        for d in report.detections
+        if d.pattern_type == PatternType.VISITOR
+        and d.confidence.level in (ConfidenceLevel.HIGH, ConfidenceLevel.VERY_HIGH)
     ]
     assert len(visitor_detections) == 0
 
@@ -316,9 +334,5 @@ class AstExtractor(NodeVisitorBase):
         return "method_name"
 """
     report = _scan_snippet({"detector.py": code})
-    lsp_detections = [
-        d for d in report.detections
-        if d.pattern_type == PatternType.LISKOV_SUBSTITUTION
-    ]
+    lsp_detections = [d for d in report.detections if d.pattern_type == PatternType.LISKOV_SUBSTITUTION]
     assert len(lsp_detections) == 0
-

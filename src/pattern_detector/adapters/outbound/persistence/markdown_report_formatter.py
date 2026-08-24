@@ -31,13 +31,15 @@ class MarkdownReportFormatter(ReportFormatterPort):
             if count > 0:
                 lines.append(f"| **{cat.upper()}** | {count} |")
 
-        lines.extend([
-            "",
-            "---",
-            "",
-            "## 📋 Identified Design Patterns",
-            "",
-        ])
+        lines.extend(
+            [
+                "",
+                "---",
+                "",
+                "## 📋 Identified Design Patterns",
+                "",
+            ]
+        )
 
         for idx, det in enumerate(report.detections, 1):
             badge = {

@@ -31,7 +31,10 @@ class CommandPatternRule(BasePatternRule):
                 related_locs: list[SourceLocation] = []
 
                 name_lower = mm_name.lower()
-                is_command_named = any(k in name_lower for k in ("command", "cmd", "event", "action", "msg", "message", "dispatch", "handle-"))
+                is_command_named = any(
+                    k in name_lower
+                    for k in ("command", "cmd", "event", "action", "msg", "message", "dispatch", "handle-")
+                )
 
                 if is_command_named:
                     evidences.append(

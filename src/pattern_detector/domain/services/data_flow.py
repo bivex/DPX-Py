@@ -95,7 +95,9 @@ class DataFlowService:
 
         if target_variable not in full_out_graph.nodes:
             if source_variable in full_out_graph.nodes:
-                filtered_graph.add_node(node_id=source_variable, name=source_variable, kind=NodeKind.VARIABLE, is_root=True)
+                filtered_graph.add_node(
+                    node_id=source_variable, name=source_variable, kind=NodeKind.VARIABLE, is_root=True
+                )
             return filtered_graph
 
         reachable_to_target = self._find_ancestors(full_out_graph, target_variable)
@@ -147,7 +149,9 @@ class DataFlowService:
 
     # ── Private Helper Functions for Complexity Reduction ───────────
 
-    def _create_initial_graph(self, root_variable: str, direction: DataFlowDirection, variant: DataFlowVariant) -> DataFlowGraph:
+    def _create_initial_graph(
+        self, root_variable: str, direction: DataFlowDirection, variant: DataFlowVariant
+    ) -> DataFlowGraph:
         graph = DataFlowGraph(root_id=root_variable, direction=direction, variant=variant)
         graph.add_node(node_id=root_variable, name=root_variable, kind=NodeKind.VARIABLE, is_root=True)
         return graph
@@ -177,14 +181,18 @@ class DataFlowService:
         return model._writers_by_var  # type: ignore[attr-defined]
 
     def _expand_forward_function(
-        self, graph: DataFlowGraph, var_name: str, fn: Any, depth: int, max_nodes: int,
-        visited_vars: set[str], queue: deque[tuple[str, int]]
+        self,
+        graph: DataFlowGraph,
+        var_name: str,
+        fn: Any,
+        depth: int,
+        max_nodes: int,
+        visited_vars: set[str],
+        queue: deque[tuple[str, int]],
     ) -> None:
         fn_id = f"fn_{fn.name}"
         cluster_name = fn.namespace or (fn.location.file_path.split("/")[-1] if fn.location else "global")
-        graph.add_node(
-            node_id=fn_id, name=fn.name, kind=NodeKind.FUNCTION, cluster=cluster_name, location=fn.location
-        )
+        graph.add_node(node_id=fn_id, name=fn.name, kind=NodeKind.FUNCTION, cluster=cluster_name, location=fn.location)
         graph.add_edge(from_id=var_name, to_id=fn_id, kind="READS", location=fn.location)
 
         written_vars = list(dict.fromkeys(fn.writes_variables + fn.modifies_variables))
@@ -199,14 +207,18 @@ class DataFlowService:
                 queue.append((w_var, depth + 1))
 
     def _expand_backward_function(
-        self, graph: DataFlowGraph, var_name: str, fn: Any, depth: int, max_nodes: int,
-        visited_vars: set[str], queue: deque[tuple[str, int]]
+        self,
+        graph: DataFlowGraph,
+        var_name: str,
+        fn: Any,
+        depth: int,
+        max_nodes: int,
+        visited_vars: set[str],
+        queue: deque[tuple[str, int]],
     ) -> None:
         fn_id = f"fn_{fn.name}"
         cluster_name = fn.namespace or (fn.location.file_path.split("/")[-1] if fn.location else "global")
-        graph.add_node(
-            node_id=fn_id, name=fn.name, kind=NodeKind.FUNCTION, cluster=cluster_name, location=fn.location
-        )
+        graph.add_node(node_id=fn_id, name=fn.name, kind=NodeKind.FUNCTION, cluster=cluster_name, location=fn.location)
         w_kind = "MODIFIED_BY" if var_name in fn.modifies_variables else "WRITTEN_BY"
         graph.add_edge(from_id=var_name, to_id=fn_id, kind=w_kind, location=fn.location)
 
@@ -287,7 +299,11 @@ class DataFlowService:
 
     def _summarize_variable_flow(self, var_name: str, loc: Any, graph: DataFlowGraph) -> VariableFlowSummary:
         readers = [e.to_id.replace("fn_", "") for e in graph.edges if e.from_id == var_name and e.kind == "READS"]
-        writers = [e.from_id.replace("fn_", "") for e in graph.edges if e.to_id == var_name and e.kind in ("WRITES", "MODIFIES")]
+        writers = [
+            e.from_id.replace("fn_", "")
+            for e in graph.edges
+            if e.to_id == var_name and e.kind in ("WRITES", "MODIFIES")
+        ]
 
         reach = len(graph.nodes) - 1
         impact = self._calculate_impact_level(reach, len(readers))

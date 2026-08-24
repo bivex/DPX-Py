@@ -69,19 +69,50 @@ class PatternDetectorService:
 
     def _is_dominated_strategy(self, other_patterns: set[PatternType], target_lower: str) -> bool:
         competing = (
-            PatternType.COMPOSITE, PatternType.VISITOR, PatternType.OBSERVER, PatternType.COMMAND,
-            PatternType.STATE, PatternType.BRIDGE, PatternType.BUILDER, PatternType.ABSTRACT_FACTORY,
-            PatternType.FACTORY_METHOD, PatternType.PROTOTYPE, PatternType.FLYWEIGHT, PatternType.MEDIATOR,
-            PatternType.ITERATOR, PatternType.CHAIN_OF_RESPONSIBILITY, PatternType.ADAPTER, PatternType.PROXY,
+            PatternType.COMPOSITE,
+            PatternType.VISITOR,
+            PatternType.OBSERVER,
+            PatternType.COMMAND,
+            PatternType.STATE,
+            PatternType.BRIDGE,
+            PatternType.BUILDER,
+            PatternType.ABSTRACT_FACTORY,
+            PatternType.FACTORY_METHOD,
+            PatternType.PROTOTYPE,
+            PatternType.FLYWEIGHT,
+            PatternType.MEDIATOR,
+            PatternType.ITERATOR,
+            PatternType.CHAIN_OF_RESPONSIBILITY,
+            PatternType.ADAPTER,
+            PatternType.PROXY,
             PatternType.DECORATOR,
         )
         if any(p in other_patterns for p in competing):
             return True
 
         non_strategy = (
-            "product", "element", "subject", "prototype", "flyweight", "visitor", "observer",
-            "listener", "state", "command", "builder", "factory", "creator", "mediator",
-            "iterator", "handler", "component", "implementor", "adapter", "proxy", "decorator", "memento",
+            "product",
+            "element",
+            "subject",
+            "prototype",
+            "flyweight",
+            "visitor",
+            "observer",
+            "listener",
+            "state",
+            "command",
+            "builder",
+            "factory",
+            "creator",
+            "mediator",
+            "iterator",
+            "handler",
+            "component",
+            "implementor",
+            "adapter",
+            "proxy",
+            "decorator",
+            "memento",
         )
         is_other_role = any(k in target_lower for k in non_strategy)
         is_explicit_strategy = any(k in target_lower for k in ("strategy", "algorithm", "policy"))
@@ -92,6 +123,8 @@ class PatternDetectorService:
     ) -> bool:
         if p_type == PatternType.ABSTRACT_FACTORY and ("builder" in target_lower or target_lower == "creator"):
             return True
-        if p_type == PatternType.FACTORY_METHOD and (PatternType.ABSTRACT_FACTORY in other_patterns or "abstract" in target_lower):
+        if p_type == PatternType.FACTORY_METHOD and (
+            PatternType.ABSTRACT_FACTORY in other_patterns or "abstract" in target_lower
+        ):
             return True
         return p_type == PatternType.COMMAND and ("abstraction" in target_lower or "component" in target_lower)

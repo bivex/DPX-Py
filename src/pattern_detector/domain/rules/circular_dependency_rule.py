@@ -41,7 +41,11 @@ class CircularDependencyRule(BasePatternRule):
                 related_locs.append(loc)
 
             primary_ns = model.get_namespace(cycle[0])
-            primary_loc = SourceLocation(file_path=primary_ns.file_path, line=1) if primary_ns else SourceLocation(file_path="", line=1)
+            primary_loc = (
+                SourceLocation(file_path=primary_ns.file_path, line=1)
+                if primary_ns
+                else SourceLocation(file_path="", line=1)
+            )
 
             detections.append(
                 self.create_detection(

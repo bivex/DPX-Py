@@ -61,7 +61,8 @@ class SingletonPatternRule(BasePatternRule):
 
             # Check methods for getInstance / get()
             get_instance_methods = [
-                m for m in rec.methods
+                m
+                for m in rec.methods
                 if any(k in m.name.lower() for k in ("getinstance", "instance", "get_instance", "shared_instance"))
             ]
 

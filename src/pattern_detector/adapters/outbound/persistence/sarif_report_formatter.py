@@ -12,7 +12,7 @@ from pattern_detector.domain.value_objects import ConfidenceLevel, PatternCatego
 class SarifReportFormatter:
     """Formats DetectionReport into standard OASIS SARIF v2.1.0 JSON format."""
 
-    def format(self, report: DetectionReport) -> str:
+    def format(self, report: DetectionReport, verbose: bool = False) -> str:
         """Serialize DetectionReport to SARIF JSON string."""
         rule_map: dict[str, dict[str, Any]] = {}
         results: list[dict[str, Any]] = []
@@ -29,9 +29,7 @@ class SarifReportFormatter:
                     "fullDescription": {
                         "text": f"Detects instances and adherence/violations of {d.pattern_type.value.upper()}."
                     },
-                    "defaultConfiguration": {
-                        "level": self._map_level(d.pattern_category, d.confidence.level)
-                    },
+                    "defaultConfiguration": {"level": self._map_level(d.pattern_category, d.confidence.level)},
                     "properties": {
                         "category": d.pattern_category.value,
                         "tags": [d.pattern_category.value, "architecture", "solid", "gof-pattern"],
@@ -46,9 +44,7 @@ class SarifReportFormatter:
             result: dict[str, Any] = {
                 "ruleId": rule_id,
                 "level": self._map_level(d.pattern_category, d.confidence.level),
-                "message": {
-                    "text": f"[{d.confidence.percentage_str}] {d.summary}"
-                },
+                "message": {"text": f"[{d.confidence.percentage_str}] {d.summary}"},
                 "locations": [
                     {
                         "physicalLocation": {
@@ -82,7 +78,9 @@ class SarifReportFormatter:
                                             "message": {"text": ev.description},
                                             "physicalLocation": {
                                                 "artifactLocation": {
-                                                    "uri": ev.location.file_path if ev.location and ev.location.file_path else file_uri
+                                                    "uri": ev.location.file_path
+                                                    if ev.location and ev.location.file_path
+                                                    else file_uri
                                                 },
                                                 "region": {
                                                     "startLine": max(1, ev.location.line) if ev.location else start_line

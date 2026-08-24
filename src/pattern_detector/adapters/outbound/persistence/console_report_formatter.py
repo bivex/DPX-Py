@@ -32,7 +32,10 @@ class ConsoleReportFormatter(ReportFormatterPort):
         header = Text()
         header.append("🔍 Pattern Scanner & Detector ", style="bold magenta")
         header.append("• Hexagonal DDD Architecture\n", style="italic cyan")
-        header.append(f"Scanned: {report.scanned_files_count} file(s) in {report.elapsed_seconds:.3f}s | Found: {report.total_detections_count} pattern instance(s)", style="dim")
+        header.append(
+            f"Scanned: {report.scanned_files_count} file(s) in {report.elapsed_seconds:.3f}s | Found: {report.total_detections_count} pattern instance(s)",
+            style="dim",
+        )
         console.print(Panel(header, border_style="bright_blue"))
 
         if not report.detections:

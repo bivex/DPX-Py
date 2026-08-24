@@ -67,4 +67,8 @@ class CanvasContainer(IGraphic):
 
     assert report.total_detections_count >= 1
     pattern_types = [d.pattern_type for d in report.detections]
-    assert PatternType.STRATEGY in pattern_types or PatternType.COMPOSITE in pattern_types or PatternType.OPEN_CLOSED in pattern_types
+    assert (
+        PatternType.STRATEGY in pattern_types
+        or PatternType.COMPOSITE in pattern_types
+        or PatternType.OPEN_CLOSED in pattern_types
+    )

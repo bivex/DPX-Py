@@ -74,9 +74,7 @@ class ScanningService(ScannerPort, DetectorPort, DataFlowPort):
         )
 
         if to_entity:
-            return self._data_flow_service.trace_relationship(
-                code_model, target_entity, to_entity, max_depth=max_depth
-            )
+            return self._data_flow_service.trace_relationship(code_model, target_entity, to_entity, max_depth=max_depth)
         elif direction.upper() == "IN":
             return self._data_flow_service.trace_data_flow_in(
                 code_model, target_entity, variant=df_variant, max_depth=max_depth

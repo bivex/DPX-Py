@@ -16,9 +16,7 @@ class ScanOptions:
 
     min_confidence: float = 0.0
     enabled_patterns: list[str] = field(default_factory=list)
-    file_extensions: list[str] = field(
-        default_factory=lambda: [".py", ".pyi"]
-    )
+    file_extensions: list[str] = field(default_factory=lambda: [".py", ".pyi"])
     output_json_path: str | None = None
     output_html_path: str | None = None
     output_markdown_path: str | None = None
@@ -67,4 +65,3 @@ class DataFlowPort(Protocol):
     ) -> DataFlowSummaryReport:
         """Analyze data flow for all variables across a file or codebase."""
         ...
-

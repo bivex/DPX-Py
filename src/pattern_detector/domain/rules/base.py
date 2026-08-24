@@ -80,7 +80,9 @@ class BasePatternRule(ABC):
         snippet: str | None = None,
         code_suffix: str = "",
     ) -> Evidence:
-        rule_code = f"{self.pattern_type.value.upper()}_{code_suffix}" if code_suffix else self.pattern_type.value.upper()
+        rule_code = (
+            f"{self.pattern_type.value.upper()}_{code_suffix}" if code_suffix else self.pattern_type.value.upper()
+        )
         return Evidence(
             description=description,
             weight=weight,

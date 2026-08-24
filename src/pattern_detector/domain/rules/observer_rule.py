@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from pattern_detector.domain.code_model import CodeModel
 from pattern_detector.domain.detection import Detection
 from pattern_detector.domain.rules.base import BasePatternRule
@@ -24,67 +26,79 @@ class ObserverPatternRule(BasePatternRule):
 
     def detect(self, model: CodeModel) -> list[Detection]:
         detections: list[Detection] = []
+        detections.extend(self._detect_watched_states(model))
+        recorded_targets = {d.target_name for d in detections}
+        detections.extend(self._detect_standalone_watches(model, recorded_targets))
+        recorded_targets = {d.target_name for d in detections}
+        detections.extend(self._detect_observer_callbacks(model, recorded_targets))
+        detections.extend(self._detect_observer_protocols(model))
+        detections.extend(self._detect_subject_classes(model))
+        return detections
 
-        # 1. State-centric detection (states that have watchers attached)
+    def _detect_watched_states(self, model: CodeModel) -> list[Detection]:
+        results: list[Detection] = []
         for state in model.all_states():
-            state_watches = [w for w in model.all_watches() if w.target_state_name in (state.name, state.qualified_name)]
+            state_watches = [
+                w for w in model.all_watches() if w.target_state_name in (state.name, state.qualified_name)
+            ]
             if state_watches:
-                evidences: list[Evidence] = []
-                related_locs: list[SourceLocation] = []
+                det = self._create_state_watch_detection(state, state_watches, model)
+                results.append(det)
+        return results
 
+    def _create_state_watch_detection(self, state: Any, state_watches: list[Any], model: CodeModel) -> Detection:
+        evidences = [
+            self.evidence(
+                description=f"State container '{state.name}' of kind '{state.kind}' is subscribed to via add-watch",
+                weight=0.50,
+                location=state.location,
+                code_suffix="WATCHED_STATE",
+            )
+        ]
+        related_locs: list[SourceLocation] = []
+        for w in state_watches:
+            evidences.append(
+                self.evidence(
+                    description=f"Watcher key '{w.watch_key}' registers callback '{w.callback_fn_name}'",
+                    weight=0.35,
+                    location=w.location,
+                    code_suffix="ADD_WATCH_CALL",
+                )
+            )
+            related_locs.append(w.location)
+            self._check_watch_fn_signature(w.callback_fn_name, model, evidences, related_locs)
+
+        return self.create_detection(
+            target_name=state.name,
+            target_kind="state_atom",
+            evidences=evidences,
+            primary_location=state.location,
+            related_locations=related_locs,
+            summary=f"Observer pattern: state '{state.name}' has {len(state_watches)} active watcher subscriptions",
+        )
+
+    def _check_watch_fn_signature(
+        self, callback_name: str, model: CodeModel, evidences: list[Evidence], related_locs: list[SourceLocation]
+    ) -> None:
+        for fn in model.all_functions():
+            if (fn.name == callback_name or fn.qualified_name == callback_name) and any(
+                len(p) == 4 for p in fn.parameter_lists
+            ):
                 evidences.append(
                     self.evidence(
-                        description=f"State container '{state.name}' of kind '{state.kind}' is subscribed to via add-watch",
-                        weight=0.50,
-                        location=state.location,
-                        code_suffix="WATCHED_STATE",
+                        description=f"Callback function '{fn.name}' implements 4-parameter observer signature [key ref old-state new-state]",
+                        weight=0.25,
+                        location=fn.location,
+                        code_suffix="OBSERVER_CALLBACK_SIGNATURE",
                     )
                 )
+                related_locs.append(fn.location)
 
-                for w in state_watches:
-                    evidences.append(
-                        self.evidence(
-                            description=f"Watcher key '{w.watch_key}' registers callback '{w.callback_fn_name}'",
-                            weight=0.35,
-                            location=w.location,
-                            code_suffix="ADD_WATCH_CALL",
-                        )
-                    )
-                    related_locs.append(w.location)
-
-                    # Check if the callback function conforms to 4-parameter observer signature
-                    for fn in model.all_functions():
-                        if fn.name == w.callback_fn_name or fn.qualified_name == w.callback_fn_name:
-                            # Standard Clojure watch fn arity: [key ref old-state new-state]
-                            has_4_arity = any(len(params) == 4 for params in fn.parameter_lists)
-                            if has_4_arity:
-                                evidences.append(
-                                    self.evidence(
-                                        description=f"Callback function '{fn.name}' implements 4-parameter observer signature [key ref old-state new-state]",
-                                        weight=0.25,
-                                        location=fn.location,
-                                        code_suffix="OBSERVER_CALLBACK_SIGNATURE",
-                                    )
-                                )
-                                related_locs.append(fn.location)
-
-                detections.append(
-                    self.create_detection(
-                        target_name=state.name,
-                        target_kind="state_atom",
-                        evidences=evidences,
-                        primary_location=state.location,
-                        related_locations=related_locs,
-                        summary=f"Observer pattern: state '{state.name}' has {len(state_watches)} active watcher subscriptions",
-                    )
-                )
-
-        # 2. Standalone add-watch calls or functions with watch callbacks
-        recorded_watch_targets = {d.target_name for d in detections}
+    def _detect_standalone_watches(self, model: CodeModel, recorded_targets: set[str]) -> list[Detection]:
+        results: list[Detection] = []
         for watch in model.all_watches():
-            if watch.target_state_name in recorded_watch_targets:
+            if watch.target_state_name in recorded_targets:
                 continue
-
             evidences = [
                 self.evidence(
                     description=f"Explicit add-watch invocation attaching watcher '{watch.watch_key}' to '{watch.target_state_name}'",
@@ -93,7 +107,7 @@ class ObserverPatternRule(BasePatternRule):
                     code_suffix="ADD_WATCH_EXPLICIT",
                 )
             ]
-            detections.append(
+            results.append(
                 self.create_detection(
                     target_name=watch.target_state_name,
                     target_kind="watch_subscription",
@@ -102,13 +116,18 @@ class ObserverPatternRule(BasePatternRule):
                     summary=f"Observer pattern: watcher '{watch.watch_key}' attached to '{watch.target_state_name}'",
                 )
             )
+        return results
 
-        # 3. Callback functions with 4-parameter watch signature [k r o n]
+    def _detect_observer_callbacks(self, model: CodeModel, recorded_targets: set[str]) -> list[Detection]:
+        results: list[Detection] = []
         for fn in model.all_functions():
-            if any(
-                len(params) == 4 and any("old" in p.lower() or "state" in p.lower() or "ref" in p.lower() or "key" in p.lower() for p in params)
-                for params in fn.parameter_lists
-            ) and fn.name not in [d.target_name for d in detections]:
+            if fn.name not in recorded_targets and any(
+                len(p) == 4
+                and any(
+                    "old" in k.lower() or "state" in k.lower() or "ref" in k.lower() or "key" in k.lower() for k in p
+                )
+                for p in fn.parameter_lists
+            ):
                 evidences = [
                     self.evidence(
                         description=f"Function '{fn.name}' matches standard observer callback parameters [key ref old-state new-state]",
@@ -117,7 +136,7 @@ class ObserverPatternRule(BasePatternRule):
                         code_suffix="OBSERVER_FN_SIGNATURE",
                     )
                 ]
-                detections.append(
+                results.append(
                     self.create_detection(
                         target_name=fn.name,
                         target_kind="observer_callback",
@@ -126,11 +145,13 @@ class ObserverPatternRule(BasePatternRule):
                         summary=f"Observer callback function '{fn.name}' with [key ref old new] signature",
                     )
                 )
+        return results
 
-        # 4. OOP Observer / Subject Pattern in Python
+    def _detect_observer_protocols(self, model: CodeModel) -> list[Detection]:
+        results: list[Detection] = []
         for proto in model.all_protocols():
-            name_lower = proto.name.lower()
-            if any(k in name_lower for k in ("observer", "listener", "subscriber")):
+            if any(k in proto.name.lower() for k in ("observer", "listener", "subscriber")):
+                rec_impls = model.find_records_implementing(proto.name)
                 evidences = [
                     self.evidence(
                         description=f"Protocol '{proto.name}' defines Observer interface with callback methods: {', '.join(m.name for m in proto.methods)}",
@@ -139,7 +160,6 @@ class ObserverPatternRule(BasePatternRule):
                         code_suffix="OBSERVER_INTERFACE",
                     )
                 ]
-                rec_impls = model.find_records_implementing(proto.name)
                 for r in rec_impls:
                     evidences.append(
                         self.evidence(
@@ -149,7 +169,7 @@ class ObserverPatternRule(BasePatternRule):
                             code_suffix="CONCRETE_OBSERVER",
                         )
                     )
-                detections.append(
+                results.append(
                     self.create_detection(
                         target_name=proto.name,
                         target_kind="observer_protocol",
@@ -160,62 +180,82 @@ class ObserverPatternRule(BasePatternRule):
                         base_score=0.30,
                     )
                 )
+        return results
 
-        def is_obs_collection(field_name: str) -> bool:
-            f = field_name.lower()
-            if any(f.endswith(suffix) for suffix in ("_state", "_id", "_name", "_count", "_type", "_ptr", "_val", "_flag", "_status")):
-                return False
-            return any(k in f for k in ("observers", "listeners", "subscribers", "views", "watchers", "observer_list", "listener_list"))
-
-        # Subject classes managing observer lists
+    def _detect_subject_classes(self, model: CodeModel) -> list[Detection]:
+        results: list[Detection] = []
         for rec in model.all_records():
-            name_lower = rec.name.lower()
-            obs_fields = [f for f in rec.fields if is_obs_collection(f)]
-            has_obs_field = len(obs_fields) > 0
-            has_obs_methods = any(
-                m.name.split(".")[-1].lower().startswith(("attach", "detach", "register", "unregister", "subscribe", "notify"))
-                for m in rec.methods
-            )
-            if has_obs_field or (has_obs_methods and ("subject" in name_lower or "observable" in name_lower)):
-                evidences = []
-                if "subject" in name_lower or "observable" in name_lower:
-                    evidences.append(
-                        self.evidence(
-                            description=f"Class '{rec.name}' represents Observable Subject managing event subscribers",
-                            weight=0.45,
-                            location=rec.location,
-                            code_suffix="SUBJECT_CLASS_NAMING",
-                        )
-                    )
-                if has_obs_field:
-                    evidences.append(
-                        self.evidence(
-                            description=f"Maintains list/collection of observers: {', '.join(obs_fields)}",
-                            weight=0.40,
-                            location=rec.location,
-                            code_suffix="OBSERVER_COLLECTION_FIELD",
-                        )
-                    )
-                if has_obs_methods:
-                    obs_m_names = [m.name.split(".")[-1] for m in rec.methods if m.name.split(".")[-1].lower().startswith(("attach", "detach", "register", "unregister", "subscribe", "notify"))]
-                    evidences.append(
-                        self.evidence(
-                            description=f"Declares observer lifecycle/notification methods: {', '.join(obs_m_names)}",
-                            weight=0.40,
-                            location=rec.location,
-                            code_suffix="OBSERVER_MANAGEMENT_METHODS",
-                        )
-                    )
-                if evidences:
-                    detections.append(
-                        self.create_detection(
-                            target_name=rec.name,
-                            target_kind="subject_class",
-                            evidences=evidences,
-                            primary_location=rec.location,
-                            summary=f"Observer pattern: subject '{rec.name}' manages event subscriptions and notifications",
-                            base_score=0.30,
-                        )
-                    )
+            det = self._analyze_subject_record(rec)
+            if det:
+                results.append(det)
+        return results
 
-        return detections
+    def _analyze_subject_record(self, rec: Any) -> Detection | None:
+        name_lower = rec.name.lower()
+        obs_fields = [f for f in rec.fields if self._is_obs_collection(f)]
+        has_obs_field = len(obs_fields) > 0
+        has_obs_methods = any(
+            m.name.split(".")[-1]
+            .lower()
+            .startswith(("attach", "detach", "register", "unregister", "subscribe", "notify"))
+            for m in rec.methods
+        )
+        if not (has_obs_field or (has_obs_methods and ("subject" in name_lower or "observable" in name_lower))):
+            return None
+
+        evidences = []
+        if "subject" in name_lower or "observable" in name_lower:
+            evidences.append(
+                self.evidence(
+                    description=f"Class '{rec.name}' represents Observable Subject managing event subscribers",
+                    weight=0.45,
+                    location=rec.location,
+                    code_suffix="SUBJECT_CLASS_NAMING",
+                )
+            )
+        if has_obs_field:
+            evidences.append(
+                self.evidence(
+                    description=f"Maintains list/collection of observers: {', '.join(obs_fields)}",
+                    weight=0.40,
+                    location=rec.location,
+                    code_suffix="OBSERVER_COLLECTION_FIELD",
+                )
+            )
+        if has_obs_methods:
+            obs_m_names = [
+                m.name.split(".")[-1]
+                for m in rec.methods
+                if m.name.split(".")[-1]
+                .lower()
+                .startswith(("attach", "detach", "register", "unregister", "subscribe", "notify"))
+            ]
+            evidences.append(
+                self.evidence(
+                    description=f"Declares observer lifecycle/notification methods: {', '.join(obs_m_names)}",
+                    weight=0.40,
+                    location=rec.location,
+                    code_suffix="OBSERVER_MANAGEMENT_METHODS",
+                )
+            )
+
+        return self.create_detection(
+            target_name=rec.name,
+            target_kind="subject_class",
+            evidences=evidences,
+            primary_location=rec.location,
+            summary=f"Observer pattern: subject '{rec.name}' manages event subscriptions and notifications",
+            base_score=0.30,
+        )
+
+    def _is_obs_collection(self, field_name: str) -> bool:
+        f = field_name.lower()
+        if any(
+            f.endswith(suffix)
+            for suffix in ("_state", "_id", "_name", "_count", "_type", "_ptr", "_val", "_flag", "_status")
+        ):
+            return False
+        return any(
+            k in f
+            for k in ("observers", "listeners", "subscribers", "views", "watchers", "observer_list", "listener_list")
+        )

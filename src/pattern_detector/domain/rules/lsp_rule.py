@@ -33,8 +33,10 @@ class LiskovSubstitutionRule(BasePatternRule):
                 lines = [line.strip() for line in body.split("\n")]
                 # Check for explicit raise statement refusing parent contract
                 has_unsupported_op = any(
-                    line.startswith("raise ") and any(
-                        exc in line for exc in (
+                    line.startswith("raise ")
+                    and any(
+                        exc in line
+                        for exc in (
                             "NotImplementedError",
                             "UnsupportedOperation",
                             "UnsupportedOperationException",

@@ -139,13 +139,21 @@ def scan(
         _render_insights_to_console(container, target_path, report)
 
     if json_output:
-        console.print(f"[bold green]✔[/bold green] Full JSON detection report exported to: [underline]{json_output}[/underline]")
+        console.print(
+            f"[bold green]✔[/bold green] Full JSON detection report exported to: [underline]{json_output}[/underline]"
+        )
     if html_output:
-        console.print(f"[bold green]✔[/bold green] Interactive HTML dashboard exported to: [underline]{html_output}[/underline]")
+        console.print(
+            f"[bold green]✔[/bold green] Interactive HTML dashboard exported to: [underline]{html_output}[/underline]"
+        )
     if markdown_output:
-        console.print(f"[bold green]✔[/bold green] Markdown report exported to: [underline]{markdown_output}[/underline]")
+        console.print(
+            f"[bold green]✔[/bold green] Markdown report exported to: [underline]{markdown_output}[/underline]"
+        )
     if sarif_output:
-        console.print(f"[bold green]✔[/bold green] OASIS SARIF report exported to: [underline]{sarif_output}[/underline]")
+        console.print(
+            f"[bold green]✔[/bold green] OASIS SARIF report exported to: [underline]{sarif_output}[/underline]"
+        )
     if json_output or html_output or markdown_output or sarif_output:
         console.print()
 
@@ -292,7 +300,9 @@ def dataflow(
             Path(html_output).parent.mkdir(parents=True, exist_ok=True)
             with open(html_output, "w", encoding="utf-8") as f:
                 f.write(html_content)
-            console.print(f"\n[bold green]✔[/bold green] Interactive HTML report exported to: [underline]{html_output}[/underline]")
+            console.print(
+                f"\n[bold green]✔[/bold green] Interactive HTML report exported to: [underline]{html_output}[/underline]"
+            )
 
         if json_output:
             import json
@@ -300,7 +310,9 @@ def dataflow(
             Path(json_output).parent.mkdir(parents=True, exist_ok=True)
             with open(json_output, "w", encoding="utf-8") as f:
                 json.dump(summary_report.to_json(), f, indent=2)
-            console.print(f"\n[bold green]✔[/bold green] Data flow summary JSON exported to: [underline]{json_output}[/underline]")
+            console.print(
+                f"\n[bold green]✔[/bold green] Data flow summary JSON exported to: [underline]{json_output}[/underline]"
+            )
         return
 
     # Single variable flow analysis
@@ -324,14 +336,18 @@ def dataflow(
         title = f"Data Flow {graph.direction.value}: '{target}'"
         if to_entity:
             title += f" ➔ '{to_entity}'"
-        console.print(Panel(graph.to_rich_tree(), title=f"📊 [bold cyan]{title}[/bold cyan]", border_style="bright_blue"))
+        console.print(
+            Panel(graph.to_rich_tree(), title=f"📊 [bold cyan]{title}[/bold cyan]", border_style="bright_blue")
+        )
 
     if html_output:
         html_content = container.data_flow_html_formatter.format_single_graph(graph)
         Path(html_output).parent.mkdir(parents=True, exist_ok=True)
         with open(html_output, "w", encoding="utf-8") as f:
             f.write(html_content)
-        console.print(f"\n[bold green]✔[/bold green] Interactive HTML report exported to: [underline]{html_output}[/underline]")
+        console.print(
+            f"\n[bold green]✔[/bold green] Interactive HTML report exported to: [underline]{html_output}[/underline]"
+        )
 
     if json_output:
         import json
@@ -339,7 +355,9 @@ def dataflow(
         Path(json_output).parent.mkdir(parents=True, exist_ok=True)
         with open(json_output, "w", encoding="utf-8") as f:
             json.dump(graph.to_json(), f, indent=2)
-        console.print(f"\n[bold green]✔[/bold green] Data flow graph JSON exported to: [underline]{json_output}[/underline]")
+        console.print(
+            f"\n[bold green]✔[/bold green] Data flow graph JSON exported to: [underline]{json_output}[/underline]"
+        )
 
 
 def _render_insights_to_console(
@@ -376,7 +394,11 @@ def _render_insights_to_console(
         }.get(ins.severity, "white")
 
         sev_badge = f"[bold {sev_color}][{ins.severity.value}][/bold {sev_color}]"
-        loc_str = f" [dim]({ins.location.file_path}:{ins.location.line})[/dim]" if ins.location and ins.location.file_path else ""
+        loc_str = (
+            f" [dim]({ins.location.file_path}:{ins.location.line})[/dim]"
+            if ins.location and ins.location.file_path
+            else ""
+        )
 
         body_lines: list[str] = [
             f"[bold]Target Pattern:[/bold] [magenta]{ins.target_pattern.value.upper()}[/magenta] on [cyan]{ins.target_name}[/cyan]{loc_str}",

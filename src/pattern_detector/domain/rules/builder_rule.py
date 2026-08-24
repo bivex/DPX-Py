@@ -40,44 +40,13 @@ class BuilderPatternRule(BasePatternRule):
         return results
 
     def _detect_namespace_dsl(self, ns: Any) -> Detection | None:
-        step_fns = []
-        terminal_build_fns = []
-
-        for fn in ns.functions.values():
-            if fn.is_multimethod or fn.parent_multimethod:
-                continue
-            name_lower = fn.name.lower()
-            if name_lower.startswith(("build-", "build_")) or name_lower in ("build", "finish-build"):
-                terminal_build_fns.append(fn)
-            elif name_lower.startswith(("with-", "set-", "add-", "use-")) and not name_lower.startswith(("with-open", "with-lock", "with-transaction")):
-                has_assoc = any(k in fn.body_text for k in ("assoc", "update", "merge", "assoc-in", "update-in"))
-                params = [p.lower() for plist in fn.parameter_lists for p in plist]
-                has_builder_param = any("builder" in p or "config" in p or "opts" in p or "ctx" in p or p in ("b", "c", "m", "this") for p in params)
-                if has_assoc or has_builder_param:
-                    step_fns.append(fn)
-
+        step_fns, terminal_build_fns = self._classify_builder_functions(ns)
         if len(step_fns) < 2 and not (len(step_fns) >= 1 and len(terminal_build_fns) >= 1):
             return None
 
-        evidences: list[Evidence] = [
-            self.evidence(
-                description=f"Namespace '{ns.name}' defines {len(step_fns)} fluent configuration step functions: {', '.join(f.name for f in step_fns[:5])}",
-                weight=min(0.60, 0.30 + 0.10 * len(step_fns)),
-                location=step_fns[0].location if step_fns else next(iter(ns.functions.values())).location,
-                code_suffix="BUILDER_STEP_FUNCTIONS",
-            )
-        ]
+        evidences = self._build_dsl_evidences(ns, step_fns, terminal_build_fns)
         related_locs: list[SourceLocation] = [f.location for f in step_fns]
-        if terminal_build_fns:
-            evidences.append(
-                self.evidence(
-                    description=f"Provides terminal build / instantiation function(s): {', '.join(f.name for f in terminal_build_fns)}",
-                    weight=0.35,
-                    location=terminal_build_fns[0].location,
-                    code_suffix="TERMINAL_BUILD_FN",
-                )
-            )
-            related_locs.extend(f.location for f in terminal_build_fns)
+        related_locs.extend(f.location for f in terminal_build_fns)
 
         target_name = terminal_build_fns[0].name if terminal_build_fns else step_fns[0].name
         primary_loc = step_fns[0].location if step_fns else terminal_build_fns[0].location
@@ -91,6 +60,51 @@ class BuilderPatternRule(BasePatternRule):
             summary=f"Builder pattern: fluent builder DSL in namespace '{ns.name}' with {len(step_fns)} configuration steps",
             base_score=0.30,
         )
+
+    def _classify_builder_functions(self, ns: Any) -> tuple[list[Any], list[Any]]:
+        step_fns = []
+        terminal_build_fns = []
+        for fn in ns.functions.values():
+            if fn.is_multimethod or fn.parent_multimethod:
+                continue
+            name_lower = fn.name.lower()
+            if name_lower.startswith(("build-", "build_")) or name_lower in ("build", "finish-build"):
+                terminal_build_fns.append(fn)
+            elif self._is_step_fn(fn, name_lower):
+                step_fns.append(fn)
+        return step_fns, terminal_build_fns
+
+    def _is_step_fn(self, fn: Any, name_lower: str) -> bool:
+        if not name_lower.startswith(("with-", "set-", "add-", "use-")) or name_lower.startswith(
+            ("with-open", "with-lock", "with-transaction")
+        ):
+            return False
+        has_assoc = any(k in fn.body_text for k in ("assoc", "update", "merge", "assoc-in", "update-in"))
+        params = [p.lower() for plist in fn.parameter_lists for p in plist]
+        has_param = any(
+            "builder" in p or "config" in p or "opts" in p or "ctx" in p or p in ("b", "c", "m", "this") for p in params
+        )
+        return has_assoc or has_param
+
+    def _build_dsl_evidences(self, ns: Any, step_fns: list[Any], terminal_build_fns: list[Any]) -> list[Evidence]:
+        evidences: list[Evidence] = [
+            self.evidence(
+                description=f"Namespace '{ns.name}' defines {len(step_fns)} fluent configuration step functions: {', '.join(f.name for f in step_fns[:5])}",
+                weight=min(0.60, 0.30 + 0.10 * len(step_fns)),
+                location=step_fns[0].location if step_fns else next(iter(ns.functions.values())).location,
+                code_suffix="BUILDER_STEP_FUNCTIONS",
+            )
+        ]
+        if terminal_build_fns:
+            evidences.append(
+                self.evidence(
+                    description=f"Provides terminal build / instantiation function(s): {', '.join(f.name for f in terminal_build_fns)}",
+                    weight=0.35,
+                    location=terminal_build_fns[0].location,
+                    code_suffix="TERMINAL_BUILD_FN",
+                )
+            )
+        return evidences
 
     def _detect_protocol_builders(self, model: CodeModel) -> list[Detection]:
         results: list[Detection] = []
@@ -139,19 +153,11 @@ class BuilderPatternRule(BasePatternRule):
 
     def _detect_class_builder(self, rec: Any) -> Detection | None:
         name_lower = rec.name.lower()
-        step_methods = [
-            m for m in rec.methods
-            if (
-                m.name.split(".")[-1].lower().startswith(("with_", "set_", "add_", "append_", "use_"))
-                or "return self" in m.body_text.lower()
-            )
-            and m.name.split(".")[-1].lower() not in ("__init__", "build", "create", "construct", "get_result", "to_dict", "to_request")
-            and not m.name.split(".")[-1].lower().startswith(("with_open", "with_lock"))
-        ]
-        has_build_method = any(m.name.split(".")[-1].lower() in ("build", "create", "construct", "get_result", "to_dict", "to_request") for m in rec.methods)
+        step_methods = self._get_step_methods(rec)
+        build_fn = self._find_terminal_build_method(rec)
         is_builder_named = "builder" in name_lower
 
-        if not ((is_builder_named and (step_methods or has_build_method)) or (len(step_methods) >= 2 and has_build_method)):
+        if not ((is_builder_named and (step_methods or build_fn)) or (len(step_methods) >= 2 and build_fn)):
             return None
 
         evidences = []
@@ -173,8 +179,7 @@ class BuilderPatternRule(BasePatternRule):
                     code_suffix="BUILDER_STEP_METHODS",
                 )
             )
-        if has_build_method:
-            build_fn = next(m for m in rec.methods if m.name.split(".")[-1].lower() in ("build", "create", "construct", "get_result", "to_dict", "to_request"))
+        if build_fn:
             evidences.append(
                 self.evidence(
                     description=f"Class '{rec.name}' provides terminal assembly method '{build_fn.name.split('.')[-1]}()'",
@@ -192,3 +197,20 @@ class BuilderPatternRule(BasePatternRule):
             summary=f"Builder pattern: class '{rec.name}' provides fluent step-by-step assembly with {len(step_methods)} steps",
             base_score=0.30,
         )
+
+    def _get_step_methods(self, rec: Any) -> list[Any]:
+        return [
+            m
+            for m in rec.methods
+            if (
+                m.name.split(".")[-1].lower().startswith(("with_", "set_", "add_", "append_", "use_"))
+                or "return self" in m.body_text.lower()
+            )
+            and m.name.split(".")[-1].lower()
+            not in ("__init__", "build", "create", "construct", "get_result", "to_dict", "to_request")
+            and not m.name.split(".")[-1].lower().startswith(("with_open", "with_lock"))
+        ]
+
+    def _find_terminal_build_method(self, rec: Any) -> Any | None:
+        targets = ("build", "create", "construct", "get_result", "to_dict", "to_request")
+        return next((m for m in rec.methods if m.name.split(".")[-1].lower() in targets), None)

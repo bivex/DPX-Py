@@ -23,18 +23,28 @@ class DataFlowHtmlFormatter:
         # Prepare graph data for Cytoscape.js
         cy_elements = self._prepare_cytoscape_elements(graph)
         all_graphs_json = json.dumps({graph.root_id: cy_elements})
-        variables_summary_json = json.dumps([
-            {
-                "name": graph.root_id,
-                "file_path": graph.nodes[graph.root_id].file_path if graph.root_id in graph.nodes else "",
-                "line": graph.nodes[graph.root_id].line if graph.root_id in graph.nodes else 1,
-                "readers": [e.to_id.replace("fn_", "") for e in graph.edges if e.from_id == graph.root_id and e.kind == "READS"],
-                "writers": [e.from_id.replace("fn_", "") for e in graph.edges if e.to_id == graph.root_id and e.kind in ("WRITES", "MODIFIES")],
-                "downstream_reach": len(graph.nodes) - 1,
-                "max_depth": 3,
-                "impact_level": "HIGH" if len(graph.nodes) > 4 else "MEDIUM",
-            }
-        ])
+        variables_summary_json = json.dumps(
+            [
+                {
+                    "name": graph.root_id,
+                    "file_path": graph.nodes[graph.root_id].file_path if graph.root_id in graph.nodes else "",
+                    "line": graph.nodes[graph.root_id].line if graph.root_id in graph.nodes else 1,
+                    "readers": [
+                        e.to_id.replace("fn_", "")
+                        for e in graph.edges
+                        if e.from_id == graph.root_id and e.kind == "READS"
+                    ],
+                    "writers": [
+                        e.from_id.replace("fn_", "")
+                        for e in graph.edges
+                        if e.to_id == graph.root_id and e.kind in ("WRITES", "MODIFIES")
+                    ],
+                    "downstream_reach": len(graph.nodes) - 1,
+                    "max_depth": 3,
+                    "impact_level": "HIGH" if len(graph.nodes) > 4 else "MEDIUM",
+                }
+            ]
+        )
 
         return self._render_template(
             page_title=page_title,
@@ -59,19 +69,21 @@ class DataFlowHtmlFormatter:
 
         initial_root = sorted_summaries[0].name if sorted_summaries else ""
         all_graphs_json = json.dumps(graphs_dict)
-        variables_summary_json = json.dumps([
-            {
-                "name": s.name,
-                "file_path": s.file_path,
-                "line": s.line,
-                "readers": s.readers,
-                "writers": s.writers,
-                "downstream_reach": s.downstream_reach,
-                "max_depth": s.max_depth,
-                "impact_level": s.impact_level,
-            }
-            for s in report.summaries
-        ])
+        variables_summary_json = json.dumps(
+            [
+                {
+                    "name": s.name,
+                    "file_path": s.file_path,
+                    "line": s.line,
+                    "readers": s.readers,
+                    "writers": s.writers,
+                    "downstream_reach": s.downstream_reach,
+                    "max_depth": s.max_depth,
+                    "impact_level": s.impact_level,
+                }
+                for s in report.summaries
+            ]
+        )
 
         total_nodes = sum(len(s.graph.nodes) for s in report.summaries if s.graph)
         total_edges = sum(len(s.graph.edges) for s in report.summaries if s.graph)
@@ -115,43 +127,47 @@ class DataFlowHtmlFormatter:
                     text_color = "#e0f2fe"
                     label = f"🔷 {node.name}"
 
-            elements.append({
-                "group": "nodes",
-                "data": {
-                    "id": node.id,
-                    "label": label,
-                    "name": node.name,
-                    "kind": node.kind.value,
-                    "node_type": node_type,
-                    "is_root": is_root,
-                    "file_path": node.file_path,
-                    "line": node.line,
-                    "cluster": node.cluster,
-                    "shape": shape,
-                    "bgColor": bg_color,
-                    "borderColor": border_color,
-                    "textColor": text_color,
-                    "borderWidth": 3 if is_root else 2,
-                },
-            })
+            elements.append(
+                {
+                    "group": "nodes",
+                    "data": {
+                        "id": node.id,
+                        "label": label,
+                        "name": node.name,
+                        "kind": node.kind.value,
+                        "node_type": node_type,
+                        "is_root": is_root,
+                        "file_path": node.file_path,
+                        "line": node.line,
+                        "cluster": node.cluster,
+                        "shape": shape,
+                        "bgColor": bg_color,
+                        "borderColor": border_color,
+                        "textColor": text_color,
+                        "borderWidth": 3 if is_root else 2,
+                    },
+                }
+            )
 
         for i, edge in enumerate(graph.edges):
             kind_lower = edge.kind.lower()
             edge_color = "#38bdf8" if kind_lower == "reads" else ("#f43f5e" if "write" in kind_lower else "#fbbf24")
             line_style = "dashed" if "modifi" in kind_lower else "solid"
 
-            elements.append({
-                "group": "edges",
-                "data": {
-                    "id": f"e_{i}_{edge.from_id}_{edge.to_id}",
-                    "source": edge.from_id,
-                    "target": edge.to_id,
-                    "label": f" {kind_lower} ",
-                    "kind": edge.kind,
-                    "color": edge_color,
-                    "lineStyle": line_style,
-                },
-            })
+            elements.append(
+                {
+                    "group": "edges",
+                    "data": {
+                        "id": f"e_{i}_{edge.from_id}_{edge.to_id}",
+                        "source": edge.from_id,
+                        "target": edge.to_id,
+                        "label": f" {kind_lower} ",
+                        "kind": edge.kind,
+                        "color": edge_color,
+                        "lineStyle": line_style,
+                    },
+                }
+            )
 
         return elements
 

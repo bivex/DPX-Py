@@ -18,19 +18,88 @@ from pattern_detector.domain.code_model import (
 from pattern_detector.domain.value_objects import SourceLocation
 from pattern_detector.ports.outbound import ParserPort
 
-_PYTHON_BUILTINS_AND_KEYWORDS = frozenset({
-    "self", "cls", "None", "True", "False", "int", "str", "float", "bool",
-    "list", "dict", "set", "tuple", "bytes", "object", "type", "id", "len",
-    "range", "enumerate", "zip", "map", "filter", "print", "sum", "min",
-    "max", "any", "all", "isinstance", "issubclass", "hasattr", "getattr",
-    "setattr", "delattr", "super", "property", "staticmethod", "classmethod",
-    "abstractmethod", "ABC", "Protocol", "Any", "Optional", "Union", "List",
-    "Dict", "Set", "Tuple", "Callable", "Iterable", "Iterator", "Sequence",
-    "Mapping", "dataclass", "field", "open", "round", "abs", "sorted",
-    "reversed", "iter", "next", "repr", "format", "dir", "vars", "eval", "exec",
-    "Exception", "ValueError", "TypeError", "KeyError", "IndexError", "AttributeError",
-    "NotImplementedError", "RuntimeError", "StopIteration",
-})
+_PYTHON_BUILTINS_AND_KEYWORDS = frozenset(
+    {
+        "self",
+        "cls",
+        "None",
+        "True",
+        "False",
+        "int",
+        "str",
+        "float",
+        "bool",
+        "list",
+        "dict",
+        "set",
+        "tuple",
+        "bytes",
+        "object",
+        "type",
+        "id",
+        "len",
+        "range",
+        "enumerate",
+        "zip",
+        "map",
+        "filter",
+        "print",
+        "sum",
+        "min",
+        "max",
+        "any",
+        "all",
+        "isinstance",
+        "issubclass",
+        "hasattr",
+        "getattr",
+        "setattr",
+        "delattr",
+        "super",
+        "property",
+        "staticmethod",
+        "classmethod",
+        "abstractmethod",
+        "ABC",
+        "Protocol",
+        "Any",
+        "Optional",
+        "Union",
+        "List",
+        "Dict",
+        "Set",
+        "Tuple",
+        "Callable",
+        "Iterable",
+        "Iterator",
+        "Sequence",
+        "Mapping",
+        "dataclass",
+        "field",
+        "open",
+        "round",
+        "abs",
+        "sorted",
+        "reversed",
+        "iter",
+        "next",
+        "repr",
+        "format",
+        "dir",
+        "vars",
+        "eval",
+        "exec",
+        "Exception",
+        "ValueError",
+        "TypeError",
+        "KeyError",
+        "IndexError",
+        "AttributeError",
+        "NotImplementedError",
+        "RuntimeError",
+        "StopIteration",
+    }
+)
 
 
 class _PythonAstExtractor(ast.NodeVisitor):
@@ -153,7 +222,9 @@ class _PythonAstExtractor(ast.NodeVisitor):
                 name=class_name,
                 namespace=self.module_name,
                 location=loc,
-                methods=pure_methods if pure_methods else [MethodSignature(name=m.name.split(".")[-1], location=m.location) for m in methods],
+                methods=pure_methods
+                if pure_methods
+                else [MethodSignature(name=m.name.split(".")[-1], location=m.location) for m in methods],
                 docstring=ast.get_docstring(node) or "",
             )
 
@@ -194,7 +265,7 @@ class _PythonAstExtractor(ast.NodeVisitor):
 
         decorators = [self._extract_name(d) for d in node.decorator_list]
         is_abstract = any("abstract" in d.lower() for d in decorators)
-        
+
         has_not_implemented = False
         for stmt in node.body:
             if isinstance(stmt, ast.Raise) and stmt.exc and "NotImplemented" in self._extract_name(stmt.exc):
@@ -299,7 +370,12 @@ class _PythonAstExtractor(ast.NodeVisitor):
                     calls.append(c_name)
                     if "." in c_name:
                         obj, method = c_name.rsplit(".", 1)
-                        if method in ("append", "extend", "insert", "pop", "remove", "update", "clear", "add", "discard") and obj and obj not in _PYTHON_BUILTINS_AND_KEYWORDS:
+                        if (
+                            method
+                            in ("append", "extend", "insert", "pop", "remove", "update", "clear", "add", "discard")
+                            and obj
+                            and obj not in _PYTHON_BUILTINS_AND_KEYWORDS
+                        ):
                             modifies.append(obj)
 
             elif isinstance(node, ast.Assign):

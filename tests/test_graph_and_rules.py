@@ -22,10 +22,12 @@ class BetaService:
 """
 
     adapter = PyParserAdapter()
-    model = adapter.parse_sources({
-        "alpha.py": code_a,
-        "beta.py": code_b,
-    })
+    model = adapter.parse_sources(
+        {
+            "alpha.py": code_a,
+            "beta.py": code_b,
+        }
+    )
 
     cycles = model.find_circular_dependencies()
     assert len(cycles) == 1
