@@ -125,6 +125,19 @@ class BasePatternRule(ABC):
                 results.append(proto.name)
         return results
 
+    def is_test_entity(self, entity: Any) -> bool:
+        """Determines if a code entity is test infrastructure (test functions/classes)."""
+        name = getattr(entity, "name", "")
+        simple_name = name.split(".")[-1]
+        if simple_name.startswith("test_") or simple_name.endswith("_test"):
+            return True
+        loc = getattr(entity, "location", None)
+        if loc and loc.file_path:
+            fp = loc.file_path.replace("\\", "/")
+            if "/tests/" in fp or "/test/" in fp or fp.endswith("_test.py") or fp.startswith("test_"):
+                return True
+        return False
+
     @abstractmethod
     def detect(self, model: CodeModel) -> list[Detection]:
         """Execute detection logic against CodeModel."""

@@ -32,6 +32,8 @@ class OpenClosedPrincipleRule(BasePatternRule):
 
         # 1. Detect isinstance / type checking cascades inside function bodies (OCP Violations)
         for fn in model.all_functions():
+            if self.is_test_entity(fn):
+                continue
             simple_name = fn.name.split(".")[-1]
             if simple_name in ("__eq__", "__ne__", "__lt__", "__gt__", "__le__", "__ge__", "__init__"):
                 continue

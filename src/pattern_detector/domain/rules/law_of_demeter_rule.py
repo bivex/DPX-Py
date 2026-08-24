@@ -146,6 +146,8 @@ class LawOfDemeterRule(BasePatternRule):
         }
 
         for fn in model.all_functions():
+            if self.is_test_entity(fn):
+                continue
             body = fn.body_text or ""
             # Look for expressions with chained method invocations: expr.m1().m2().m3()
             matches = _CHAIN_CALL_RE.finditer(body)
