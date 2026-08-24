@@ -132,7 +132,7 @@ class ChainOfResponsibilityRule(BasePatternRule):
                 detections.append(
                     self.create_detection(
                         target_name=rec.name,
-                        target_kind="cpp_chain_handler",
+                        target_kind="chain_handler_class",
                         evidences=evidences,
                         primary_location=rec.location,
                         related_locations=[],

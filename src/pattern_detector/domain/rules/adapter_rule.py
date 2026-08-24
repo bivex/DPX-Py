@@ -146,7 +146,7 @@ class AdapterPatternRule(BasePatternRule):
                 detections.append(
                     self.create_detection(
                         target_name=rec.name,
-                        target_kind="cpp_adapter_class",
+                        target_kind="adapter_class",
                         evidences=evidences,
                         primary_location=rec.location,
                         related_locations=related_locs,

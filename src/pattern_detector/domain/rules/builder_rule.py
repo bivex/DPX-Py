@@ -132,4 +132,61 @@ class BuilderPatternRule(BasePatternRule):
                         )
                     )
 
+        # 3. Class-based Builder (Fluent Builder / GoF Builder)
+        for rec in model.all_records():
+            name_lower = rec.name.lower()
+            step_methods = [
+                m for m in rec.methods
+                if (
+                    m.name.split(".")[-1].lower().startswith(("with_", "set_", "add_", "append_", "use_"))
+                    or "return self" in m.body_text.lower()
+                )
+                and m.name.split(".")[-1].lower() not in ("__init__", "build", "create", "construct", "get_result", "to_dict", "to_request")
+                and not m.name.split(".")[-1].lower().startswith(("with_open", "with_lock"))
+            ]
+            has_build_method = any(m.name.split(".")[-1].lower() in ("build", "create", "construct", "get_result", "to_dict", "to_request") for m in rec.methods)
+            is_builder_named = "builder" in name_lower
+
+            if (is_builder_named and (step_methods or has_build_method)) or (len(step_methods) >= 2 and has_build_method):
+                evidences = []
+                if is_builder_named:
+                    evidences.append(
+                        self.evidence(
+                            description=f"Class '{rec.name}' follows Builder naming convention for complex object assembly",
+                            weight=0.45,
+                            location=rec.location,
+                            code_suffix="BUILDER_CLASS_NAMING",
+                        )
+                    )
+                if step_methods:
+                    evidences.append(
+                        self.evidence(
+                            description=f"Class '{rec.name}' defines {len(step_methods)} fluent configuration method(s): {', '.join(m.name.split('.')[-1] for m in step_methods[:5])}",
+                            weight=0.45,
+                            location=step_methods[0].location,
+                            code_suffix="BUILDER_STEP_METHODS",
+                        )
+                    )
+                if has_build_method:
+                    build_fn = next(m for m in rec.methods if m.name.split(".")[-1].lower() in ("build", "create", "construct", "get_result", "to_dict", "to_request"))
+                    evidences.append(
+                        self.evidence(
+                            description=f"Class '{rec.name}' provides terminal assembly method '{build_fn.name.split('.')[-1]}()'",
+                            weight=0.40,
+                            location=build_fn.location,
+                            code_suffix="BUILDER_TERMINAL_METHOD",
+                        )
+                    )
+                detections.append(
+                    self.create_detection(
+                        target_name=rec.name,
+                        target_kind="builder_class",
+                        evidences=evidences,
+                        primary_location=rec.location,
+                        related_locations=[m.location for m in step_methods],
+                        summary=f"Builder pattern: class '{rec.name}' provides fluent step-by-step assembly with {len(step_methods)} steps",
+                        base_score=0.30,
+                    )
+                )
+
         return detections

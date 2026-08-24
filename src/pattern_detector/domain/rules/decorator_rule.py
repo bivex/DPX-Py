@@ -177,7 +177,7 @@ class DecoratorPatternRule(BasePatternRule):
                 detections.append(
                     self.create_detection(
                         target_name=rec.name,
-                        target_kind="cpp_decorator_class",
+                        target_kind="decorator_class",
                         evidences=evidences,
                         primary_location=rec.location,
                         related_locations=related_locs,

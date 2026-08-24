@@ -95,7 +95,7 @@ class SingletonPatternRule(BasePatternRule):
             if evidences and len(evidences) >= 1 and (get_instance_methods or has_instance_field):
                 detection = self.create_detection(
                     target_name=rec.name,
-                    target_kind="cpp_singleton_class",
+                    target_kind="singleton_class",
                     evidences=evidences,
                     primary_location=rec.location,
                     related_locations=related_locs,

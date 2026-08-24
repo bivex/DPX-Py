@@ -173,10 +173,10 @@ class ObserverPatternRule(BasePatternRule):
             obs_fields = [f for f in rec.fields if is_obs_collection(f)]
             has_obs_field = len(obs_fields) > 0
             has_obs_methods = any(
-                m.name.lower().startswith(("attach", "detach", "register", "unregister", "subscribe", "notify"))
+                m.name.split(".")[-1].lower().startswith(("attach", "detach", "register", "unregister", "subscribe", "notify"))
                 for m in rec.methods
             )
-            if has_obs_field or (has_obs_methods and "subject" in name_lower):
+            if has_obs_field or (has_obs_methods and ("subject" in name_lower or "observable" in name_lower)):
                 evidences = []
                 if "subject" in name_lower or "observable" in name_lower:
                     evidences.append(
@@ -197,9 +197,10 @@ class ObserverPatternRule(BasePatternRule):
                         )
                     )
                 if has_obs_methods:
+                    obs_m_names = [m.name.split(".")[-1] for m in rec.methods if m.name.split(".")[-1].lower().startswith(("attach", "detach", "register", "unregister", "subscribe", "notify"))]
                     evidences.append(
                         self.evidence(
-                            description=f"Declares observer lifecycle/notification methods: {', '.join([m.name for m in rec.methods if m.name.lower().startswith(('attach', 'detach', 'register', 'unregister', 'subscribe', 'notify'))])}",
+                            description=f"Declares observer lifecycle/notification methods: {', '.join(obs_m_names)}",
                             weight=0.40,
                             location=rec.location,
                             code_suffix="OBSERVER_MANAGEMENT_METHODS",

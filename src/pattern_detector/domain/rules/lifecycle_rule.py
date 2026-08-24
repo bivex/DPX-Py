@@ -54,8 +54,8 @@ class LifecycleComponentPatternRule(BasePatternRule):
             related_locs: list[SourceLocation] = []
 
             implements_lifecycle = any("lifecycle" in p.lower() for p in rec.implemented_protocols)
-            has_start = any(m.name == "start" for m in rec.methods)
-            has_stop = any(m.name == "stop" for m in rec.methods)
+            has_start = any(m.name.split(".")[-1] == "start" for m in rec.methods)
+            has_stop = any(m.name.split(".")[-1] == "stop" for m in rec.methods)
 
             if implements_lifecycle:
                 evidences.append(
