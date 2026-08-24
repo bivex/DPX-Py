@@ -28,9 +28,16 @@ class LlmReportFormatter:
                 lines.append(f'      <category name="{cat.upper()}" count="{count}" />')
         lines.append("    </category_summary>")
 
-        # Separate Design Patterns and Violations
+        # Separate Design Patterns, SOLID Adherences, and Architectural Violations
         patterns = [d for d in report.detections if d.pattern_category != PatternCategory.PRINCIPLE]
-        violations = [d for d in report.detections if d.pattern_category == PatternCategory.PRINCIPLE]
+        adherences = [
+            d for d in report.detections
+            if d.pattern_category == PatternCategory.PRINCIPLE and ("Adherence" in d.summary or "adherence" in d.target_kind)
+        ]
+        violations = [
+            d for d in report.detections
+            if d.pattern_category == PatternCategory.PRINCIPLE and not ("Adherence" in d.summary or "adherence" in d.target_kind)
+        ]
 
         if patterns:
             lines.append("    <design_patterns>")
@@ -44,6 +51,19 @@ class LlmReportFormatter:
                 lines.append("        </evidence>")
                 lines.append("      </pattern>")
             lines.append("    </design_patterns>")
+
+        if adherences:
+            lines.append("    <solid_and_architectural_adherences>")
+            for a in adherences:
+                loc = f"{a.primary_location.file_path}:{a.primary_location.line}" if a.primary_location else ""
+                lines.append(f'      <adherence rule="{a.pattern_type.value}" target="{a.target_name}" confidence="{a.confidence.percentage_str}" location="{loc}">')
+                lines.append(f"        <summary>{a.summary}</summary>")
+                lines.append("        <evidence>")
+                for ev in a.evidences:
+                    lines.append(f'          <item rule="{ev.rule_code}">{ev.description}</item>')
+                lines.append("        </evidence>")
+                lines.append("      </adherence>")
+            lines.append("    </solid_and_architectural_adherences>")
 
         if violations:
             lines.append("    <architectural_violations_and_risks>")
