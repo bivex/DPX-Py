@@ -24,7 +24,8 @@ class DataFlowService:
         model: CodeModel,
         root_variable: str,
         variant: DataFlowVariant = DataFlowVariant.SIMPLIFIED,
-        max_depth: int = 15,
+        max_depth: int = 6,
+        max_nodes: int = 50,
     ) -> DataFlowGraph:
         """Trace forward data flow: what reads and propagates root_variable."""
         graph = DataFlowGraph(
@@ -59,7 +60,7 @@ class DataFlowService:
         visited_vars: set[str] = set()
         queue: deque[tuple[str, int]] = deque([(root_variable, 0)])
 
-        while queue:
+        while queue and len(graph.nodes) < max_nodes:
             var_name, depth = queue.popleft()
             if depth >= max_depth:
                 continue
@@ -72,6 +73,8 @@ class DataFlowService:
             reader_functions = readers_by_var.get(var_name, [])
 
             for fn in reader_functions:
+                if len(graph.nodes) >= max_nodes:
+                    break
                 fn_id = f"fn_{fn.name}"
                 cluster_name = fn.namespace or (fn.location.file_path.split("/")[-1] if fn.location else "global")
                 graph.add_node(
@@ -88,6 +91,8 @@ class DataFlowService:
                 written_vars = list(dict.fromkeys(fn.writes_variables + fn.modifies_variables))
 
                 for w_var in written_vars:
+                    if len(graph.nodes) >= max_nodes:
+                        break
                     w_kind = "MODIFIES" if w_var in fn.modifies_variables or (w_var == var_name) else "WRITES"
                     graph.add_node(
                         node_id=w_var,
@@ -107,7 +112,8 @@ class DataFlowService:
         model: CodeModel,
         root_variable: str,
         variant: DataFlowVariant = DataFlowVariant.SIMPLIFIED,
-        max_depth: int = 15,
+        max_depth: int = 6,
+        max_nodes: int = 50,
     ) -> DataFlowGraph:
         """Trace backward data flow: what produces/modifies root_variable."""
         graph = DataFlowGraph(
@@ -135,7 +141,7 @@ class DataFlowService:
         visited_vars: set[str] = set()
         queue: deque[tuple[str, int]] = deque([(root_variable, 0)])
 
-        while queue:
+        while queue and len(graph.nodes) < max_nodes:
             var_name, depth = queue.popleft()
             if depth >= max_depth:
                 continue
@@ -148,6 +154,8 @@ class DataFlowService:
             writer_functions = writers_by_var.get(var_name, [])
 
             for fn in writer_functions:
+                if len(graph.nodes) >= max_nodes:
+                    break
                 fn_id = f"fn_{fn.name}"
                 cluster_name = fn.namespace or (fn.location.file_path.split("/")[-1] if fn.location else "global")
                 graph.add_node(
@@ -163,6 +171,8 @@ class DataFlowService:
 
                 # 2. Find variables that this function reads
                 for r_var in fn.reads_variables:
+                    if len(graph.nodes) >= max_nodes:
+                        break
                     graph.add_node(
                         node_id=r_var,
                         name=r_var,
@@ -176,55 +186,58 @@ class DataFlowService:
 
         return graph
 
-    def trace_relationship(
+    def trace_relationship_path(
         self,
         model: CodeModel,
-        source: str,
-        target: str,
-        max_depth: int = 15,
+        source_variable: str,
+        target_variable: str,
+        max_depth: int = 10,
     ) -> DataFlowGraph:
-        """Trace paths specifically connecting source and target entities (Relationship variant)."""
-        full_out_graph = self.trace_data_flow_out(model, source, variant=DataFlowVariant.RELATIONSHIP, max_depth=max_depth)
-
-        # Filter nodes and edges to only those that lie on paths from source to target
-        adj: dict[str, list[str]] = {}
-        for edge in full_out_graph.edges:
-            adj.setdefault(edge.from_id, []).append(edge.to_id)
-
-        target_nodes = {target, f"fn_{target}"}
-
-        # Backtrack DFS to find all reachable nodes to target
-        reachable_to_target: set[str] = set()
-
-        def can_reach(u: str, path: list[str]) -> bool:
-            if u in target_nodes:
-                reachable_to_target.update(path + [u])
-                return True
-            found = False
-            for v in adj.get(u, []):
-                if v not in path and can_reach(v, path + [u]):
-                    found = True
-            return found
-
-        can_reach(source, [])
+        """Find the shortest data flow path from source_variable to target_variable."""
+        full_out_graph = self.trace_data_flow_out(model, source_variable, max_depth=max_depth)
 
         filtered_graph = DataFlowGraph(
-            root_id=source,
+            root_id=source_variable,
             direction=DataFlowDirection.OUT,
             variant=DataFlowVariant.RELATIONSHIP,
         )
 
+        if target_variable not in full_out_graph.nodes:
+            if source_variable in full_out_graph.nodes:
+                filtered_graph.add_node(
+                    node_id=source_variable,
+                    name=source_variable,
+                    kind=NodeKind.VARIABLE,
+                    is_root=True,
+                )
+            return filtered_graph
+
+        # Reverse traversal from target to find all nodes on the path to target
+        reverse_adj: dict[str, list[str]] = defaultdict(list)
+        for edge in full_out_graph.edges:
+            reverse_adj[edge.to_id].append(edge.from_id)
+
+        reachable_to_target: set[str] = set()
+        q: deque[str] = deque([target_variable])
+        while q:
+            curr = q.popleft()
+            if curr in reachable_to_target:
+                continue
+            reachable_to_target.add(curr)
+            for prev in reverse_adj.get(curr, []):
+                q.append(prev)
+
         for node_id in reachable_to_target:
             if node_id in full_out_graph.nodes:
-                node = full_out_graph.nodes[node_id]
+                orig_node = full_out_graph.nodes[node_id]
                 filtered_graph.add_node(
-                    node_id=node.id,
-                    name=node.name,
-                    kind=node.kind,
-                    cluster=node.cluster,
-                    file_path=node.file_path,
-                    line=node.line,
-                    is_root=node.is_root,
+                    node_id=orig_node.id,
+                    name=orig_node.name,
+                    kind=orig_node.kind,
+                    cluster=orig_node.cluster,
+                    file_path=orig_node.file_path,
+                    line=orig_node.line,
+                    is_root=orig_node.is_root,
                 )
 
         for edge in full_out_graph.edges:
@@ -233,37 +246,48 @@ class DataFlowService:
 
         return filtered_graph
 
+    def trace_relationship(
+        self,
+        model: CodeModel,
+        source: str,
+        target: str,
+        max_depth: int = 10,
+    ) -> DataFlowGraph:
+        """Trace paths specifically connecting source and target entities (Relationship variant)."""
+        g = self.trace_relationship_path(model, source, target, max_depth=max_depth)
+        g.variant = DataFlowVariant.RELATIONSHIP
+        return g
+
     def analyze_all_variables(
         self,
         model: CodeModel,
         target_path: str = "",
         direction: DataFlowDirection = DataFlowDirection.OUT,
         file_filter: str | None = None,
-        max_depth: int = 15,
+        max_depth: int = 6,
     ) -> DataFlowSummaryReport:
         """Analyze data flow for all discovered variables in the model or specific file."""
-        from pattern_detector.domain.data_flow import DataFlowSummaryReport, VariableFlowSummary
+        from pattern_detector.adapters.outbound.python_ast.py_parser_adapter import _PYTHON_BUILTINS_AND_KEYWORDS
 
-        RESERVED = {"true", "false", "nullptr", "NULL", "std", "this", "auto", "void", "int", "char", "bool", "double", "float", "size_t", "const"}
         vars_map: dict[str, Any] = {}
         for s in model.all_states():
             if file_filter and s.location and file_filter not in s.location.file_path:
                 continue
-            if s.name and len(s.name) >= 2 and s.name not in RESERVED and (s.name[0].isalpha() or s.name[0] == '_'):
+            if s.name and len(s.name) >= 2 and s.name not in _PYTHON_BUILTINS_AND_KEYWORDS and (s.name[0].isalpha() or s.name[0] == '_'):
                 vars_map[s.name] = s.location
 
         for r in model.all_records():
             if file_filter and r.location and file_filter not in r.location.file_path:
                 continue
             for f in r.fields:
-                if f and len(f) >= 2 and f not in vars_map and f not in RESERVED and (f[0].isalpha() or f[0] == '_'):
+                if f and len(f) >= 2 and f not in vars_map and f not in _PYTHON_BUILTINS_AND_KEYWORDS and (f[0].isalpha() or f[0] == '_'):
                     vars_map[f] = r.location
 
         for fn in model.all_functions():
             if file_filter and fn.location and file_filter not in fn.location.file_path:
                 continue
             for v in fn.reads_variables + fn.writes_variables + fn.modifies_variables:
-                if v and len(v) >= 2 and v not in vars_map and v not in RESERVED and (v[0].isalpha() or v[0] == '_'):
+                if v and len(v) >= 2 and v not in vars_map and v not in _PYTHON_BUILTINS_AND_KEYWORDS and (v[0].isalpha() or v[0] == '_'):
                     vars_map[v] = fn.location
 
         summaries: list[VariableFlowSummary] = []

@@ -18,6 +18,20 @@ from pattern_detector.domain.code_model import (
 from pattern_detector.domain.value_objects import SourceLocation
 from pattern_detector.ports.outbound import ParserPort
 
+_PYTHON_BUILTINS_AND_KEYWORDS = frozenset({
+    "self", "cls", "None", "True", "False", "int", "str", "float", "bool",
+    "list", "dict", "set", "tuple", "bytes", "object", "type", "id", "len",
+    "range", "enumerate", "zip", "map", "filter", "print", "sum", "min",
+    "max", "any", "all", "isinstance", "issubclass", "hasattr", "getattr",
+    "setattr", "delattr", "super", "property", "staticmethod", "classmethod",
+    "abstractmethod", "ABC", "Protocol", "Any", "Optional", "Union", "List",
+    "Dict", "Set", "Tuple", "Callable", "Iterable", "Iterator", "Sequence",
+    "Mapping", "dataclass", "field", "open", "round", "abs", "sorted",
+    "reversed", "iter", "next", "repr", "format", "dir", "vars", "eval", "exec",
+    "Exception", "ValueError", "TypeError", "KeyError", "IndexError", "AttributeError",
+    "NotImplementedError", "RuntimeError", "StopIteration",
+})
+
 
 class _PythonAstExtractor(ast.NodeVisitor):
     """AST visitor extracting structural domain models from Python source code."""
@@ -129,6 +143,7 @@ class _PythonAstExtractor(ast.NodeVisitor):
             implemented_protocols=bases,
             methods=methods,
             is_type=is_abstract,
+            docstring=ast.get_docstring(node) or "",
         )
         self.records[class_name] = record
 
@@ -139,11 +154,10 @@ class _PythonAstExtractor(ast.NodeVisitor):
                 namespace=self.module_name,
                 location=loc,
                 methods=pure_methods if pure_methods else [MethodSignature(name=m.name.split(".")[-1], location=m.location) for m in methods],
+                docstring=ast.get_docstring(node) or "",
             )
 
         # Check Python Singleton patterns:
-        # 1. @singleton decorator
-        # 2. _instance or instance attribute with get_instance() or __new__ override
         has_instance_field = any(f in ("_instance", "_instances", "instance", "__instance") for f in fields)
         has_new_override = any(m.name.endswith(".__new__") or m.name == "__new__" for m in methods)
         has_get_instance = any("get_instance" in m.name.lower() or "getinstance" in m.name.lower() for m in methods)
@@ -157,6 +171,17 @@ class _PythonAstExtractor(ast.NodeVisitor):
                 is_once=True,
                 is_dynamic=True,
             )
+
+        for f in fields:
+            if f in ("_instance", "instance", "current", "default"):
+                self.states[f"{class_name}.{f}"] = StateModel(
+                    name=f"{class_name}.{f}",
+                    namespace=self.module_name,
+                    location=loc,
+                    kind="atom",
+                    is_once=True,
+                    is_dynamic=True,
+                )
 
         self._current_class = prev_class
 
@@ -172,18 +197,15 @@ class _PythonAstExtractor(ast.NodeVisitor):
         qualified_name = f"{class_name}.{fn_name}"
         loc = self._get_loc(node)
 
-        # Extract parameters
         params = [arg.arg for arg in node.args.args if arg.arg not in ("self", "cls")]
         if node.args.vararg:
             params.append(f"*{node.args.vararg.arg}")
         if node.args.kwarg:
             params.append(f"**{node.args.kwarg.arg}")
 
-        # Check @abstractmethod or raise NotImplementedError
         decorators = [self._extract_name(d) for d in node.decorator_list]
         is_abstract = any("abstract" in d.lower() for d in decorators)
         
-        # Check method body for raise NotImplementedError or pass / ...
         has_not_implemented = False
         for stmt in node.body:
             if isinstance(stmt, ast.Raise) and stmt.exc and "NotImplemented" in self._extract_name(stmt.exc):
@@ -193,10 +215,8 @@ class _PythonAstExtractor(ast.NodeVisitor):
         if is_abstract or has_not_implemented:
             self._class_pure_methods[class_name].append(MethodSignature(name=fn_name, location=loc))
 
-        # Extract calls and Def-Use variable accesses
         calls, r_vars, w_vars, m_vars = self._analyze_body(node)
 
-        # Extract instance fields set via self.x = ...
         if fn_name in ("__init__", "__post_init__"):
             for w in w_vars:
                 if w.startswith("self."):
@@ -265,7 +285,7 @@ class _PythonAstExtractor(ast.NodeVisitor):
         if self._current_class is None:
             for target in node.targets:
                 name = self._extract_name(target)
-                if name and not name.startswith("__"):
+                if name and not name.startswith("__") and name not in _PYTHON_BUILTINS_AND_KEYWORDS:
                     self.states[name] = StateModel(
                         name=name,
                         namespace=self.module_name,
@@ -286,31 +306,31 @@ class _PythonAstExtractor(ast.NodeVisitor):
         for node in ast.walk(func_node):
             if isinstance(node, ast.Call):
                 c_name = self._extract_name(node.func)
-                if c_name:
+                if c_name and c_name not in _PYTHON_BUILTINS_AND_KEYWORDS:
                     calls.append(c_name)
-                    # Check method calls modifying data like list.append, dict.update
                     if "." in c_name:
                         obj, method = c_name.rsplit(".", 1)
-                        if method in ("append", "extend", "insert", "pop", "remove", "update", "clear", "add", "discard"):
+                        if method in ("append", "extend", "insert", "pop", "remove", "update", "clear", "add", "discard") and obj and obj not in _PYTHON_BUILTINS_AND_KEYWORDS:
                             modifies.append(obj)
 
             elif isinstance(node, ast.Assign):
                 for target in node.targets:
                     t_name = self._extract_name(target)
-                    if t_name:
+                    if t_name and len(t_name) > 1 and t_name not in _PYTHON_BUILTINS_AND_KEYWORDS:
                         writes.append(t_name)
 
             elif isinstance(node, ast.AugAssign):
                 t_name = self._extract_name(node.target)
-                if t_name:
+                if t_name and len(t_name) > 1 and t_name not in _PYTHON_BUILTINS_AND_KEYWORDS:
                     modifies.append(t_name)
 
             elif isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
-                reads.append(node.id)
+                if node.id and len(node.id) > 1 and node.id not in _PYTHON_BUILTINS_AND_KEYWORDS:
+                    reads.append(node.id)
 
             elif isinstance(node, ast.Attribute) and isinstance(node.ctx, ast.Load):
                 attr_full = self._extract_name(node)
-                if attr_full:
+                if attr_full and attr_full not in _PYTHON_BUILTINS_AND_KEYWORDS:
                     reads.append(attr_full)
 
         return calls, reads, writes, modifies

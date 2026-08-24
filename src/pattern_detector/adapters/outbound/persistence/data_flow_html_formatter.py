@@ -53,7 +53,7 @@ class DataFlowHtmlFormatter:
 
         graphs_dict: dict[str, Any] = {}
         sorted_summaries = sorted(report.summaries, key=lambda x: (x.downstream_reach, len(x.readers)), reverse=True)
-        for s in sorted_summaries[:150]:
+        for s in sorted_summaries[:40]:
             if s.graph:
                 graphs_dict[s.name] = self._prepare_cytoscape_elements(s.graph)
 
@@ -667,11 +667,109 @@ class DataFlowHtmlFormatter:
             layout.run();
         }}
 
+        function synthesizeGraph(info) {{
+            const elements = [];
+            elements.push({{
+                group: 'nodes',
+                data: {{
+                    id: info.name,
+                    label: '⭐ ' + info.name,
+                    name: info.name,
+                    kind: 'variable',
+                    node_type: 'variable',
+                    is_root: true,
+                    file_path: info.file_path,
+                    line: info.line,
+                    shape: 'round-rectangle',
+                    bgColor: '#0284c7',
+                    borderColor: '#38bdf8',
+                    textColor: '#ffffff',
+                    borderWidth: 3
+                }}
+            }});
+
+            (info.readers || []).forEach((r, idx) => {{
+                const rId = 'fn_' + r;
+                elements.push({{
+                    group: 'nodes',
+                    data: {{
+                        id: rId,
+                        label: '⚙️ ' + r + '()',
+                        name: r,
+                        kind: 'function',
+                        node_type: 'function',
+                        is_root: false,
+                        file_path: info.file_path,
+                        line: info.line,
+                        shape: 'round-rectangle',
+                        bgColor: '#581c87',
+                        borderColor: '#c084fc',
+                        textColor: '#f3e8ff',
+                        borderWidth: 2
+                    }}
+                }});
+                elements.push({{
+                    group: 'edges',
+                    data: {{
+                        id: 'e_r_' + idx,
+                        source: info.name,
+                        target: rId,
+                        label: 'reads',
+                        kind: 'READS',
+                        color: '#38bdf8',
+                        lineStyle: 'solid'
+                    }}
+                }});
+            }});
+
+            (info.writers || []).forEach((w, idx) => {{
+                const wId = 'fn_' + w;
+                elements.push({{
+                    group: 'nodes',
+                    data: {{
+                        id: wId,
+                        label: '⚙️ ' + w + '()',
+                        name: w,
+                        kind: 'function',
+                        node_type: 'function',
+                        is_root: false,
+                        file_path: info.file_path,
+                        line: info.line,
+                        shape: 'round-rectangle',
+                        bgColor: '#581c87',
+                        borderColor: '#c084fc',
+                        textColor: '#f3e8ff',
+                        borderWidth: 2
+                    }}
+                }});
+                elements.push({{
+                    group: 'edges',
+                    data: {{
+                        id: 'e_w_' + idx,
+                        source: wId,
+                        target: info.name,
+                        label: 'writes',
+                        kind: 'WRITES',
+                        color: '#f43f5e',
+                        lineStyle: 'solid'
+                    }}
+                }});
+            }});
+
+            return elements;
+        }}
+
         function selectVariable(varName) {{
             currentRoot = varName;
             renderVariableList();
 
-            const elements = allGraphs[varName] || [];
+            let elements = allGraphs[varName];
+            if (!elements || elements.length === 0) {{
+                const info = variablesSummary.find(v => v.name === varName);
+                if (info) elements = synthesizeGraph(info);
+            }}
+            if (!elements) elements = [];
+
             cy.elements().remove();
             cy.add(elements);
             applyLayout(currentLayoutName);
