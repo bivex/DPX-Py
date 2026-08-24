@@ -193,7 +193,7 @@ def test_data_flow_html_report_export(tmp_path: Path) -> None:
     assert res_single.exit_code == 0
     assert html_single.exists()
     content_single = html_single.read_text(encoding="utf-8")
-    assert "vis.Network" in content_single
+    assert "cytoscape" in content_single
     assert "transformed_data" in content_single
 
     # 2. Test batch summary HTML export
@@ -202,7 +202,7 @@ def test_data_flow_html_report_export(tmp_path: Path) -> None:
     assert res_all.exit_code == 0
     assert html_all.exists()
     content_all = html_all.read_text(encoding="utf-8")
-    assert "vis.Network" in content_all
+    assert "cytoscape" in content_all
     assert "aux_data" in content_all
     assert "report_value" in content_all
 

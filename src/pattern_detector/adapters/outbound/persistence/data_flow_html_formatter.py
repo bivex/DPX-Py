@@ -1,4 +1,4 @@
-"""Interactive HTML Report Formatter for Data Flow Graphs (using Vis.js Network / Mermaid)."""
+"""Interactive HTML Report Formatter for Data Flow Graphs (using Cytoscape.js & Semantic UI / Fomantic-UI)."""
 
 from __future__ import annotations
 
@@ -14,15 +14,15 @@ from pattern_detector.domain.data_flow import (
 
 
 class DataFlowHtmlFormatter:
-    """Formatter for generating interactive HTML visualizer for Data Flow graphs."""
+    """Formatter for generating high-performance interactive HTML visualizer for Data Flow graphs using Cytoscape.js and Semantic UI."""
 
     def format_single_graph(self, graph: DataFlowGraph, title: str = "") -> str:
         """Generate interactive HTML page for a single Data Flow Graph."""
         page_title = title or f"Data Flow {graph.direction.value}: {graph.root_id}"
-        
-        # Prepare graph data for Vis.js
-        vis_data = self._prepare_vis_graph(graph)
-        all_graphs_json = json.dumps({graph.root_id: vis_data})
+
+        # Prepare graph data for Cytoscape.js
+        cy_elements = self._prepare_cytoscape_elements(graph)
+        all_graphs_json = json.dumps({graph.root_id: cy_elements})
         variables_summary_json = json.dumps([
             {
                 "name": graph.root_id,
@@ -50,12 +50,12 @@ class DataFlowHtmlFormatter:
     def format_summary_report(self, report: DataFlowSummaryReport) -> str:
         """Generate interactive HTML dashboard for all variables in a codebase."""
         page_title = f"🌲 Data Flow Analysis Dashboard ({report.direction.value})"
-        
+
         graphs_dict: dict[str, Any] = {}
         sorted_summaries = sorted(report.summaries, key=lambda x: (x.downstream_reach, len(x.readers)), reverse=True)
-        for s in sorted_summaries[:100]:
+        for s in sorted_summaries[:150]:
             if s.graph:
-                graphs_dict[s.name] = self._prepare_vis_graph(s.graph)
+                graphs_dict[s.name] = self._prepare_cytoscape_elements(s.graph)
 
         initial_root = sorted_summaries[0].name if sorted_summaries else ""
         all_graphs_json = json.dumps(graphs_dict)
@@ -87,62 +87,73 @@ class DataFlowHtmlFormatter:
             total_edges=total_edges,
         )
 
-    def _prepare_vis_graph(self, graph: DataFlowGraph) -> dict[str, Any]:
-        """Convert DataFlowGraph into Vis.js nodes and edges format."""
-        nodes: list[dict[str, Any]] = []
-        edges: list[dict[str, Any]] = []
+    def _prepare_cytoscape_elements(self, graph: DataFlowGraph) -> list[dict[str, Any]]:
+        """Convert DataFlowGraph into high-performance Cytoscape.js elements."""
+        elements: list[dict[str, Any]] = []
 
         for node in graph.nodes.values():
             is_root = node.is_root or node.id == graph.root_id
             if node.kind == NodeKind.FUNCTION:
-                shape = "box"
-                color = {
-                    "background": "#581c87",
-                    "border": "#c084fc",
-                    "highlight": {"background": "#7e22ce", "border": "#e9d5ff"},
-                }
-                font = {"color": "#f3e8ff", "face": "monospace", "size": 13, "bold": True}
+                shape = "round-rectangle"
+                bg_color = "#581c87"
+                border_color = "#c084fc"
+                text_color = "#f3e8ff"
                 label = f"⚙️ {node.name}()"
+                node_type = "function"
             else:
-                shape = "ellipse" if not is_root else "box"
-                color = {
-                    "background": "#0284c7" if is_root else "#0f172a",
-                    "border": "#38bdf8" if is_root else "#0284c7",
-                    "highlight": {"background": "#0369a1", "border": "#bae6fd"},
-                }
-                font = {"color": "#ffffff" if is_root else "#e0f2fe", "face": "monospace", "size": 14 if is_root else 12, "bold": is_root}
-                label = f"🔷 {node.name}" if not is_root else f"⭐ {node.name} (ROOT)"
+                node_type = "variable"
+                if is_root:
+                    shape = "round-rectangle"
+                    bg_color = "#0284c7"
+                    border_color = "#38bdf8"
+                    text_color = "#ffffff"
+                    label = f"⭐ {node.name}"
+                else:
+                    shape = "ellipse"
+                    bg_color = "#0f172a"
+                    border_color = "#0284c7"
+                    text_color = "#e0f2fe"
+                    label = f"🔷 {node.name}"
 
-            nodes.append({
-                "id": node.id,
-                "label": label,
-                "shape": shape,
-                "color": color,
-                "font": font,
-                "margin": 10,
-                "borderWidth": 3 if is_root else 2,
-                "shadow": is_root,
-                "title": f"<b>{node.name}</b><br>Kind: {node.kind.value}<br>Cluster: {node.cluster}<br>{node.file_path}:{node.line}",
+            elements.append({
+                "group": "nodes",
+                "data": {
+                    "id": node.id,
+                    "label": label,
+                    "name": node.name,
+                    "kind": node.kind.value,
+                    "node_type": node_type,
+                    "is_root": is_root,
+                    "file_path": node.file_path,
+                    "line": node.line,
+                    "cluster": node.cluster,
+                    "shape": shape,
+                    "bgColor": bg_color,
+                    "borderColor": border_color,
+                    "textColor": text_color,
+                    "borderWidth": 3 if is_root else 2,
+                },
             })
 
         for i, edge in enumerate(graph.edges):
             kind_lower = edge.kind.lower()
             edge_color = "#38bdf8" if kind_lower == "reads" else ("#f43f5e" if "write" in kind_lower else "#fbbf24")
-            dashes = "modifi" in kind_lower
+            line_style = "dashed" if "modifi" in kind_lower else "solid"
 
-            edges.append({
-                "id": f"e_{i}",
-                "from": edge.from_id,
-                "to": edge.to_id,
-                "label": f" {kind_lower} ",
-                "arrows": "to",
-                "color": {"color": edge_color, "highlight": "#ffffff"},
-                "font": {"color": edge_color, "size": 10, "face": "monospace", "align": "top"},
-                "dashes": dashes,
-                "smooth": {"type": "cubicBezier", "roundness": 0.2},
+            elements.append({
+                "group": "edges",
+                "data": {
+                    "id": f"e_{i}_{edge.from_id}_{edge.to_id}",
+                    "source": edge.from_id,
+                    "target": edge.to_id,
+                    "label": f" {kind_lower} ",
+                    "kind": edge.kind,
+                    "color": edge_color,
+                    "lineStyle": line_style,
+                },
             })
 
-        return {"nodes": nodes, "edges": edges}
+        return elements
 
     def _render_template(
         self,
@@ -155,26 +166,31 @@ class DataFlowHtmlFormatter:
         total_nodes: int,
         total_edges: int,
     ) -> str:
-        """Render complete standalone HTML template with embedded JavaScript and CSS."""
+        """Render complete standalone HTML template with Cytoscape.js and Semantic UI."""
         return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{html.escape(page_title)} - DPX-Py Data Flow</title>
-    <!-- Vis.js Network CDN -->
-    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <!-- Fomantic-UI (Semantic UI) CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fomantic-ui@2.9.3/dist/semantic.min.css">
+    <!-- Cytoscape.js Core & Layout Engines -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fomantic-ui@2.9.3/dist/semantic.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.2/cytoscape.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/webcola/3.4.0/cola.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cytoscape-cola@2.5.1/cytoscape-cola.min.js"></script>
+
     <style>
         :root {{
-            --bg-primary: #090d16;
-            --bg-secondary: #0f172a;
+            --bg-page: #090d16;
+            --bg-sidebar: #0f172a;
             --bg-card: #1e293b;
             --bg-card-hover: #334155;
-            --border: #334155;
-            --border-highlight: #38bdf8;
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --text-muted: #64748b;
+            --border-color: #334155;
             --accent-cyan: #38bdf8;
             --accent-purple: #c084fc;
             --accent-emerald: #34d399;
@@ -187,295 +203,189 @@ class DataFlowHtmlFormatter:
             padding: 0;
         }}
         body {{
+            background-color: var(--bg-page) !important;
+            color: #f8fafc !important;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-primary);
-            color: var(--text-primary);
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            height: 100vh;
             overflow: hidden;
         }}
-        /* Header */
-        header {{
-            background: linear-gradient(135deg, #0b1329 0%, #1e1b4b 100%);
-            border-bottom: 1px solid var(--border);
-            padding: 12px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 10;
+
+        /* Semantic UI Customizations for Dark Mode */
+        .ui.inverted.menu {{
+            background: linear-gradient(135deg, #0b1329 0%, #1e1b4b 100%) !important;
+            border-bottom: 1px solid #1e293b !important;
+            margin: 0 !important;
+            border-radius: 0 !important;
         }}
-        .logo-area {{
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }}
-        .logo-badge {{
-            background: linear-gradient(135deg, #0284c7, #9333ea);
-            color: #fff;
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-weight: 800;
-            font-size: 14px;
-            letter-spacing: 0.5px;
-        }}
-        .title {{
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--text-primary);
-        }}
-        .direction-pill {{
-            padding: 4px 10px;
-            border-radius: 9999px;
-            font-size: 12px;
-            font-weight: 700;
-            background: #0284c722;
-            color: var(--accent-cyan);
-            border: 1px solid var(--accent-cyan);
-        }}
-        .stats-bar {{
-            display: flex;
-            gap: 16px;
-            font-size: 13px;
-        }}
-        .stat-item {{
-            background: var(--bg-secondary);
-            padding: 4px 12px;
-            border-radius: 6px;
-            border: 1px solid var(--border);
-            display: flex;
-            gap: 6px;
-        }}
-        .stat-val {{
-            font-weight: 700;
-            color: var(--accent-cyan);
+        .ui.inverted.segment {{
+            background: var(--bg-sidebar) !important;
+            border: 1px solid var(--border-color) !important;
         }}
 
-        /* Main Workspace Layout */
-        .workspace {{
+        /* Workspace Grid */
+        .app-workspace {{
             display: flex;
             flex: 1;
             overflow: hidden;
+            height: calc(100vh - 55px - 140px);
         }}
 
-        /* Left Sidebar: Variable List */
-        .sidebar {{
+        /* Sidebar */
+        .app-sidebar {{
             width: 380px;
-            background-color: var(--bg-secondary);
-            border-right: 1px solid var(--border);
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            flex-shrink: 0;
         }}
-        .sidebar-header {{
-            padding: 14px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+        .sidebar-header-box {{
+            padding: 12px;
+            background: #0b1120;
+            border-bottom: 1px solid var(--border-color);
         }}
-        .search-box {{
-            width: 100%;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            color: var(--text-primary);
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 13px;
-            outline: none;
-        }}
-        .search-box:focus {{
-            border-color: var(--accent-cyan);
-        }}
-        .filter-tabs {{
-            display: flex;
-            gap: 6px;
-            overflow-x: auto;
-        }}
-        .filter-tab {{
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            color: var(--text-secondary);
-            font-size: 11px;
-            font-weight: 600;
-            padding: 4px 8px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.15s ease;
-        }}
-        .filter-tab.active, .filter-tab:hover {{
-            background: #0284c733;
-            color: var(--accent-cyan);
-            border-color: var(--accent-cyan);
-        }}
-        .var-list {{
+        .var-list-container {{
             flex: 1;
             overflow-y: auto;
-            padding: 8px;
+            padding: 10px;
             display: flex;
             flex-direction: column;
             gap: 6px;
         }}
+
+        /* Variable Card */
         .var-card {{
             background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
             padding: 10px 12px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.15s ease-in-out;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 5px;
         }}
         .var-card:hover {{
             background: var(--bg-card-hover);
             border-color: var(--accent-cyan);
             transform: translateX(2px);
         }}
-        .var-card.selected {{
-            background: #0c4a6e44;
-            border-color: var(--accent-cyan);
-            box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+        .var-card.active {{
+            background: #0c4a6e44 !important;
+            border-color: var(--accent-cyan) !important;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
         }}
         .var-card-header {{
             display: flex;
             justify-content: space-between;
             align-items: center;
         }}
-        .var-name {{
+        .var-name-text {{
             font-family: monospace;
             font-weight: 700;
-            font-size: 14px;
-            color: var(--text-primary);
+            font-size: 13px;
+            color: #f8fafc;
+            word-break: break-all;
         }}
-        .impact-badge {{
-            font-size: 10px;
-            font-weight: 700;
-            padding: 2px 6px;
-            border-radius: 4px;
-        }}
-        .impact-CRITICAL {{ background: #881337; color: #fecdd3; border: 1px solid #f43f5e; }}
-        .impact-HIGH {{ background: #78350f; color: #fde68a; border: 1px solid #fbbf24; }}
-        .impact-MEDIUM {{ background: #164e63; color: #a5f3fc; border: 1px solid #22d3ee; }}
-        .impact-LOW {{ background: #334155; color: #cbd5e1; border: 1px solid #64748b; }}
-
         .var-card-meta {{
             display: flex;
             justify-content: space-between;
+            align-items: center;
             font-size: 11px;
-            color: var(--text-muted);
-        }}
-        .meta-tags {{
-            display: flex;
-            gap: 8px;
-        }}
-        .meta-tag {{
-            color: var(--accent-purple);
-            font-weight: 600;
+            color: #94a3b8;
         }}
 
-        /* Center Canvas: Interactive Vis.js Network */
-        .canvas-container {{
+        /* Canvas Area */
+        .app-canvas-container {{
             flex: 1;
             position: relative;
-            background: radial-gradient(circle at center, #111827 0%, #090d16 100%);
-            display: flex;
-            flex-direction: column;
+            background: #060911;
+            overflow: hidden;
         }}
-        #network {{
-            flex: 1;
+        #cy {{
             width: 100%;
             height: 100%;
+            display: block;
         }}
+
+        /* Floating Toolbar */
         .canvas-toolbar {{
             position: absolute;
             top: 14px;
-            right: 14px;
+            right: 16px;
+            z-index: 100;
             background: rgba(15, 23, 42, 0.85);
             backdrop-filter: blur(8px);
-            border: 1px solid var(--border);
-            padding: 6px;
+            border: 1px solid var(--border-color);
             border-radius: 8px;
-            display: flex;
-            gap: 6px;
-            z-index: 10;
-        }}
-        .btn {{
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            color: var(--text-primary);
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.15s ease;
-        }}
-        .btn:hover {{
-            background: #0284c7;
-            border-color: var(--accent-cyan);
-        }}
-        .btn.active {{
-            background: #0284c7;
-            border-color: var(--accent-cyan);
-        }}
-
-        /* Legend Panel */
-        .legend {{
-            position: absolute;
-            bottom: 14px;
-            left: 14px;
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(8px);
-            border: 1px solid var(--border);
-            padding: 10px 14px;
-            border-radius: 8px;
-            font-size: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            z-index: 10;
-        }}
-        .legend-item {{
+            padding: 6px 10px;
             display: flex;
             align-items: center;
-            gap: 8px;
-        }}
-        .legend-color {{
-            width: 12px;
-            height: 12px;
-            border-radius: 3px;
+            gap: 6px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
         }}
 
-        /* Drawer / Details Bottom Panel */
-        .details-panel {{
-            height: 160px;
-            background: var(--bg-secondary);
-            border-top: 1px solid var(--border);
-            padding: 14px 20px;
+        /* Floating Legend */
+        .canvas-legend {{
+            position: absolute;
+            bottom: 14px;
+            left: 16px;
+            z-index: 100;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px 12px;
+            display: flex;
+            gap: 12px;
+            font-size: 11px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+        }}
+        .legend-badge {{
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            margin-right: 4px;
+            vertical-align: middle;
+        }}
+
+        /* Bottom Inspector */
+        .app-inspector {{
+            height: 140px;
+            background: #0b1120;
+            border-top: 1px solid var(--border-color);
+            padding: 12px 20px;
             overflow-y: auto;
             display: flex;
-            gap: 24px;
+            gap: 20px;
         }}
-        .detail-block {{
+        .inspector-col {{
             flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
         }}
-        .detail-title {{
-            font-size: 12px;
+        .inspector-title {{
+            font-size: 11px;
             font-weight: 700;
-            color: var(--text-secondary);
+            color: #94a3b8;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }}
-        .detail-content {{
+        .inspector-body {{
             font-size: 13px;
-            color: var(--text-primary);
-            line-height: 1.5;
+            color: #f8fafc;
+            line-height: 1.4;
         }}
-        .code-pill {{
-            background: var(--bg-card);
-            border: 1px solid var(--border);
+        .code-tag {{
+            background: #1e293b;
+            border: 1px solid #334155;
             padding: 2px 6px;
             border-radius: 4px;
             font-family: monospace;
@@ -487,69 +397,104 @@ class DataFlowHtmlFormatter:
     </style>
 </head>
 <body>
-    <header>
-        <div class="logo-area">
-            <span class="logo-badge">DPX-Py</span>
-            <span class="title">{html.escape(page_title)}</span>
-            <span class="direction-pill">Direction: {direction}</span>
-        </div>
-        <div class="stats-bar">
-            <div class="stat-item">Variables: <span class="stat-val">{total_variables}</span></div>
-            <div class="stat-item">Graph Nodes: <span class="stat-val">{total_nodes}</span></div>
-            <div class="stat-item">Data Flow Edges: <span class="stat-val">{total_edges}</span></div>
-        </div>
-    </header>
 
-    <div class="workspace">
-        <!-- Sidebar: Variables Matrix -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <input type="text" id="searchInput" class="search-box" placeholder="🔍 Search variables, fields...">
-                <div class="filter-tabs">
-                    <button class="filter-tab active" onclick="filterImpact('ALL')">All</button>
-                    <button class="filter-tab" onclick="filterImpact('CRITICAL')">Critical</button>
-                    <button class="filter-tab" onclick="filterImpact('HIGH')">High</button>
-                    <button class="filter-tab" onclick="filterImpact('MEDIUM')">Medium</button>
-                    <button class="filter-tab" onclick="filterImpact('LOW')">Low</button>
+    <!-- Semantic UI Inverted Menu Header -->
+    <div class="ui inverted borderless menu">
+        <div class="header item">
+            <i class="project diagram icon" style="color: #38bdf8;"></i>
+            <span style="font-weight: 700; font-size: 15px; margin-left: 6px;">DPX-Py Data Flow Engine</span>
+        </div>
+        <div class="item">
+            <span class="ui mini teal label"><i class="compass icon"></i> Direction: {direction}</span>
+            <span class="ui mini blue label"><i class="bolt icon"></i> Cytoscape.js Turbo</span>
+        </div>
+        <div class="right menu">
+            <div class="item">
+                <div class="ui mini inverted statistics" style="margin: 0;">
+                    <div class="statistic" style="margin: 0 10px;">
+                        <div class="value" style="color: #38bdf8;">{total_variables}</div>
+                        <div class="label" style="color: #94a3b8; font-size: 8px;">Variables</div>
+                    </div>
+                    <div class="statistic" style="margin: 0 10px;">
+                        <div class="value" style="color: #c084fc;">{total_nodes}</div>
+                        <div class="label" style="color: #94a3b8; font-size: 8px;">Nodes</div>
+                    </div>
+                    <div class="statistic" style="margin: 0 10px;">
+                        <div class="value" style="color: #34d399;">{total_edges}</div>
+                        <div class="label" style="color: #94a3b8; font-size: 8px;">Edges</div>
+                    </div>
                 </div>
             </div>
-            <div class="var-list" id="varList"></div>
+        </div>
+    </div>
+
+    <!-- Workspace: Sidebar + Canvas -->
+    <div class="app-workspace">
+        
+        <!-- Sidebar -->
+        <aside class="app-sidebar">
+            <div class="sidebar-header-box">
+                <div class="ui fluid mini icon inverted input">
+                    <input type="text" id="searchInput" placeholder="Search variable or module...">
+                    <i class="search icon"></i>
+                </div>
+                <div class="ui mini inverted secondary pointing menu" style="margin-top: 8px; margin-bottom: 0;">
+                    <a class="active item" onclick="filterImpact('ALL')">All</a>
+                    <a class="item" onclick="filterImpact('CRITICAL')">Critical</a>
+                    <a class="item" onclick="filterImpact('HIGH')">High</a>
+                    <a class="item" onclick="filterImpact('MEDIUM')">Medium</a>
+                    <a class="item" onclick="filterImpact('LOW')">Low</a>
+                </div>
+            </div>
+            <div class="var-list-container" id="varList"></div>
         </aside>
 
-        <!-- Canvas Container -->
-        <main class="canvas-container">
+        <!-- Main Canvas -->
+        <main class="app-canvas-container">
+            
+            <!-- Semantic UI Canvas Toolbar -->
             <div class="canvas-toolbar">
-                <button class="btn active" id="layoutHierarchicalBtn" onclick="setLayout('hierarchical')">🌳 Tree View</button>
-                <button class="btn" id="layoutPhysicsBtn" onclick="setLayout('physics')">⚛️ Force Graph</button>
-                <button class="btn" onclick="network.fit()">🔍 Fit</button>
-                <button class="btn" onclick="exportJSON()">💾 Export JSON</button>
+                <div class="ui mini inverted buttons">
+                    <button class="ui active blue button" id="btnLayoutDagre" onclick="applyLayout('dagre')"><i class="sitemap icon"></i> Hierarchy</button>
+                    <button class="ui purple button" id="btnLayoutCola" onclick="applyLayout('cola')"><i class="atom icon"></i> Force</button>
+                    <button class="ui teal button" id="btnLayoutBreadth" onclick="applyLayout('breadthfirst')"><i class="tree icon"></i> Tree</button>
+                    <button class="ui grey button" id="btnLayoutConcentric" onclick="applyLayout('concentric')"><i class="circle notch icon"></i> Orbit</button>
+                </div>
+                <div class="ui mini inverted icon buttons" style="margin-left: 6px;">
+                    <button class="ui button" title="Fit to Screen" onclick="cy.fit(undefined, 30)"><i class="expand icon"></i></button>
+                    <button class="ui button" title="Center View" onclick="cy.center()"><i class="crosshairs icon"></i></button>
+                    <button class="ui button" title="Download PNG" onclick="exportPNG()"><i class="camera icon"></i></button>
+                    <button class="ui button" title="Export JSON" onclick="exportJSON()"><i class="download icon"></i></button>
+                </div>
             </div>
 
-            <div id="network"></div>
+            <!-- Cytoscape High Performance Canvas -->
+            <div id="cy"></div>
 
-            <div class="legend">
-                <div class="legend-item"><div class="legend-color" style="background:#0284c7;border:1px solid #38bdf8;"></div> Selected Root Variable</div>
-                <div class="legend-item"><div class="legend-color" style="background:#581c87;border:1px solid #c084fc;"></div> Function (Reader / Writer)</div>
-                <div class="legend-item"><div class="legend-color" style="background:#0f172a;border:1px solid #0284c7;"></div> Downstream Variable / State</div>
-                <div class="legend-item"><div class="legend-color" style="background:#38bdf8;"></div> Reads Edge</div>
-                <div class="legend-item"><div class="legend-color" style="background:#f43f5e;"></div> Writes / Modifies Edge</div>
+            <!-- Legend -->
+            <div class="canvas-legend">
+                <div><span class="legend-badge" style="background:#0284c7; border: 1px solid #38bdf8;"></span> Root Target</div>
+                <div><span class="legend-badge" style="background:#581c87; border: 1px solid #c084fc;"></span> Function (Reader/Writer)</div>
+                <div><span class="legend-badge" style="background:#0f172a; border: 1px solid #0284c7;"></span> Downstream State</div>
+                <div><span class="legend-badge" style="background:#38bdf8;"></span> Reads</div>
+                <div><span class="legend-badge" style="background:#f43f5e;"></span> Writes / Modifies</div>
             </div>
         </main>
     </div>
 
-    <!-- Details Panel -->
-    <div class="details-panel" id="detailsPanel">
-        <div class="detail-block">
-            <div class="detail-title">Selected Variable Details</div>
-            <div class="detail-content" id="detailRootMeta">Select a variable to inspect full propagation metrics.</div>
+    <!-- Bottom Inspector Segment (Semantic UI Grid) -->
+    <div class="app-inspector">
+        <div class="inspector-col">
+            <div class="inspector-title"><i class="info circle icon" style="color: #38bdf8;"></i> Target Variable Details</div>
+            <div class="inspector-body" id="detailRootMeta">Select a variable from the sidebar to inspect complete data flow.</div>
         </div>
-        <div class="detail-block">
-            <div class="detail-title">Direct Function Readers</div>
-            <div class="detail-content" id="detailReaders">-</div>
+        <div class="inspector-col">
+            <div class="inspector-title"><i class="eye icon" style="color: #38bdf8;"></i> Direct Function Readers</div>
+            <div class="inspector-body" id="detailReaders">-</div>
         </div>
-        <div class="detail-block">
-            <div class="detail-title">Direct Function Writers / Modifiers</div>
-            <div class="detail-content" id="detailWriters">-</div>
+        <div class="inspector-col">
+            <div class="inspector-title"><i class="pencil alternate icon" style="color: #f43f5e;"></i> Direct Function Writers / Modifiers</div>
+            <div class="inspector-body" id="detailWriters">-</div>
         </div>
     </div>
 
@@ -557,9 +502,187 @@ class DataFlowHtmlFormatter:
         const allGraphs = {all_graphs_json};
         const variablesSummary = {variables_summary_json};
         let currentRoot = "{initial_root}";
-        let currentLayout = "hierarchical";
-        let network = null;
+        let currentLayoutName = "dagre";
         let activeImpactFilter = "ALL";
+        let cy = null;
+
+        // Initialize Cytoscape Instance
+        function initCytoscape() {{
+            const container = document.getElementById("cy");
+            const initialElements = allGraphs[currentRoot] || [];
+
+            cy = cytoscape({{
+                container: container,
+                elements: initialElements,
+                style: [
+                    {{
+                        selector: 'node',
+                        style: {{
+                            'label': 'data(label)',
+                            'color': 'data(textColor)',
+                            'font-family': 'monospace',
+                            'font-size': '11px',
+                            'font-weight': 'bold',
+                            'text-valign': 'center',
+                            'text-halign': 'center',
+                            'background-color': 'data(bgColor)',
+                            'border-color': 'data(borderColor)',
+                            'border-width': 'data(borderWidth)',
+                            'shape': 'data(shape)',
+                            'width': 'label',
+                            'height': '32px',
+                            'padding': '12px',
+                            'text-outline-color': 'data(bgColor)',
+                            'text-outline-width': '1px',
+                            'transition-property': 'background-color, border-color, width, height',
+                            'transition-duration': '0.15s'
+                        }}
+                    }},
+                    {{
+                        selector: 'node:selected',
+                        style: {{
+                            'border-color': '#38bdf8',
+                            'border-width': '4px',
+                            'shadow-blur': 15,
+                            'shadow-color': '#38bdf8',
+                            'shadow-opacity': 0.8
+                        }}
+                    }},
+                    {{
+                        selector: 'edge',
+                        style: {{
+                            'width': 2,
+                            'line-color': 'data(color)',
+                            'target-arrow-color': 'data(color)',
+                            'target-arrow-shape': 'triangle',
+                            'curve-style': 'bezier',
+                            'label': 'data(label)',
+                            'font-family': 'monospace',
+                            'font-size': '9px',
+                            'color': '#94a3b8',
+                            'text-background-color': '#0f172a',
+                            'text-background-opacity': 0.85,
+                            'text-background-padding': '2px',
+                            'text-rotation': 'autorotate',
+                            'line-style': 'data(lineStyle)'
+                        }}
+                    }},
+                    {{
+                        selector: 'edge:selected',
+                        style: {{
+                            'width': 4,
+                            'line-color': '#38bdf8',
+                            'target-arrow-color': '#38bdf8'
+                        }}
+                    }},
+                    {{
+                        selector: '.faded',
+                        style: {{
+                            'opacity': 0.15
+                        }}
+                    }},
+                    {{
+                        selector: '.highlighted',
+                        style: {{
+                            'opacity': 1.0,
+                            'border-width': 4
+                        }}
+                    }}
+                ],
+                layout: getLayoutConfig('dagre'),
+                wheelSensitivity: 0.25,
+                minZoom: 0.2,
+                maxZoom: 3.5
+            }});
+
+            // Event Listeners for Cytoscape
+            cy.on('tap', 'node', function(evt) {{
+                const node = evt.target;
+                highlightNeighbors(node);
+                showNodeInspector(node.data());
+            }});
+
+            cy.on('tap', function(evt) {{
+                if (evt.target === cy) {{
+                    cy.elements().removeClass('faded highlighted');
+                    updateInspectorForRoot(currentRoot);
+                }}
+            }});
+        }}
+
+        function getLayoutConfig(name) {{
+            if (name === 'dagre') {{
+                return {{
+                    name: 'dagre',
+                    rankDir: 'TB',
+                    nodeSep: 60,
+                    rankSep: 80,
+                    animate: true,
+                    animationDuration: 300,
+                    fit: true,
+                    padding: 40
+                }};
+            }} else if (name === 'cola') {{
+                return {{
+                    name: 'cola',
+                    animate: true,
+                    maxSimulationTime: 1200,
+                    fit: true,
+                    padding: 40,
+                    nodeSpacing: 45
+                }};
+            }} else if (name === 'breadthfirst') {{
+                return {{
+                    name: 'breadthfirst',
+                    directed: true,
+                    spacingFactor: 1.3,
+                    animate: true,
+                    fit: true,
+                    padding: 40
+                }};
+            }} else if (name === 'concentric') {{
+                return {{
+                    name: 'concentric',
+                    minNodeSpacing: 60,
+                    animate: true,
+                    fit: true,
+                    padding: 40
+                }};
+            }}
+            return {{ name: 'dagre', rankDir: 'TB' }};
+        }}
+
+        function applyLayout(name) {{
+            currentLayoutName = name;
+            document.querySelectorAll('.canvas-toolbar .ui.button').forEach(btn => btn.classList.remove('active'));
+            const btnMap = {{
+                'dagre': 'btnLayoutDagre',
+                'cola': 'btnLayoutCola',
+                'breadthfirst': 'btnLayoutBreadth',
+                'concentric': 'btnLayoutConcentric'
+            }};
+            if (btnMap[name]) document.getElementById(btnMap[name]).classList.add('active');
+
+            const layout = cy.layout(getLayoutConfig(name));
+            layout.run();
+        }}
+
+        function selectVariable(varName) {{
+            currentRoot = varName;
+            renderVariableList();
+
+            const elements = allGraphs[varName] || [];
+            cy.elements().remove();
+            cy.add(elements);
+            applyLayout(currentLayoutName);
+            updateInspectorForRoot(varName);
+        }}
+
+        function highlightNeighbors(node) {{
+            cy.elements().addClass('faded').removeClass('highlighted');
+            node.removeClass('faded').addClass('highlighted');
+            node.neighborhood().removeClass('faded').addClass('highlighted');
+        }}
 
         function renderVariableList() {{
             const container = document.getElementById("varList");
@@ -571,22 +694,24 @@ class DataFlowHtmlFormatter:
                 if (query && !v.name.toLowerCase().includes(query) && !v.file_path.toLowerCase().includes(query)) return;
 
                 const card = document.createElement("div");
-                card.className = `var-card ${{v.name === currentRoot ? 'selected' : ''}}`;
+                card.className = `var-card ${{v.name === currentRoot ? 'active' : ''}}`;
                 card.onclick = () => selectVariable(v.name);
 
                 const fileName = v.file_path ? v.file_path.split("/").pop() + ":" + v.line : "global";
+                
+                let badgeClass = "grey";
+                if (v.impact_level === "CRITICAL") badgeClass = "red";
+                else if (v.impact_level === "HIGH") badgeClass = "orange";
+                else if (v.impact_level === "MEDIUM") badgeClass = "teal";
 
                 card.innerHTML = `
                     <div class="var-card-header">
-                        <span class="var-name">🔷 ${{v.name}}</span>
-                        <span class="impact-badge impact-${{v.impact_level}}">${{v.impact_level}}</span>
+                        <span class="var-name-text">🔷 ${{v.name}}</span>
+                        <span class="ui mini ${{badgeClass}} label" style="padding: 3px 6px; font-size: 10px;">${{v.impact_level}}</span>
                     </div>
                     <div class="var-card-meta">
-                        <span>${{fileName}}</span>
-                        <div class="meta-tags">
-                            <span class="meta-tag">Reach: ${{v.downstream_reach}}</span>
-                            <span class="meta-tag">Depth: ${{v.max_depth}}</span>
-                        </div>
+                        <span><i class="file code outline icon"></i> ${{fileName}}</span>
+                        <span>Reach: <b>${{v.downstream_reach}}</b> | Depth: <b>${{v.max_depth}}</b></span>
                     </div>
                 `;
                 container.appendChild(card);
@@ -595,108 +720,49 @@ class DataFlowHtmlFormatter:
 
         function filterImpact(impact) {{
             activeImpactFilter = impact;
-            document.querySelectorAll(".filter-tab").forEach(tab => {{
+            document.querySelectorAll(".ui.pointing.menu a.item").forEach(tab => {{
                 tab.classList.toggle("active", tab.innerText.toUpperCase() === impact);
             }});
             renderVariableList();
         }}
 
-        document.getElementById("searchInput").addEventListener("input", renderVariableList);
-
-        function selectVariable(name) {{
-            currentRoot = name;
-            renderVariableList();
-            renderNetwork(name);
-            updateDetails(name);
-        }}
-
-        function updateDetails(name) {{
-            const v = variablesSummary.find(item => item.name === name);
-            if (!v) return;
+        function updateInspectorForRoot(varName) {{
+            const info = variablesSummary.find(v => v.name === varName);
+            if (!info) return;
 
             document.getElementById("detailRootMeta").innerHTML = `
-                <b>${{v.name}}</b> (Defined at <span class="code-pill">${{v.file_path || "global"}}:${{v.line}}</span>)<br>
-                Impact: <span class="impact-badge impact-${{v.impact_level}}">${{v.impact_level}}</span> | Downstream Reach: <b>${{v.downstream_reach}} nodes</b> | Max Depth: <b>${{v.max_depth}}</b>
+                <div><b style="color: #38bdf8;">Variable:</b> <span class="code-tag">${{info.name}}</span></div>
+                <div><b style="color: #94a3b8;">Location:</b> ${{info.file_path}}:${{info.line}}</div>
+                <div><b style="color: #fbbf24;">Downstream Reach:</b> ${{info.downstream_reach}} elements | <b style="color: #c084fc;">Max Depth:</b> ${{info.max_depth}}</div>
             `;
 
-            const readersElem = document.getElementById("detailReaders");
-            if (v.readers && v.readers.length > 0) {{
-                readersElem.innerHTML = v.readers.map(r => `<span class="code-pill">⚙️ ${{r}}()</span>`).join(" ");
-            }} else {{
-                readersElem.innerHTML = '<span style="color:var(--text-muted)">None (Not directly read)</span>';
-            }}
+            document.getElementById("detailReaders").innerHTML = info.readers && info.readers.length > 0 
+                ? info.readers.map(r => `<span class="code-tag">⚙️ ${{r}}()</span>`).join(" ")
+                : `<span style="color:#64748b;">No direct function readers.</span>`;
 
-            const writersElem = document.getElementById("detailWriters");
-            if (v.writers && v.writers.length > 0) {{
-                writersElem.innerHTML = v.writers.map(w => `<span class="code-pill">⚙️ ${{w}}()</span>`).join(" ");
-            }} else {{
-                writersElem.innerHTML = '<span style="color:var(--text-muted)">None (Read-only or Extern)</span>';
-            }}
+            document.getElementById("detailWriters").innerHTML = info.writers && info.writers.length > 0 
+                ? info.writers.map(w => `<span class="code-tag" style="color:#f43f5e;">✏️ ${{w}}()</span>`).join(" ")
+                : `<span style="color:#64748b;">No direct function writers.</span>`;
         }}
 
-        function renderNetwork(varName) {{
-            const graphData = allGraphs[varName];
-            const container = document.getElementById("network");
-            if (!graphData) {{
-                container.innerHTML = `<div style="display:flex;justify-content:center;align-items:center;height:100%;color:var(--text-muted)">No propagation data found for ${{varName}}.</div>`;
-                return;
-            }}
-
-            const data = {{
-                nodes: new vis.DataSet(graphData.nodes),
-                edges: new vis.DataSet(graphData.edges)
-            }};
-
-            const options = {{
-                layout: currentLayout === "hierarchical" ? {{
-                    hierarchical: {{
-                        direction: "LR",
-                        sortMethod: "directed",
-                        levelSeparation: 180,
-                        nodeSpacing: 100,
-                    }}
-                }} : {{
-                    improvedLayout: true
-                }},
-                physics: currentLayout === "physics" ? {{
-                    solver: "forceAtlas2Based",
-                    forceAtlas2Based: {{
-                        gravitationalConstant: -50,
-                        centralGravity: 0.01,
-                        springLength: 100,
-                        springConstant: 0.08
-                    }}
-                }} : false,
-                nodes: {{
-                    borderWidth: 2,
-                    shadow: true
-                }},
-                edges: {{
-                    width: 2,
-                    shadow: true
-                }},
-                interaction: {{
-                    hover: true,
-                    tooltipDelay: 100,
-                    zoomView: true,
-                    dragView: true
-                }}
-            }};
-
-            if (network) network.destroy();
-            network = new vis.Network(container, data, options);
+        function showNodeInspector(data) {{
+            document.getElementById("detailRootMeta").innerHTML = `
+                <div><b style="color: #38bdf8;">Selected Node:</b> <span class="code-tag">${{data.name}}</span></div>
+                <div><b style="color: #94a3b8;">Kind:</b> ${{data.kind}} | <b style="color: #c084fc;">Type:</b> ${{data.node_type}}</div>
+                <div><b style="color: #fbbf24;">Location:</b> ${{data.file_path || 'unknown'}}:${{data.line || 1}}</div>
+            `;
         }}
 
-        function setLayout(layoutType) {{
-            currentLayout = layoutType;
-            document.getElementById("layoutHierarchicalBtn").classList.toggle("active", layoutType === "hierarchical");
-            document.getElementById("layoutPhysicsBtn").classList.toggle("active", layoutType === "physics");
-            if (currentRoot) renderNetwork(currentRoot);
+        function exportPNG() {{
+            const pngData = cy.png({{ scale: 2, full: true, bg: '#060911' }});
+            const link = document.createElement('a');
+            link.download = `dataflow_${{currentRoot}}.png`;
+            link.href = pngData;
+            link.click();
         }}
 
         function exportJSON() {{
-            const v = variablesSummary.find(item => item.name === currentRoot);
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allGraphs[currentRoot] || {{}}, null, 2));
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cy.json(), null, 2));
             const downloadAnchor = document.createElement('a');
             downloadAnchor.setAttribute("href", dataStr);
             downloadAnchor.setAttribute("download", `dataflow_${{currentRoot}}.json`);
@@ -705,10 +771,13 @@ class DataFlowHtmlFormatter:
             downloadAnchor.remove();
         }}
 
-        // Initialize UI on load
-        window.addEventListener("DOMContentLoaded", () => {{
+        // Initialization
+        document.addEventListener("DOMContentLoaded", () => {{
             renderVariableList();
-            if (currentRoot) selectVariable(currentRoot);
+            initCytoscape();
+            updateInspectorForRoot(currentRoot);
+
+            document.getElementById("searchInput").addEventListener("input", renderVariableList);
         }});
     </script>
 </body>
