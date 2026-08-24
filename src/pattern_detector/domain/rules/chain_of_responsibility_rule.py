@@ -103,23 +103,49 @@ class ChainOfResponsibilityRule(BasePatternRule):
 
     def _analyze_handler_record(self, rec: Any) -> Detection | None:
         name_lower = rec.name.lower()
-        is_handler_named = "handler" in name_lower or "filter" in name_lower or "processor" in name_lower
-        has_successor_field = any(
-            any(k in f.lower() for k in ("successor", "next", "handler", "parent", "chain")) for f in rec.fields
-        )
-        has_chain_methods = any(
-            any(k in m.name.lower() for k in ("setsuccessor", "setnext", "handle", "handlerequest", "process"))
-            for m in rec.methods
-        )
+        is_handler_named = any(k in name_lower for k in ("handler", "filter", "processor"))
+        successor_fields = self._find_successor_fields(rec.fields)
+        chain_methods = self._find_chain_methods(rec.methods)
 
-        if not (
-            (is_handler_named and (has_successor_field or has_chain_methods))
-            or (has_successor_field and has_chain_methods)
-        ):
+        if not self._is_handler_candidate(is_handler_named, len(successor_fields) > 0, len(chain_methods) > 0):
             return None
 
+        evidences = self._build_handler_evidences(rec, is_handler_named, successor_fields, chain_methods)
+        return self.create_detection(
+            target_name=rec.name,
+            target_kind="chain_handler_class",
+            evidences=evidences,
+            primary_location=rec.location,
+            summary=f"Chain of Responsibility: class '{rec.name}' processes requests and/or delegates to successor handler",
+            base_score=0.30,
+        )
+
+    def _is_handler_candidate(self, is_named: bool, has_successor: bool, has_methods: bool) -> bool:
+        return (is_named and (has_successor or has_methods)) or (has_successor and has_methods)
+
+    def _find_successor_fields(self, fields: list[str]) -> list[str]:
+        keywords = ("successor", "next", "handler", "parent", "chain")
+        results = []
+        for f in fields:
+            f_lower = f.lower()
+            if any(k in f_lower for k in keywords):
+                results.append(f)
+        return results
+
+    def _find_chain_methods(self, methods: list[Any]) -> list[str]:
+        keywords = ("setsuccessor", "setnext", "handle", "handlerequest", "process")
+        results = []
+        for m in methods:
+            m_lower = m.name.lower()
+            if any(k in m_lower for k in keywords):
+                results.append(m.name)
+        return results
+
+    def _build_handler_evidences(
+        self, rec: Any, is_named: bool, successor_fields: list[str], chain_methods: list[str]
+    ) -> list[Evidence]:
         evidences = []
-        if is_handler_named:
+        if is_named:
             evidences.append(
                 self.evidence(
                     description=f"Class '{rec.name}' follows Chain of Responsibility handler naming convention",
@@ -128,12 +154,7 @@ class ChainOfResponsibilityRule(BasePatternRule):
                     code_suffix="HANDLER_CLASS_NAMING",
                 )
             )
-        if has_successor_field:
-            successor_fields = [
-                f
-                for f in rec.fields
-                if any(k in f.lower() for k in ("successor", "next", "handler", "parent", "chain"))
-            ]
+        if successor_fields:
             evidences.append(
                 self.evidence(
                     description=f"Maintains successor/next link to chain handler: {', '.join(successor_fields)}",
@@ -142,12 +163,7 @@ class ChainOfResponsibilityRule(BasePatternRule):
                     code_suffix="HANDLER_SUCCESSOR_FIELD",
                 )
             )
-        if has_chain_methods:
-            chain_methods = [
-                m.name
-                for m in rec.methods
-                if any(k in m.name.lower() for k in ("setsuccessor", "setnext", "handle", "handlerequest", "process"))
-            ]
+        if chain_methods:
             evidences.append(
                 self.evidence(
                     description=f"Declares request processing / successor configuration methods: {', '.join(chain_methods)}",
@@ -156,13 +172,4 @@ class ChainOfResponsibilityRule(BasePatternRule):
                     code_suffix="HANDLER_CHAIN_METHODS",
                 )
             )
-
-        return self.create_detection(
-            target_name=rec.name,
-            target_kind="chain_handler_class",
-            evidences=evidences,
-            primary_location=rec.location,
-            related_locations=[],
-            summary=f"Chain of Responsibility: handler '{rec.name}' passes requests along dynamic chain of successor objects",
-            base_score=0.30,
-        )
+        return evidences

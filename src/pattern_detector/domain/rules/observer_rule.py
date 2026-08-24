@@ -191,19 +191,39 @@ class ObserverPatternRule(BasePatternRule):
         return results
 
     def _analyze_subject_record(self, rec: Any) -> Detection | None:
-        name_lower = rec.name.lower()
         obs_fields = [f for f in rec.fields if self._is_obs_collection(f)]
-        has_obs_field = len(obs_fields) > 0
-        has_obs_methods = any(
-            m.name.split(".")[-1]
-            .lower()
-            .startswith(("attach", "detach", "register", "unregister", "subscribe", "notify"))
-            for m in rec.methods
-        )
-        if not (has_obs_field or (has_obs_methods and ("subject" in name_lower or "observable" in name_lower))):
+        obs_m_names = self._get_subject_method_names(rec)
+
+        if not self._is_subject_candidate(rec.name, len(obs_fields) > 0, len(obs_m_names) > 0):
             return None
 
+        evidences = self._build_subject_evidences(rec, obs_fields, obs_m_names)
+        return self.create_detection(
+            target_name=rec.name,
+            target_kind="subject_class",
+            evidences=evidences,
+            primary_location=rec.location,
+            summary=f"Observer pattern: class '{rec.name}' manages and notifies observers of state changes",
+            base_score=0.30,
+        )
+
+    def _is_subject_candidate(self, name: str, has_obs_field: bool, has_obs_methods: bool) -> bool:
+        name_lower = name.lower()
+        is_named = "subject" in name_lower or "observable" in name_lower
+        return has_obs_field or (has_obs_methods and is_named)
+
+    def _get_subject_method_names(self, rec: Any) -> list[str]:
+        prefixes = ("attach", "detach", "register", "unregister", "subscribe", "notify")
+        results = []
+        for m in rec.methods:
+            s_name = m.name.split(".")[-1].lower()
+            if s_name.startswith(prefixes):
+                results.append(m.name.split(".")[-1])
+        return results
+
+    def _build_subject_evidences(self, rec: Any, obs_fields: list[str], obs_m_names: list[str]) -> list[Evidence]:
         evidences = []
+        name_lower = rec.name.lower()
         if "subject" in name_lower or "observable" in name_lower:
             evidences.append(
                 self.evidence(
@@ -213,7 +233,7 @@ class ObserverPatternRule(BasePatternRule):
                     code_suffix="SUBJECT_CLASS_NAMING",
                 )
             )
-        if has_obs_field:
+        if obs_fields:
             evidences.append(
                 self.evidence(
                     description=f"Maintains list/collection of observers: {', '.join(obs_fields)}",
@@ -222,14 +242,7 @@ class ObserverPatternRule(BasePatternRule):
                     code_suffix="OBSERVER_COLLECTION_FIELD",
                 )
             )
-        if has_obs_methods:
-            obs_m_names = [
-                m.name.split(".")[-1]
-                for m in rec.methods
-                if m.name.split(".")[-1]
-                .lower()
-                .startswith(("attach", "detach", "register", "unregister", "subscribe", "notify"))
-            ]
+        if obs_m_names:
             evidences.append(
                 self.evidence(
                     description=f"Declares observer lifecycle/notification methods: {', '.join(obs_m_names)}",
@@ -238,15 +251,7 @@ class ObserverPatternRule(BasePatternRule):
                     code_suffix="OBSERVER_MANAGEMENT_METHODS",
                 )
             )
-
-        return self.create_detection(
-            target_name=rec.name,
-            target_kind="subject_class",
-            evidences=evidences,
-            primary_location=rec.location,
-            summary=f"Observer pattern: subject '{rec.name}' manages event subscriptions and notifications",
-            base_score=0.30,
-        )
+        return evidences
 
     def _is_obs_collection(self, field_name: str) -> bool:
         f = field_name.lower()

@@ -129,18 +129,46 @@ class FactoryPatternRule(BasePatternRule):
         return results
 
     def _analyze_factory_proto(self, proto: Any, model: CodeModel) -> Detection | None:
-        name_lower = proto.name.lower()
-        if not (any(k in name_lower for k in ("creator", "factory", "provider")) and "builder" not in name_lower):
+        if not self._is_factory_proto_name(proto.name):
             return None
 
-        creation_methods = [m for m in proto.methods if m.name.lower().startswith(("create", "make", "new"))]
+        creation_methods = self._get_creation_methods(proto)
         rec_impls = model.find_records_implementing(proto.name)
-        if not (creation_methods or rec_impls):
+        if not creation_methods and not rec_impls:
             return None
 
+        evidences = self._build_factory_proto_evidences(proto, creation_methods, rec_impls)
+        return self.create_detection(
+            target_name=proto.name,
+            target_kind="factory_method_protocol",
+            evidences=evidences,
+            primary_location=proto.location,
+            related_locations=[r.location for r in rec_impls],
+            summary=f"Factory Method pattern: '{proto.name}' declares factory creation contract implemented by {len(rec_impls)} concrete creator(s)",
+            base_score=0.30,
+        )
+
+    def _is_factory_proto_name(self, name: str) -> bool:
+        name_lower = name.lower()
+        if "builder" in name_lower:
+            return False
+        return any(k in name_lower for k in ("creator", "factory", "provider"))
+
+    def _get_creation_methods(self, proto: Any) -> list[Any]:
+        results = []
+        prefixes = ("create", "make", "new")
+        for m in proto.methods:
+            if m.name.lower().startswith(prefixes):
+                results.append(m)
+        return results
+
+    def _build_factory_proto_evidences(
+        self, proto: Any, creation_methods: list[Any], rec_impls: list[Any]
+    ) -> list[Evidence]:
+        active_methods = creation_methods if creation_methods else proto.methods
         evidences = [
             self.evidence(
-                description=f"Protocol '{proto.name}' defines Factory Method creation contract: {', '.join(m.name for m in creation_methods or proto.methods)}",
+                description=f"Protocol '{proto.name}' defines Factory Method creation contract: {', '.join(m.name for m in active_methods)}",
                 weight=0.55,
                 location=proto.location,
                 code_suffix="FACTORY_METHOD_PROTOCOL",
@@ -155,13 +183,4 @@ class FactoryPatternRule(BasePatternRule):
                     code_suffix="CONCRETE_CREATOR_IMPL",
                 )
             )
-
-        return self.create_detection(
-            target_name=proto.name,
-            target_kind="factory_method_protocol",
-            evidences=evidences,
-            primary_location=proto.location,
-            related_locations=[r.location for r in rec_impls],
-            summary=f"Factory Method pattern: '{proto.name}' declares factory creation contract implemented by {len(rec_impls)} concrete creator(s)",
-            base_score=0.30,
-        )
+        return evidences

@@ -7,7 +7,7 @@ from typing import Any
 from pattern_detector.domain.code_model import CodeModel
 from pattern_detector.domain.detection import Detection
 from pattern_detector.domain.rules.base import BasePatternRule
-from pattern_detector.domain.value_objects import PatternType, SourceLocation
+from pattern_detector.domain.value_objects import Evidence, PatternType
 
 
 class MediatorPatternRule(BasePatternRule):
@@ -39,37 +39,13 @@ class MediatorPatternRule(BasePatternRule):
         return results
 
     def _analyze_mediator_proto(self, proto: Any, model: CodeModel) -> Detection | None:
-        name_lower = proto.name.lower()
-        methods_lower = [m.name.split(".")[-1].lower() for m in proto.methods]
-        is_mediator_proto = any(k in name_lower for k in ("mediator", "eventbus", "messagebroker", "dispatcherhub"))
-        has_pubsub = any(
-            m in ("publish", "subscribe", "broadcast", "dispatch", "emit", "send_message", "notify_colleagues")
-            for m in methods_lower
-        )
-
-        if not ((is_mediator_proto and has_pubsub) or (len(methods_lower) >= 2 and has_pubsub)):
+        has_pubsub = self._has_pubsub_methods(proto)
+        if not self._is_mediator_proto_candidate(proto.name, has_pubsub, len(proto.methods)):
             return None
 
-        evidences = [
-            self.evidence(
-                description=f"Protocol '{proto.name}' defines central mediator message coordination methods: {', '.join(m.name for m in proto.methods)}",
-                weight=0.60,
-                location=proto.location,
-                code_suffix="MEDIATOR_PROTOCOL",
-            ),
-        ]
         rec_impls = model.find_records_implementing(proto.name)
-        related_locs: list[SourceLocation] = []
-        if rec_impls:
-            evidences.append(
-                self.evidence(
-                    description=f"Implemented by concrete mediator hub record(s): {', '.join(r.name for r in rec_impls)}",
-                    weight=0.35,
-                    location=rec_impls[0].location,
-                    code_suffix="MEDIATOR_RECORD_IMPL",
-                )
-            )
-            related_locs.extend(r.location for r in rec_impls)
+        evidences = self._build_mediator_proto_evidences(proto, rec_impls)
+        related_locs = [r.location for r in rec_impls]
 
         return self.create_detection(
             target_name=proto.name,
@@ -80,6 +56,39 @@ class MediatorPatternRule(BasePatternRule):
             summary=f"Mediator pattern: protocol '{proto.name}' acts as central event/message broker decoupling components",
             base_score=0.30,
         )
+
+    def _is_mediator_proto_candidate(self, name: str, has_pubsub: bool, method_count: int) -> bool:
+        name_lower = name.lower()
+        is_mediator = any(k in name_lower for k in ("mediator", "eventbus", "messagebroker", "dispatcherhub"))
+        return has_pubsub and (is_mediator or method_count >= 2)
+
+    def _has_pubsub_methods(self, proto: Any) -> bool:
+        pubsub_names = ("publish", "subscribe", "broadcast", "dispatch", "emit", "send_message", "notify_colleagues")
+        for m in proto.methods:
+            m_name = m.name.split(".")[-1].lower()
+            if m_name in pubsub_names:
+                return True
+        return False
+
+    def _build_mediator_proto_evidences(self, proto: Any, rec_impls: list[Any]) -> list[Evidence]:
+        evidences = [
+            self.evidence(
+                description=f"Protocol '{proto.name}' defines central mediator message coordination methods: {', '.join(m.name for m in proto.methods)}",
+                weight=0.60,
+                location=proto.location,
+                code_suffix="MEDIATOR_PROTOCOL",
+            ),
+        ]
+        if rec_impls:
+            evidences.append(
+                self.evidence(
+                    description=f"Implemented by concrete mediator hub record(s): {', '.join(r.name for r in rec_impls)}",
+                    weight=0.35,
+                    location=rec_impls[0].location,
+                    code_suffix="MEDIATOR_RECORD_IMPL",
+                )
+            )
+        return evidences
 
     def _detect_mediator_records(self, model: CodeModel) -> list[Detection]:
         results: list[Detection] = []

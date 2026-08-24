@@ -7,7 +7,7 @@ from typing import Any
 from pattern_detector.domain.code_model import CodeModel
 from pattern_detector.domain.detection import Detection
 from pattern_detector.domain.rules.base import BasePatternRule
-from pattern_detector.domain.value_objects import PatternType, SourceLocation
+from pattern_detector.domain.value_objects import Evidence, PatternType
 
 
 class PrototypePatternRule(BasePatternRule):
@@ -38,33 +38,12 @@ class PrototypePatternRule(BasePatternRule):
         return results
 
     def _analyze_proto_protocol(self, proto: Any, model: CodeModel) -> Detection | None:
-        name_lower = proto.name.lower()
-        is_proto_named = any(k in name_lower for k in ("prototype", "cloneable", "copiable", "derive"))
-        clone_methods = [m for m in proto.methods if m.name.lower() in ("clone", "copy-with", "derive", "duplicate")]
-
-        if not (is_proto_named or clone_methods):
+        if not self._is_prototype_proto(proto):
             return None
 
-        evidences = [
-            self.evidence(
-                description=f"Protocol '{proto.name}' defines prototype cloning methods: {', '.join(m.name for m in proto.methods)}",
-                weight=0.55,
-                location=proto.location,
-                code_suffix="PROTOTYPE_PROTOCOL",
-            ),
-        ]
         rec_impls = model.find_records_implementing(proto.name)
-        related_locs: list[SourceLocation] = []
-        if rec_impls:
-            evidences.append(
-                self.evidence(
-                    description=f"Implemented by {len(rec_impls)} prototype records: {', '.join(r.name for r in rec_impls)}",
-                    weight=0.35,
-                    location=rec_impls[0].location,
-                    code_suffix="CONCRETE_PROTOTYPES",
-                )
-            )
-            related_locs.extend(r.location for r in rec_impls)
+        evidences = self._build_proto_evidences(proto, rec_impls)
+        related_locs = [r.location for r in rec_impls]
 
         return self.create_detection(
             target_name=proto.name,
@@ -75,6 +54,36 @@ class PrototypePatternRule(BasePatternRule):
             summary=f"Prototype pattern: protocol '{proto.name}' defines instance cloning and derivation interface",
             base_score=0.30,
         )
+
+    def _is_prototype_proto(self, proto: Any) -> bool:
+        name_lower = proto.name.lower()
+        if any(k in name_lower for k in ("prototype", "cloneable", "copiable", "derive")):
+            return True
+        clone_names = ("clone", "copy-with", "derive", "duplicate")
+        for m in proto.methods:
+            if m.name.lower() in clone_names:
+                return True
+        return False
+
+    def _build_proto_evidences(self, proto: Any, rec_impls: list[Any]) -> list[Evidence]:
+        evidences = [
+            self.evidence(
+                description=f"Protocol '{proto.name}' defines prototype cloning methods: {', '.join(m.name for m in proto.methods)}",
+                weight=0.55,
+                location=proto.location,
+                code_suffix="PROTOTYPE_PROTOCOL",
+            ),
+        ]
+        if rec_impls:
+            evidences.append(
+                self.evidence(
+                    description=f"Implemented by {len(rec_impls)} prototype records: {', '.join(r.name for r in rec_impls)}",
+                    weight=0.35,
+                    location=rec_impls[0].location,
+                    code_suffix="CONCRETE_PROTOTYPES",
+                )
+            )
+        return evidences
 
     def _detect_prototype_functions(self, model: CodeModel) -> list[Detection]:
         results: list[Detection] = []
