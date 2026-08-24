@@ -183,8 +183,7 @@ class DataFlowService:
         fn_id = f"fn_{fn.name}"
         cluster_name = fn.namespace or (fn.location.file_path.split("/")[-1] if fn.location else "global")
         graph.add_node(
-            node_id=fn_id, name=fn.name, kind=NodeKind.FUNCTION, cluster=cluster_name,
-            file_path=fn.location.file_path if fn.location else "", line=fn.location.line if fn.location else 1,
+            node_id=fn_id, name=fn.name, kind=NodeKind.FUNCTION, cluster=cluster_name, location=fn.location
         )
         graph.add_edge(from_id=var_name, to_id=fn_id, kind="READS", location=fn.location)
 
@@ -206,8 +205,7 @@ class DataFlowService:
         fn_id = f"fn_{fn.name}"
         cluster_name = fn.namespace or (fn.location.file_path.split("/")[-1] if fn.location else "global")
         graph.add_node(
-            node_id=fn_id, name=fn.name, kind=NodeKind.FUNCTION, cluster=cluster_name,
-            file_path=fn.location.file_path if fn.location else "", line=fn.location.line if fn.location else 1,
+            node_id=fn_id, name=fn.name, kind=NodeKind.FUNCTION, cluster=cluster_name, location=fn.location
         )
         w_kind = "MODIFIED_BY" if var_name in fn.modifies_variables else "WRITTEN_BY"
         graph.add_edge(from_id=var_name, to_id=fn_id, kind=w_kind, location=fn.location)
@@ -241,7 +239,7 @@ class DataFlowService:
         for node_id in keep_nodes:
             if node_id in src_graph.nodes:
                 n = src_graph.nodes[node_id]
-                dst_graph.add_node(node_id=n.id, name=n.name, kind=n.kind, cluster=n.cluster, file_path=n.file_path, line=n.line, is_root=n.is_root)
+                dst_graph.nodes[node_id] = n
         for edge in src_graph.edges:
             if edge.from_id in keep_nodes and edge.to_id in keep_nodes:
                 dst_graph.add_edge(edge.from_id, edge.to_id, edge.kind, edge.location)

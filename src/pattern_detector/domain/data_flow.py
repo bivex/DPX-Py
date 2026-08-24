@@ -75,8 +75,7 @@ class DataFlowGraph:
         name: str,
         kind: NodeKind,
         cluster: str = "default",
-        file_path: str = "",
-        line: int = 1,
+        location: SourceLocation | None = None,
         is_root: bool = False,
     ) -> DataFlowNode:
         if node_id not in self.nodes:
@@ -85,8 +84,8 @@ class DataFlowGraph:
                 name=name,
                 kind=kind,
                 cluster=cluster,
-                file_path=file_path,
-                line=line,
+                file_path=location.file_path if location else "",
+                line=location.line if location else 1,
                 is_root=is_root,
             )
         return self.nodes[node_id]

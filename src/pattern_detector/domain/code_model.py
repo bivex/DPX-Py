@@ -24,6 +24,18 @@ class MethodSignature:
 
 
 @dataclass
+class NamedCodeEntity:
+    """Base class for named code entities with namespace qualification."""
+
+    name: str
+    namespace: str
+
+    @property
+    def qualified_name(self) -> str:
+        return f"{self.namespace}/{self.name}" if self.namespace else self.name
+
+
+@dataclass
 class FunctionInvocation:
     """Represents a function or constructor call in the code."""
 
@@ -35,12 +47,10 @@ class FunctionInvocation:
 
 
 @dataclass
-class FunctionModel:
+class FunctionModel(NamedCodeEntity):
     """Represents a function, method, multimethod implementation, or macro."""
 
-    name: str
-    namespace: str
-    location: SourceLocation
+    location: SourceLocation = field(default_factory=lambda: SourceLocation(file_path="", line=1, column=1))
     docstring: str | None = None
     is_private: bool = False
     is_macro: bool = False
@@ -59,46 +69,30 @@ class FunctionModel:
     modifies_variables: list[str] = field(default_factory=list)
     metadata: dict[str, str] = field(default_factory=dict)
 
-    @property
-    def qualified_name(self) -> str:
-        return f"{self.namespace}/{self.name}" if self.namespace else self.name
-
 
 @dataclass
-class ProtocolModel:
+class ProtocolModel(NamedCodeEntity):
     """Represents a protocol, interface, or abstract trait definition."""
 
-    name: str
-    namespace: str
-    location: SourceLocation
+    location: SourceLocation = field(default_factory=lambda: SourceLocation(file_path="", line=1, column=1))
     docstring: str | None = None
     methods: list[MethodSignature] = field(default_factory=list)
     metadata: dict[str, str] = field(default_factory=dict)
-
-    @property
-    def qualified_name(self) -> str:
-        return f"{self.namespace}/{self.name}" if self.namespace else self.name
 
     def has_method(self, name: str) -> bool:
         return any(m.name == name for m in self.methods)
 
 
 @dataclass
-class RecordModel:
+class RecordModel(NamedCodeEntity):
     """Represents a defrecord, deftype, or class struct."""
 
-    name: str
-    namespace: str
-    location: SourceLocation
+    location: SourceLocation = field(default_factory=lambda: SourceLocation(file_path="", line=1, column=1))
     fields: list[str] = field(default_factory=list)
     implemented_protocols: list[str] = field(default_factory=list)
     methods: list[FunctionModel] = field(default_factory=list)
     is_type: bool = False
     docstring: str | None = None
-
-    @property
-    def qualified_name(self) -> str:
-        return f"{self.namespace}/{self.name}" if self.namespace else self.name
 
     def implements_protocol(self, protocol_name: str) -> bool:
         norm = protocol_name.split("/")[-1]
@@ -117,21 +111,15 @@ class ProtocolExtensionModel:
 
 
 @dataclass
-class StateModel:
+class StateModel(NamedCodeEntity):
     """Represents a state holder or global binding (atom, ref, agent, defonce, var)."""
 
-    name: str
-    namespace: str
-    location: SourceLocation
-    kind: str  # "atom", "ref", "agent", "var", "defonce", "delay", "promise"
+    location: SourceLocation = field(default_factory=lambda: SourceLocation(file_path="", line=1, column=1))
+    kind: str = "atom"  # "atom", "ref", "agent", "var", "defonce", "delay", "promise"
     initial_expr: str | None = None
     is_once: bool = False
     is_dynamic: bool = False
     watchers: list[str] = field(default_factory=list)
-
-    @property
-    def qualified_name(self) -> str:
-        return f"{self.namespace}/{self.name}" if self.namespace else self.name
 
 
 @dataclass

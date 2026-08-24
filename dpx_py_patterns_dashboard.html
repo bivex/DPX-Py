@@ -90,11 +90,11 @@
         <div class="ui inverted segment" style="background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; margin-bottom: 20px; padding: 16px 20px;">
             <div class="ui five mini inverted statistics">
                 <div class="statistic">
-                    <div class="value" style="color: #38bdf8;">70</div>
+                    <div class="value" style="color: #38bdf8;">69</div>
                     <div class="label" style="color: #94a3b8;">Total Detections</div>
                 </div>
                 <div class="statistic">
-                    <div class="value" style="color: #4ade80;">69</div>
+                    <div class="value" style="color: #4ade80;">68</div>
                     <div class="label" style="color: #94a3b8;">High Confidence (≥70%)</div>
                 </div>
                 <div class="statistic">
@@ -106,7 +106,7 @@
                     <div class="label" style="color: #94a3b8;">Files Scanned</div>
                 </div>
                 <div class="statistic">
-                    <div class="value" style="color: #34d399;">0.156s</div>
+                    <div class="value" style="color: #34d399;">0.148s</div>
                     <div class="label" style="color: #94a3b8;">Scan Duration</div>
                 </div>
             </div>
@@ -116,7 +116,7 @@
         <div class="ui mini inverted secondary pointing menu" style="border-bottom: 1px solid #1e293b; margin-bottom: 16px;">
             <a class="active item cat-filter-btn" data-filter="all">
                 <i class="cubes icon"></i> All Categories
-                <div class="ui mini blue label">70</div>
+                <div class="ui mini blue label">69</div>
             </a>
             
                     <a class="item cat-filter-btn" data-filter="creational">
@@ -140,7 +140,7 @@
                     <a class="item cat-filter-btn" data-filter="principle">
                         <i class="shield alternate icon" style="color: #6366f1;"></i>
                         Principles & SOLID
-                        <div class="ui mini teal label">62</div>
+                        <div class="ui mini teal label">61</div>
                     </a>
                     
         </div>
@@ -1562,45 +1562,13 @@
                     </div>
                 </div>
                 
-                <div class="ui fluid inverted card pattern-card" data-pattern="dry" data-category="principle" data-target="FunctionModel.qualified_name" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #6366f1 !important; margin-bottom: 14px;">
-                    <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
-                        <div class="right floated">
-                            <span class="ui mini green label" style="font-weight: 700;">88% [VERY_HIGH]</span>
-                        </div>
-                        <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#45</span>
-                            <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
-                            <span class="ui mini pink label">DRY</span>
-                            <span style="color: #cbd5e1; font-weight: 600;">dry_code_duplication:</span>
-                            <span style="color: #38bdf8; font-family: monospace; font-weight: 700;">FunctionModel.qualified_name</span>
-                        </div>
-                    </div>
-                    <div class="content" style="padding: 14px 16px; font-size: 13px;">
-                        <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
-                            <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> DRY Violation: Duplicate logic shared across 4 methods (FunctionModel.qualified_name, ProtocolModel.qualified_name, RecordModel.qualified_name, StateModel.qualified_name)
-                        </div>
-                        <div style="margin-bottom: 10px; color: #94a3b8;">
-                            <i class="map marker alternate icon" style="color: #f43f5e;"></i> <strong>Primary Location:</strong> <span class="code-pill">/Volumes/External/Code/DPX-Py/src/pattern_detector/domain/code_model.py:63:5</span>
-                        </div>
-                        <div class="evidence-section" style="margin-top: 12px;">
-                            <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
-                                <i class="search icon"></i> Evidence Trail (2 heuristics):
-                            </div>
-                            <div class="ui inverted list">
-                                <div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+70%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[DRY_DRY_CODE_DUPLICATION]</span> <span style="color: #e2e8f0;">Identical duplicate code logic detected across 4 methods: FunctionModel.qualified_name, ProtocolModel.qualified_name, RecordModel.qualified_name, StateModel.qualified_name</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/code_model.py:63:5</span></div><div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+35%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[DRY_DRY_EXTRACTION_RECOMMENDED]</span> <span style="color: #e2e8f0;">Duplicate logic creates maintenance hazards when business rules change; extract into shared utility or base class</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/code_model.py:79:5</span></div>
-                            </div>
-                        </div>
-                        <div style="margin-top: 10px; font-size: 12px; color: #94a3b8;"><strong>Related Locations:</strong><div style="margin-top: 4px;"><span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/code_model.py:79:5</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/code_model.py:100:5</span> <span class="code-pill"><i class="file code outline icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/code_model.py:133:5</span></div></div>
-                    </div>
-                </div>
-                
                 <div class="ui fluid inverted card pattern-card" data-pattern="composite" data-category="structural" data-target="BasePatternRule" style="background: #0f172a; border: 1px solid #1e293b; border-left: 4px solid #0ea5e9 !important; margin-bottom: 14px;">
                     <div class="content" style="border-bottom: 1px solid #1e293b; padding: 12px 16px;">
                         <div class="right floated">
                             <span class="ui mini green label" style="font-weight: 700;">87% [VERY_HIGH]</span>
                         </div>
                         <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#46</span>
+                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#45</span>
                             <span class="ui mini blue label"><i class="cubes icon"></i> STRUCTURAL</span>
                             <span class="ui mini blue label">COMPOSITE</span>
                             <span style="color: #cbd5e1; font-weight: 600;">composite_hierarchy:</span>
@@ -1632,7 +1600,7 @@
                             <span class="ui mini green label" style="font-weight: 700;">87% [VERY_HIGH]</span>
                         </div>
                         <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#47</span>
+                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#46</span>
                             <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                             <span class="ui mini violet label">OPEN_CLOSED</span>
                             <span style="color: #cbd5e1; font-weight: 600;">ocp_polymorphic_hierarchy:</span>
@@ -1664,7 +1632,7 @@
                             <span class="ui mini green label" style="font-weight: 700;">87% [VERY_HIGH]</span>
                         </div>
                         <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#48</span>
+                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#47</span>
                             <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                             <span class="ui mini violet label">OPEN_CLOSED</span>
                             <span style="color: #cbd5e1; font-weight: 600;">ocp_polymorphic_hierarchy:</span>
@@ -1696,7 +1664,7 @@
                             <span class="ui mini green label" style="font-weight: 700;">87% [VERY_HIGH]</span>
                         </div>
                         <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#49</span>
+                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#48</span>
                             <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                             <span class="ui mini violet label">OPEN_CLOSED</span>
                             <span style="color: #cbd5e1; font-weight: 600;">ocp_polymorphic_hierarchy:</span>
@@ -1728,7 +1696,7 @@
                             <span class="ui mini green label" style="font-weight: 700;">86% [VERY_HIGH]</span>
                         </div>
                         <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#50</span>
+                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#49</span>
                             <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                             <span class="ui mini violet label">STRATEGY</span>
                             <span style="color: #cbd5e1; font-weight: 600;">protocol_strategy:</span>
@@ -1760,7 +1728,7 @@
                             <span class="ui mini green label" style="font-weight: 700;">85% [VERY_HIGH]</span>
                         </div>
                         <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#51</span>
+                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#50</span>
                             <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                             <span class="ui mini olive label">KISS</span>
                             <span style="color: #cbd5e1; font-weight: 600;">kiss_complexity_parameters:</span>
@@ -1792,7 +1760,7 @@
                             <span class="ui mini green label" style="font-weight: 700;">85% [VERY_HIGH]</span>
                         </div>
                         <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#52</span>
+                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#51</span>
                             <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                             <span class="ui mini olive label">KISS</span>
                             <span style="color: #cbd5e1; font-weight: 600;">kiss_complexity_parameters:</span>
@@ -1824,7 +1792,7 @@
                             <span class="ui mini green label" style="font-weight: 700;">85% [VERY_HIGH]</span>
                         </div>
                         <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#53</span>
+                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#52</span>
                             <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                             <span class="ui mini olive label">KISS</span>
                             <span style="color: #cbd5e1; font-weight: 600;">kiss_complexity_parameters:</span>
@@ -1833,7 +1801,7 @@
                     </div>
                     <div class="content" style="padding: 14px 16px; font-size: 13px;">
                         <div style="margin-bottom: 8px; color: #e2e8f0; font-size: 14px;">
-                            <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> KISS Violation (Long Parameter List): Method &#x27;DataFlowGraph.add_node&#x27; takes 7 parameters
+                            <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> KISS Violation (Long Parameter List): Method &#x27;DataFlowGraph.add_node&#x27; takes 6 parameters
                         </div>
                         <div style="margin-bottom: 10px; color: #94a3b8;">
                             <i class="map marker alternate icon" style="color: #f43f5e;"></i> <strong>Primary Location:</strong> <span class="code-pill">/Volumes/External/Code/DPX-Py/src/pattern_detector/domain/data_flow.py:72:5</span>
@@ -1843,7 +1811,7 @@
                                 <i class="search icon"></i> Evidence Trail (2 heuristics):
                             </div>
                             <div class="ui inverted list">
-                                <div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+65%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[KISS_KISS_LONG_PARAMETER_LIST]</span> <span style="color: #e2e8f0;">Method &#x27;DataFlowGraph.add_node&#x27; has 7 parameters, violating KISS (Long Parameter List)</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/data_flow.py:72:5</span></div><div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+35%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[KISS_KISS_PARAMETER_OBJECT_RECOMMENDED]</span> <span style="color: #e2e8f0;">Excessive parameters increase cognitive load and error probability; consider a Parameter Object / Builder</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/data_flow.py:72:5</span></div>
+                                <div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+65%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[KISS_KISS_LONG_PARAMETER_LIST]</span> <span style="color: #e2e8f0;">Method &#x27;DataFlowGraph.add_node&#x27; has 6 parameters, violating KISS (Long Parameter List)</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/data_flow.py:72:5</span></div><div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+35%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[KISS_KISS_PARAMETER_OBJECT_RECOMMENDED]</span> <span style="color: #e2e8f0;">Excessive parameters increase cognitive load and error probability; consider a Parameter Object / Builder</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/data_flow.py:72:5</span></div>
                             </div>
                         </div>
                         
@@ -1856,7 +1824,7 @@
                             <span class="ui mini green label" style="font-weight: 700;">85% [VERY_HIGH]</span>
                         </div>
                         <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#54</span>
+                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#53</span>
                             <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                             <span class="ui mini olive label">KISS</span>
                             <span style="color: #cbd5e1; font-weight: 600;">kiss_complexity_parameters:</span>
@@ -1888,7 +1856,7 @@
                             <span class="ui mini green label" style="font-weight: 700;">85% [VERY_HIGH]</span>
                         </div>
                         <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#55</span>
+                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#54</span>
                             <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                             <span class="ui mini olive label">KISS</span>
                             <span style="color: #cbd5e1; font-weight: 600;">kiss_complexity_parameters:</span>
@@ -1900,14 +1868,14 @@
                             <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> KISS Violation (Long Parameter List): Method &#x27;DataFlowService._expand_backward_function&#x27; takes 7 parameters
                         </div>
                         <div style="margin-bottom: 10px; color: #94a3b8;">
-                            <i class="map marker alternate icon" style="color: #f43f5e;"></i> <strong>Primary Location:</strong> <span class="code-pill">/Volumes/External/Code/DPX-Py/src/pattern_detector/domain/services/data_flow.py:202:5</span>
+                            <i class="map marker alternate icon" style="color: #f43f5e;"></i> <strong>Primary Location:</strong> <span class="code-pill">/Volumes/External/Code/DPX-Py/src/pattern_detector/domain/services/data_flow.py:201:5</span>
                         </div>
                         <div class="evidence-section" style="margin-top: 12px;">
                             <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
                                 <i class="search icon"></i> Evidence Trail (2 heuristics):
                             </div>
                             <div class="ui inverted list">
-                                <div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+65%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[KISS_KISS_LONG_PARAMETER_LIST]</span> <span style="color: #e2e8f0;">Method &#x27;DataFlowService._expand_backward_function&#x27; has 7 parameters, violating KISS (Long Parameter List)</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/services/data_flow.py:202:5</span></div><div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+35%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[KISS_KISS_PARAMETER_OBJECT_RECOMMENDED]</span> <span style="color: #e2e8f0;">Excessive parameters increase cognitive load and error probability; consider a Parameter Object / Builder</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/services/data_flow.py:202:5</span></div>
+                                <div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+65%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[KISS_KISS_LONG_PARAMETER_LIST]</span> <span style="color: #e2e8f0;">Method &#x27;DataFlowService._expand_backward_function&#x27; has 7 parameters, violating KISS (Long Parameter List)</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/services/data_flow.py:201:5</span></div><div class="item" style="padding: 4px 0; border-left: 3px solid #6366f1; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #818cf8; font-weight: 700; font-family: monospace;">+35%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[KISS_KISS_PARAMETER_OBJECT_RECOMMENDED]</span> <span style="color: #e2e8f0;">Excessive parameters increase cognitive load and error probability; consider a Parameter Object / Builder</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/services/data_flow.py:201:5</span></div>
                             </div>
                         </div>
                         
@@ -1920,7 +1888,7 @@
                             <span class="ui mini green label" style="font-weight: 700;">85% [VERY_HIGH]</span>
                         </div>
                         <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#56</span>
+                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#55</span>
                             <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                             <span class="ui mini olive label">KISS</span>
                             <span style="color: #cbd5e1; font-weight: 600;">kiss_complexity_parameters:</span>
@@ -1952,7 +1920,7 @@
                             <span class="ui mini green label" style="font-weight: 700;">85% [VERY_HIGH]</span>
                         </div>
                         <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#57</span>
+                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#56</span>
                             <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                             <span class="ui mini olive label">KISS</span>
                             <span style="color: #cbd5e1; font-weight: 600;">kiss_complexity_parameters:</span>
@@ -1984,7 +1952,7 @@
                             <span class="ui mini green label" style="font-weight: 700;">85% [VERY_HIGH]</span>
                         </div>
                         <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#58</span>
+                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#57</span>
                             <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                             <span class="ui mini olive label">KISS</span>
                             <span style="color: #cbd5e1; font-weight: 600;">kiss_complexity_parameters:</span>
@@ -2016,7 +1984,7 @@
                             <span class="ui mini green label" style="font-weight: 700;">85% [VERY_HIGH]</span>
                         </div>
                         <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#59</span>
+                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#58</span>
                             <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                             <span class="ui mini olive label">KISS</span>
                             <span style="color: #cbd5e1; font-weight: 600;">kiss_complexity_parameters:</span>
@@ -2048,7 +2016,7 @@
                             <span class="ui mini green label" style="font-weight: 700;">85% [VERY_HIGH]</span>
                         </div>
                         <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#60</span>
+                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#59</span>
                             <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                             <span class="ui mini olive label">KISS</span>
                             <span style="color: #cbd5e1; font-weight: 600;">kiss_complexity_parameters:</span>
@@ -2080,7 +2048,7 @@
                             <span class="ui mini green label" style="font-weight: 700;">85% [VERY_HIGH]</span>
                         </div>
                         <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#61</span>
+                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#60</span>
                             <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                             <span class="ui mini olive label">KISS</span>
                             <span style="color: #cbd5e1; font-weight: 600;">kiss_complexity_parameters:</span>
@@ -2112,7 +2080,7 @@
                             <span class="ui mini teal label" style="font-weight: 700;">81% [HIGH]</span>
                         </div>
                         <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#62</span>
+                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#61</span>
                             <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                             <span class="ui mini violet label">STRATEGY</span>
                             <span style="color: #cbd5e1; font-weight: 600;">protocol_strategy:</span>
@@ -2144,7 +2112,7 @@
                             <span class="ui mini teal label" style="font-weight: 700;">80% [HIGH]</span>
                         </div>
                         <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#63</span>
+                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#62</span>
                             <span class="ui mini green label"><i class="magic icon"></i> CREATIONAL</span>
                             <span class="ui mini teal label">FACTORY_METHOD</span>
                             <span style="color: #cbd5e1; font-weight: 600;">factory_method_protocol:</span>
@@ -2176,7 +2144,7 @@
                             <span class="ui mini teal label" style="font-weight: 700;">77% [HIGH]</span>
                         </div>
                         <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#64</span>
+                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#63</span>
                             <span class="ui mini blue label"><i class="cubes icon"></i> STRUCTURAL</span>
                             <span class="ui mini teal label">ADAPTER</span>
                             <span style="color: #cbd5e1; font-weight: 600;">adapter_class:</span>
@@ -2208,7 +2176,7 @@
                             <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
                         </div>
                         <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#65</span>
+                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#64</span>
                             <span class="ui mini blue label"><i class="cubes icon"></i> STRUCTURAL</span>
                             <span class="ui mini teal label">ADAPTER</span>
                             <span style="color: #cbd5e1; font-weight: 600;">adapter_class:</span>
@@ -2240,7 +2208,7 @@
                             <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
                         </div>
                         <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#66</span>
+                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#65</span>
                             <span class="ui mini blue label"><i class="cubes icon"></i> STRUCTURAL</span>
                             <span class="ui mini teal label">FACADE</span>
                             <span style="color: #cbd5e1; font-weight: 600;">facade_class:</span>
@@ -2272,7 +2240,7 @@
                             <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
                         </div>
                         <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#67</span>
+                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#66</span>
                             <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                             <span class="ui mini blue label">INTERFACE_SEGREGATION</span>
                             <span style="color: #cbd5e1; font-weight: 600;">segregated_role_interface:</span>
@@ -2304,7 +2272,7 @@
                             <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
                         </div>
                         <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#68</span>
+                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#67</span>
                             <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                             <span class="ui mini blue label">INTERFACE_SEGREGATION</span>
                             <span style="color: #cbd5e1; font-weight: 600;">segregated_role_interface:</span>
@@ -2336,7 +2304,7 @@
                             <span class="ui mini teal label" style="font-weight: 700;">75% [HIGH]</span>
                         </div>
                         <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#69</span>
+                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#68</span>
                             <span class="ui mini teal label"><i class="shield alternate icon"></i> PRINCIPLES &amp; SOLID</span>
                             <span class="ui mini blue label">INTERFACE_SEGREGATION</span>
                             <span style="color: #cbd5e1; font-weight: 600;">segregated_role_interface:</span>
@@ -2368,7 +2336,7 @@
                             <span class="ui mini orange label" style="font-weight: 700;">57% [MEDIUM]</span>
                         </div>
                         <div class="header" style="color: #f8fafc; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#70</span>
+                            <span style="color: #64748b; font-weight: 700; font-size: 13px;">#69</span>
                             <span class="ui mini purple label"><i class="sync alternate icon"></i> BEHAVIORAL</span>
                             <span class="ui mini pink label">OBSERVER</span>
                             <span style="color: #cbd5e1; font-weight: 600;">subject_class:</span>
@@ -2380,14 +2348,14 @@
                             <i class="info circle icon" style="color: #38bdf8;"></i> <strong>Summary:</strong> Observer pattern: subject &#x27;StateModel&#x27; manages event subscriptions and notifications
                         </div>
                         <div style="margin-bottom: 10px; color: #94a3b8;">
-                            <i class="map marker alternate icon" style="color: #f43f5e;"></i> <strong>Primary Location:</strong> <span class="code-pill">/Volumes/External/Code/DPX-Py/src/pattern_detector/domain/code_model.py:120:1</span>
+                            <i class="map marker alternate icon" style="color: #f43f5e;"></i> <strong>Primary Location:</strong> <span class="code-pill">/Volumes/External/Code/DPX-Py/src/pattern_detector/domain/code_model.py:114:1</span>
                         </div>
                         <div class="evidence-section" style="margin-top: 12px;">
                             <div style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
                                 <i class="search icon"></i> Evidence Trail (1 heuristics):
                             </div>
                             <div class="ui inverted list">
-                                <div class="item" style="padding: 4px 0; border-left: 3px solid #a855f7; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #c084fc; font-weight: 700; font-family: monospace;">+40%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[OBSERVER_OBSERVER_COLLECTION_FIELD]</span> <span style="color: #e2e8f0;">Maintains list/collection of observers: watchers</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/code_model.py:120:1</span></div>
+                                <div class="item" style="padding: 4px 0; border-left: 3px solid #a855f7; padding-left: 10px; margin-bottom: 4px;"><span class="weight-tag" style="color: #c084fc; font-weight: 700; font-family: monospace;">+40%</span> <span class="rule-code" style="color: #94a3b8; font-family: monospace; font-size: 11px;">[OBSERVER_OBSERVER_COLLECTION_FIELD]</span> <span style="color: #e2e8f0;">Maintains list/collection of observers: watchers</span> <span class="location-tag"><i class="map marker alternate icon"></i> /Volumes/External/Code/DPX-Py/src/pattern_detector/domain/code_model.py:114:1</span></div>
                             </div>
                         </div>
                         
