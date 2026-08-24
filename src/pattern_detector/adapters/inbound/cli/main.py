@@ -106,7 +106,7 @@ def scan(
         ),
     ] = False,
 ) -> None:
-    """Scan a C++ source code file or directory for software design patterns."""
+    """Scan a Python source code file or directory for software design patterns."""
     target_path = str(Path(path).resolve())
 
     container = create_container()
@@ -179,7 +179,7 @@ def dataflow(
         typer.Option(
             "--path",
             "-p",
-            help="File or directory path containing C++ source code.",
+            help="File or directory path containing Python source code.",
         ),
     ] = ".",
     all_vars: Annotated[

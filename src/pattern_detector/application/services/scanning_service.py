@@ -26,7 +26,7 @@ from pattern_detector.ports.outbound import (
 class ScanningService(ScannerPort, DetectorPort, DataFlowPort):
     """Application Service implementing ScannerPort, DetectorPort, and DataFlowPort.
 
-    Coordinates source fetching, AST/C++ parsing into CodeModel,
+    Coordinates source fetching, Python AST parsing into CodeModel,
     pattern rule execution, data flow analysis, and persisting results.
     """
 

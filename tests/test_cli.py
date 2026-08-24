@@ -1,4 +1,4 @@
-"""Tests for Typer CLI commands in C++ Pattern Detector."""
+"""Tests for Typer CLI commands in Python Pattern Detector."""
 
 from typer.testing import CliRunner
 

@@ -82,7 +82,7 @@ class AdapterPatternRule(BasePatternRule):
                 )
             )
 
-        # 2. C++ OOP Adapter Pattern (Object & Class Adapters)
+        # 2. Python OOP Adapter Pattern (Object & Class Adapters)
         for rec in model.all_records():
             name_lower = rec.name.lower()
             is_adapter_named = "adapter" in name_lower or "wrapper" in name_lower

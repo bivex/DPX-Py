@@ -92,7 +92,7 @@ class TemplateMethodRule(BasePatternRule):
                     )
                 )
 
-        # 5. C++ OOP Template Method Pattern (Abstract base classes with primitive operations)
+        # 5. Python OOP Template Method Pattern (Abstract base classes with primitive operations)
         for proto in model.all_protocols():
             name_lower = proto.name.lower()
             primitive_methods = [

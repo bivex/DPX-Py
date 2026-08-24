@@ -100,7 +100,7 @@ class InterpreterPatternRule(BasePatternRule):
                         )
                     )
 
-        # 3. C++ OOP Interpreter Pattern (AbstractExpression protocols and base records)
+        # 3. Python OOP Interpreter Pattern (AbstractExpression protocols and base records)
         candidates: list[ProtocolModel | RecordModel] = list(model.all_protocols())
         for rec in model.all_records():
             if "expression" in rec.name.lower() or any("interpret" in m.name.lower() for m in rec.methods):

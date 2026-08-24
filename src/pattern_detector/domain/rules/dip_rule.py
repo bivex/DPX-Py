@@ -1,4 +1,4 @@
-"""Dependency Inversion Principle (DIP) Detection Rule for C++."""
+"""Dependency Inversion Principle (DIP) Detection Rule for Python."""
 
 from __future__ import annotations
 

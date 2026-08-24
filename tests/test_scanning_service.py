@@ -1,4 +1,4 @@
-"""Integration tests for ScanningService and Dependency Injection Container for C++."""
+"""Integration tests for ScanningService and Dependency Injection Container for Python."""
 
 import json
 import tempfile

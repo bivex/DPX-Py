@@ -98,7 +98,7 @@ class StatePatternRule(BasePatternRule):
                         )
                     )
 
-        # 3. C++ OOP State Pattern (State Interface and polymorphic state implementations)
+        # 3. Python OOP State Pattern (State Interface and polymorphic state implementations)
         for proto in model.all_protocols():
             name_lower = proto.name.lower()
             if "state" in name_lower and "strategy" not in name_lower:

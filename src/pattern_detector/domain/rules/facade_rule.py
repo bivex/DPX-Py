@@ -83,7 +83,7 @@ class FacadePatternRule(BasePatternRule):
                     )
                 )
 
-        # 2. C++ OOP Facade Pattern (Classes aggregating multiple subsystem components)
+        # 2. Python OOP Facade Pattern (Classes aggregating multiple subsystem components)
         for rec in model.all_records():
             name_lower = rec.name.lower()
             is_facade_named = "facade" in name_lower

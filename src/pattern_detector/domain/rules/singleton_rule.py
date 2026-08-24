@@ -1,4 +1,4 @@
-"""Singleton Pattern Detection Rule for C++."""
+"""Singleton Pattern Detection Rule for Python."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ _MEYERS_INSTANCE_RE = re.compile(r"\bstatic\s+([A-Za-z0-9_:]+)\s*(&|\*)\s*([A-Za
 
 
 class SingletonPatternRule(BasePatternRule):
-    """Detects Singleton Pattern instances in C++.
+    """Detects Singleton Pattern instances in Python.
 
     Indicators:
     - Meyers' Singleton: Static member function returning reference to local static instance

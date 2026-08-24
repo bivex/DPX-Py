@@ -85,7 +85,7 @@ class ChainOfResponsibilityRule(BasePatternRule):
                     )
                 )
 
-        # 2. C++ OOP Chain of Responsibility Pattern (Handler chaining)
+        # 2. Python OOP Chain of Responsibility Pattern (Handler chaining)
         for rec in model.all_records():
             name_lower = rec.name.lower()
             is_handler_named = "handler" in name_lower or "filter" in name_lower or "processor" in name_lower

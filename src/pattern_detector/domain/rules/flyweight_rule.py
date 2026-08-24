@@ -69,7 +69,7 @@ class FlyweightPatternRule(BasePatternRule):
                     )
                 )
 
-        # 3. C++ OOP Flyweight Pattern (Flyweight Factory & Flyweight protocols)
+        # 3. Python OOP Flyweight Pattern (Flyweight Factory & Flyweight protocols)
         for rec in model.all_records():
             name_lower = rec.name.lower()
             if "flyweight" in name_lower:

@@ -112,7 +112,7 @@ class DecoratorPatternRule(BasePatternRule):
                     )
                 )
 
-        # 2. C++ OOP Decorator Pattern (Wrapping Component interface)
+        # 2. Python OOP Decorator Pattern (Wrapping Component interface)
         for rec in model.all_records():
             name_lower = rec.name.lower()
             is_decorator_named = "decorator" in name_lower

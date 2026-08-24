@@ -92,7 +92,7 @@ class FactoryPatternRule(BasePatternRule):
                     )
                 )
 
-        # 2. OOP Factory Method Pattern in C++ (Creator / Factory with virtual creation methods)
+        # 2. OOP Factory Method Pattern in Python (Creator / Factory with virtual creation methods)
         for proto in model.all_protocols():
             name_lower = proto.name.lower()
             if any(k in name_lower for k in ("creator", "factory", "provider")) and "builder" not in name_lower:

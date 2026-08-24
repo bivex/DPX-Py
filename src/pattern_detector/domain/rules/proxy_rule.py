@@ -88,7 +88,7 @@ class ProxyPatternRule(BasePatternRule):
                     )
                 )
 
-        # 3. OOP Proxy Pattern in C++
+        # 3. OOP Proxy Pattern in Python
         for rec in model.all_records():
             name_lower = rec.name.lower()
             if "proxy" in name_lower:

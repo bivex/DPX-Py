@@ -127,7 +127,7 @@ class ObserverPatternRule(BasePatternRule):
                     )
                 )
 
-        # 4. OOP Observer / Subject Pattern in C++
+        # 4. OOP Observer / Subject Pattern in Python
         for proto in model.all_protocols():
             name_lower = proto.name.lower()
             if any(k in name_lower for k in ("observer", "listener", "subscriber")):
