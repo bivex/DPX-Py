@@ -85,7 +85,7 @@ class AdapterPatternRule(BasePatternRule):
     def _detect_oop_adapters(self, model: CodeModel) -> list[Detection]:
         results: list[Detection] = []
         for rec in model.all_records():
-            if not rec.name.endswith(("Rule", "Test")):
+            if not rec.name.endswith(("Rule", "Test", "TestCase", "Service", "Coordinator", "Orchestrator", "UseCase", "Handler")):
                 det = self._analyze_adapter_record(rec, model)
                 if det:
                     results.append(det)
@@ -112,10 +112,11 @@ class AdapterPatternRule(BasePatternRule):
         )
 
     def _find_adaptee_fields(self, fields: list[str]) -> list[str]:
-        keywords = ("adaptee", "delegate", "target", "source", "wrapped", "impl", "client")
+        adaptee_exact = {"adaptee", "_adaptee", "delegate", "_delegate", "wrapped", "_wrapped", "impl", "_impl"}
         results = []
         for f in fields:
-            if any(k in f.lower() for k in keywords):
+            f_lower = f.lower()
+            if f_lower in adaptee_exact or any(f_lower.startswith(prefix) for prefix in ("adaptee_", "_adaptee_", "wrapped_", "_wrapped_", "delegate_", "_delegate_")) or any(f_lower.endswith(suffix) for suffix in ("_adaptee", "_delegate", "_wrapped", "_impl")):
                 results.append(f)
         return results
 

@@ -33,6 +33,9 @@ class CompositePatternRule(BasePatternRule):
         return detections
 
     def _analyze_composite_proto(self, proto: Any, model: CodeModel) -> Detection | None:
+        if proto.name.endswith(("Rule", "Test", "TestCase", "Detector", "Visitor", "Parser", "Analyzer")):
+            return None
+
         rec_impls = model.find_records_implementing(proto.name)
         if len(rec_impls) < 2:
             return None
@@ -70,6 +73,8 @@ class CompositePatternRule(BasePatternRule):
         return composite_recs, leaf_recs
 
     def _is_composite_record(self, rec: Any) -> bool:
+        if rec.name.endswith(("Rule", "Test", "TestCase", "Detector", "Visitor", "Parser", "Analyzer")):
+            return False
         fields_lower = [f.lower() for f in rec.fields]
         is_composite_field = any(
             k in f

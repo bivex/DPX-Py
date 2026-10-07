@@ -122,7 +122,7 @@ class ObserverPatternRule(BasePatternRule):
         results: list[Detection] = []
         for fn in model.all_functions():
             if fn.name not in recorded_targets and any(
-                self._has_observer_callback_signature(p) for p in fn.parameter_lists
+                self._has_observer_callback_signature(p, fn_name=fn.name) for p in fn.parameter_lists
             ):
                 evidences = [
                     self.evidence(
@@ -143,12 +143,12 @@ class ObserverPatternRule(BasePatternRule):
                 )
         return results
 
-    def _has_observer_callback_signature(self, params: list[str]) -> bool:
+    def _has_observer_callback_signature(self, params: list[str], fn_name: str = "") -> bool:
         """Determines if a 4-arity parameter list matches Clojure/Observer watch callback semantics.
 
         Standard watcher signature: [key ref old-state new-state].
-        Requires strong transition semantics (both old and new state) or at least 3 distinct
-        observer role markers to avoid false positives on standard 4-arg functions (e.g., render(chords, key, duration, context)).
+        Requires observed subject reference (ref) or explicit watch/observer role naming
+        to avoid false positives on standard 4-arg functions (e.g. math or musical transition functions).
         """
         if len(params) != 4:
             return False
@@ -160,13 +160,24 @@ class ObserverPatternRule(BasePatternRule):
         has_key = any(any(k in p for k in ("key", "watch_key", "observer_key")) for p in param_names)
         has_state = any("state" in p or "val" in p for p in param_names)
 
-        # 1. Old state and new state present (e.g., [key, ref, old, new], [k, r, old_val, new_val])
-        if has_old and has_new:
+        fn_base = fn_name.split(".")[-1].lower() if fn_name else ""
+        is_obs_fn_named = (
+            fn_base.startswith(("on_", "watch_", "handle_"))
+            or any(k in fn_base for k in ("observer", "listener", "callback", "handler", "watcher", "on_change"))
+        )
+        has_explicit_watch_key = any("watch_key" in p or "observer_key" in p for p in param_names)
+
+        # 1. Full watcher signature: old state, new state, and the observed subject reference (ref)
+        if has_old and has_new and (has_ref or has_explicit_watch_key):
             return True
 
-        # 2. Or at least 3 distinct matching watcher concepts
-        roles_count = sum([has_key, has_ref, (has_old or has_new), has_state])
-        return roles_count >= 3
+        # 2. Function explicitly named as an observer handler with state transition params
+        if is_obs_fn_named and has_old and has_new:
+            return True
+
+        # 3. Or at least 3 distinct matching watcher concepts including ref
+        roles_count = sum([has_key, has_ref, (has_old and has_new), has_state])
+        return roles_count >= 3 and has_ref
 
     def _detect_observer_protocols(self, model: CodeModel) -> list[Detection]:
         results: list[Detection] = []
@@ -212,6 +223,11 @@ class ObserverPatternRule(BasePatternRule):
         return results
 
     def _analyze_subject_record(self, rec: Any) -> Detection | None:
+        name_lower = rec.name.lower()
+        is_named = "subject" in name_lower or "observable" in name_lower
+        if rec.name.endswith(("Rule", "Test", "TestCase", "Model", "Dto", "Entity")) and not is_named:
+            return None
+
         obs_fields = [f for f in rec.fields if self._is_obs_collection(f)]
         obs_m_names = self._get_subject_method_names(rec)
 
@@ -231,7 +247,9 @@ class ObserverPatternRule(BasePatternRule):
     def _is_subject_candidate(self, name: str, has_obs_field: bool, has_obs_methods: bool) -> bool:
         name_lower = name.lower()
         is_named = "subject" in name_lower or "observable" in name_lower
-        return has_obs_field or (has_obs_methods and is_named)
+        if is_named:
+            return has_obs_field or has_obs_methods
+        return has_obs_field and has_obs_methods
 
     def _get_subject_method_names(self, rec: Any) -> list[str]:
         prefixes = ("attach", "detach", "register", "unregister", "subscribe", "notify")

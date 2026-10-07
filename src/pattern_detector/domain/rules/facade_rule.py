@@ -88,7 +88,7 @@ class FacadePatternRule(BasePatternRule):
     def _detect_facade_records(self, model: CodeModel) -> list[Detection]:
         results: list[Detection] = []
         for rec in model.all_records():
-            if not rec.name.endswith(("Rule", "Test")):
+            if not rec.name.endswith(("Rule", "Test", "TestCase", "Request", "Response", "Dto", "Event", "Message", "Config", "Options", "Model", "State")):
                 det = self._analyze_facade_record(rec)
                 if det:
                     results.append(det)
@@ -99,6 +99,10 @@ class FacadePatternRule(BasePatternRule):
         subsystem_fields = self._find_subsystem_fields(rec.fields)
 
         if not self._is_facade_record_candidate(is_facade_named, len(subsystem_fields)):
+            return None
+
+        public_methods = [m for m in rec.methods if not m.name.split(".")[-1].startswith("_")]
+        if not is_facade_named and len(public_methods) == 0:
             return None
 
         evidences = self._build_facade_record_evidences(rec, is_facade_named, subsystem_fields)
@@ -146,10 +150,12 @@ class FacadePatternRule(BasePatternRule):
                     code_suffix="FACADE_SUBSYSTEM_MEMBERS",
                 )
             )
-        if len(rec.methods) >= 1:
+        public_methods = [m for m in rec.methods if not m.name.split(".")[-1].startswith("_")]
+        if len(public_methods) >= 1:
+            clean_names = [m.name.split(".")[-1] for m in public_methods[:3]]
             evidences.append(
                 self.evidence(
-                    description=f"Exposes simplified unified facade method(s): {', '.join(m.name for m in rec.methods[:3])}",
+                    description=f"Exposes simplified unified facade method(s): {', '.join(clean_names)}",
                     weight=0.35,
                     location=rec.location,
                     code_suffix="FACADE_UNIFIED_METHODS",

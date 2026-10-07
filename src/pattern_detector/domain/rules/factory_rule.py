@@ -132,12 +132,15 @@ class FactoryPatternRule(BasePatternRule):
         return results
 
     def _analyze_factory_proto(self, proto: Any, model: CodeModel) -> Detection | None:
+        if proto.name.endswith(("Rule", "Test", "TestCase")):
+            return None
+
         if not self._is_factory_proto_name(proto.name):
             return None
 
         creation_methods = self._get_creation_methods(proto)
         rec_impls = model.find_records_implementing(proto.name)
-        if not creation_methods and not rec_impls:
+        if not creation_methods or not rec_impls:
             return None
 
         evidences = self._build_factory_proto_evidences(proto, creation_methods, rec_impls)
@@ -155,7 +158,7 @@ class FactoryPatternRule(BasePatternRule):
         name_lower = name.lower()
         if "builder" in name_lower:
             return False
-        return any(k in name_lower for k in ("creator", "factory", "provider"))
+        return any(k in name_lower for k in ("creator", "factory"))
 
     def _get_creation_methods(self, proto: Any) -> list[Any]:
         results = []

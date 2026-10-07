@@ -367,3 +367,140 @@ def standalone_generator_render(chords: List[ChordLabel], key: Scale, duration_b
     ]
     assert len(observer_detections) == 0
 
+
+def test_class_with_instance_in_name_or_method_not_flagged_as_singleton() -> None:
+    code = """
+class PhraseInstance:
+    def __init__(self, notes: list) -> None:
+        self.notes = notes
+
+    def __post_init__(self) -> None:
+        pass
+
+class RuleDeduplicator:
+    def _deduplicate_instances(self, items: list) -> list:
+        return list(set(items))
+
+    def _find_get_instance_methods(self) -> list:
+        return []
+"""
+    report = _scan_snippet({"phrase_instance.py": code})
+    singleton_detections = [d for d in report.detections if d.pattern_type == PatternType.SINGLETON]
+    assert len(singleton_detections) == 0
+
+
+def test_modifier_and_service_classes_not_flagged_as_adapter() -> None:
+    code = """
+from abc import ABC, abstractmethod
+
+class IModifier(ABC):
+    @abstractmethod
+    def modify(self, items: list) -> list:
+        pass
+
+class VoiceLeadingModifier(IModifier):
+    def __init__(self, target_octave: int = 4) -> None:
+        self.target_octave = target_octave
+
+    def modify(self, items: list) -> list:
+        return items
+
+class WorkflowService:
+    def __init__(self, source_provider: object) -> None:
+        self._source_provider = source_provider
+
+    def execute(self) -> None:
+        pass
+"""
+    report = _scan_snippet({"modifier.py": code})
+    adapter_detections = [d for d in report.detections if d.pattern_type == PatternType.ADAPTER]
+    assert len(adapter_detections) == 0
+
+
+def test_rule_hierarchy_not_flagged_as_composite() -> None:
+    code = """
+from abc import ABC, abstractmethod
+
+class BaseAnalysisRule(ABC):
+    @abstractmethod
+    def analyze(self) -> bool:
+        pass
+
+class CompositePatternRule(BaseAnalysisRule):
+    def analyze(self) -> bool:
+        return True
+
+class LeafAnalysisRule(BaseAnalysisRule):
+    def analyze(self) -> bool:
+        return False
+"""
+    report = _scan_snippet({"rules.py": code})
+    composite_detections = [d for d in report.detections if d.pattern_type == PatternType.COMPOSITE]
+    assert len(composite_detections) == 0
+
+
+def test_outbound_provider_port_not_flagged_as_factory_method() -> None:
+    code = """
+from abc import ABC, abstractmethod
+
+class SourceProviderPort(ABC):
+    @abstractmethod
+    def get_sources(self, path: str) -> dict:
+        pass
+
+class FileSourceProvider(SourceProviderPort):
+    def get_sources(self, path: str) -> dict:
+        return {}
+"""
+    report = _scan_snippet({"provider.py": code})
+    factory_detections = [d for d in report.detections if d.pattern_type == PatternType.FACTORY_METHOD]
+    assert len(factory_detections) == 0
+
+
+def test_math_voice_leading_functions_not_flagged_as_observer_callback() -> None:
+    code = """
+def _is_parallel_fifth(prev_a: int, prev_b: int, curr_a: int, curr_b: int) -> bool:
+    return abs(prev_a - prev_b) == 7 and abs(curr_a - curr_b) == 7
+
+def _is_parallel_octave(prev_a: int, prev_b: int, curr_a: int, curr_b: int) -> bool:
+    return abs(prev_a - prev_b) == 0 and abs(curr_a - curr_b) == 0
+"""
+    report = _scan_snippet({"voice_leading_math.py": code})
+    observer_detections = [d for d in report.detections if d.pattern_type == PatternType.OBSERVER]
+    assert len(observer_detections) == 0
+
+
+def test_data_model_with_watchers_field_not_flagged_as_observer_subject() -> None:
+    code = """
+from dataclasses import dataclass, field
+
+@dataclass
+class StateDataModel:
+    name: str
+    watchers: list[str] = field(default_factory=list)
+    views: int = 0
+"""
+    report = _scan_snippet({"state_data.py": code})
+    observer_detections = [d for d in report.detections if d.pattern_type == PatternType.OBSERVER]
+    assert len(observer_detections) == 0
+
+
+def test_dataclass_request_with_subsystem_fields_not_flagged_as_facade() -> None:
+    code = """
+from dataclasses import dataclass
+
+@dataclass
+class HarmonizationRequest:
+    melody: list
+    engine: int = 4
+    rule_db: object = None
+
+    def __post_init__(self) -> None:
+        if not self.melody:
+            raise ValueError("Empty melody")
+"""
+    report = _scan_snippet({"request.py": code})
+    facade_detections = [d for d in report.detections if d.pattern_type == PatternType.FACADE]
+    assert len(facade_detections) == 0
+
+

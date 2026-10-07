@@ -7,7 +7,6 @@ from pathlib import Path
 
 from pattern_detector.ports.outbound import SourceProviderPort
 
-
 _IGNORED_DIR_NAMES = frozenset(
     {
         "build",
